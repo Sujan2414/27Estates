@@ -7,7 +7,8 @@ import Hero from '@/components/Hero';
 import WelcomeSection from '@/components/WelcomeSection';
 import ServicesSection from '@/components/ServicesSection';
 import FeaturedProperties from '@/components/FeaturedProperties';
-import FeaturedProjects from '@/components/emergent/FeaturedProjects';
+import FeaturedProjectsStacked from '@/components/FeaturedProjectsStacked';
+import HowWeWork from '@/components/HowWeWork';
 import TestimonialSection from '@/components/TestimonialSection';
 import GalleryShowcase from '@/components/GalleryShowcase';
 import Footer from '@/components/Footer';
@@ -26,7 +27,8 @@ export default function Home() {
                     <WelcomeSection />
                     <ServicesSection />
                     <FeaturedProperties />
-                    <FeaturedProjects />
+                    <FeaturedProjectsStacked />
+                    <HowWeWork />
                     <TestimonialSection />
                     <GalleryShowcase />
                     <Footer />
