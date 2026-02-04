@@ -158,23 +158,22 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.875rem 1.75rem;
-    background-color: var(--dark-turquoise);
-    color: #ffffff;
+    padding: 1rem 2.25rem;
+    background: #1F524B;
+    color: white;
     font-family: var(--font-body);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     text-decoration: none;
-    border: 1px solid var(--dark-turquoise);
-    transition: all 0.3s ease;
+    border-radius: 50px;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 16px rgba(31, 82, 75, 0.2);
 }
 
 .viewAllBtn:hover {
-    background-color: #2d7a6e;
-    border-color: #2d7a6e;
-    color: #ffffff;
+    background: #2d7a6e;
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(31, 82, 75, 0.4);
+    box-shadow: 0 8px 24px rgba(31, 82, 75, 0.3);
 }
