@@ -58,9 +58,10 @@
 
 .text {
     font-family: var(--font-body);
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
     line-height: 1.8;
-    color: var(--dark-grey);
+    color: #0E110F;
+    opacity: 0.85;
     margin-bottom: 1.5rem;
 }
 
