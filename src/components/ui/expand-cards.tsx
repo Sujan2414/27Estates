@@ -36,7 +36,7 @@ const ExpandOnHover = () => {
     };
 
     return (
-        <section className="w-full bg-[#f5f4f3] pb-24">
+        <section className="w-full bg-[#FEFDFB] pb-24">
             <div className="w-full px-16">
                 {/* Carousel Container */}
                 <div className="flex items-center gap-4 justify-center">
