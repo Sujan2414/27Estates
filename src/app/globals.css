@@ -240,43 +240,49 @@ a:hover {
   color: var(--gold);
 }
 
-/* Buttons */
+/* Buttons - Enhanced Modern Style */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.875rem 1.75rem;
+  padding: 1rem 2.25rem;
   font-family: var(--font-body);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   text-decoration: none;
   border: none;
+  border-radius: 50px;
   cursor: pointer;
-  transition: all var(--transition-medium);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .btn-primary {
   background-color: var(--dark-turquoise);
-  color: var(--light-grey);
+  color: white;
 }
 
 .btn-primary:hover {
-  background-color: #3a4a5a;
+  background-color: #2d7a6e;
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(31, 82, 75, 0.25);
 }
 
 .btn-outline {
   background: transparent;
   color: var(--dark-turquoise);
-  border: 1px solid var(--dark-turquoise);
+  border: 2px solid var(--dark-turquoise);
+  box-shadow: none;
 }
 
 .btn-outline:hover {
   background: var(--dark-turquoise);
-  color: var(--light-grey);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(31, 82, 75, 0.2);
 }
 
 /* Divider */
