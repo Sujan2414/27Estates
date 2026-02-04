@@ -34,20 +34,20 @@
 .subtitle {
     font-family: var(--font-body);
     font-size: 0.75rem;
-    font-weight: 400;
+    font-weight: 500;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: var(--gold);
+    color: #BFA270;
     margin-bottom: 1.25rem;
 }
 
 .title {
     font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 3rem);
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
     font-weight: 500;
-    line-height: 1.15;
+    line-height: 1.2;
     letter-spacing: -0.02em;
-    color: var(--dark-turquoise);
+    color: #1F524B;
     margin-bottom: 2.5rem;
 }
 
