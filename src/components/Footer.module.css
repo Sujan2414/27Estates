@@ -1,0 +1,146 @@
+.footer {
+    position: relative;
+    background: var(--light-grey);
+    padding: 4rem 0 2rem;
+    border-top: 1px solid rgba(43, 54, 66, 0.06);
+}
+
+
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.logoSection {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.brandName {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--dark-turquoise);
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.linksGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+    .linksGrid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.linkColumn {
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    .linkColumn {
+        text-align: left;
+    }
+}
+
+.columnTitle {
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dark-grey);
+    margin-bottom: 1rem;
+}
+
+.linkList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.linkList li {
+    margin-bottom: 0.5rem;
+}
+
+.linkList a,
+.linkList li {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--dark-turquoise);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.linkList a:hover {
+    color: var(--gold);
+}
+
+/* Social Links */
+.socialLinks {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+@media (min-width: 768px) {
+    .socialLinks {
+        justify-content: flex-start;
+    }
+}
+
+.socialLink {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(43, 54, 66, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dark-turquoise);
+    transition: all 0.3s ease;
+}
+
+.socialLink:hover {
+    background: var(--dark-turquoise);
+    color: var(--light-grey);
+    border-color: var(--dark-turquoise);
+}
+
+/* Bottom Bar */
+.bottomBar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(43, 54, 66, 0.06);
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    .bottomBar {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+.copyright {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--dark-grey);
+}
+
+.tagline {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--gold);
+}

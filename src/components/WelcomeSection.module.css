@@ -1,0 +1,128 @@
+.section {
+    position: relative;
+    padding: 6rem 0 0;
+    background: var(--light-grey);
+    overflow: hidden;
+}
+
+.palmShadow {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 600px;
+    height: 800px;
+    background-image: url('https://images.unsplash.com/photo-1596726853569-b13184eb430d?q=80&w=2070&auto=format&fit=crop');
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.25;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+    z-index: 0;
+    transform: rotate(0deg);
+    /* Reset rotation to ensure simple positioning first */
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    text-align: center;
+}
+
+.subtitle {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.25rem;
+}
+
+.title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--dark-turquoise);
+    margin-bottom: 2.5rem;
+}
+
+.content {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.text {
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    line-height: 1.8;
+    color: var(--dark-grey);
+    margin-bottom: 1.5rem;
+}
+
+.signature {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(43, 54, 66, 0.08);
+}
+
+.signatureName {
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--dark-turquoise);
+    margin-bottom: 0.25rem;
+}
+
+.signatureTitle {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dark-grey);
+}
+
+/* Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 5rem;
+    padding: 0 2rem;
+}
+
+.dividerLine {
+    flex: 1;
+    max-width: 180px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.dividerIcon {
+    width: 8px;
+    height: 8px;
+    margin: 0 1rem;
+    border: 1px solid var(--gold);
+    transform: rotate(45deg);
+}
+
+@media (max-width: 768px) {
+    .section {
+        padding: 4rem 0 0;
+    }
+
+    .palmShadow {
+        width: 400px;
+        height: 600px;
+        right: -20%;
+        opacity: 0.08;
+    }
+
+    .divider {
+        margin-top: 4rem;
+    }
+}

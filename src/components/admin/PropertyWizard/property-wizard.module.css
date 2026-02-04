@@ -1,0 +1,244 @@
+.wizardContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem;
+    background: #f8fafc;
+    /* Modern light background */
+    min-height: 90vh;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Stepper Modernization */
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 30px 0;
+}
+
+.stepper::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #e2e8f0;
+    z-index: 1;
+    transform: translateY(-50%);
+    border-radius: 4px;
+}
+
+.step {
+    position: relative;
+    z-index: 2;
+    background: #f8fafc;
+    /* Match container bg */
+    padding: 0 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.step:hover {
+    transform: translateY(-2px);
+}
+
+.stepIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    color: #94a3b8;
+    /* Slate 400 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid #e2e8f0;
+}
+
+.step.active .stepIcon {
+    background: #0ea5e9;
+    /* Sky 500 - Modern Blue */
+    color: white;
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+}
+
+.step.completed .stepIcon {
+    background: #10b981;
+    /* Emerald 500 */
+    color: white;
+    border-color: #10b981;
+}
+
+.stepLabel {
+    font-size: 0.875rem;
+    color: #64748b;
+    /* Slate 500 */
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.step.active .stepLabel {
+    color: #0ea5e9;
+    font-weight: 700;
+}
+
+/* Card Content Modernization */
+.stepContent {
+    background: white;
+    padding: 3rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    border: 1px solid #f1f5f9;
+}
+
+.stepTitle {
+    font-size: 1.5rem;
+    color: #0f172a;
+    /* Slate 900 */
+    margin-bottom: 2rem;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+/* Form Actions */
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    /* Align right for modern feel */
+    gap: 1rem;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn {
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.primaryBtn {
+    background: #0ea5e9;
+    /* Sky 500 */
+    color: white;
+}
+
+.primaryBtn:hover {
+    background: #0284c7;
+    /* Sky 600 */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
+}
+
+.secondaryBtn {
+    background: white;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.secondaryBtn:hover {
+    background: #f8fafc;
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+.successBtn {
+    background: #10b981;
+    color: white;
+}
+
+.successBtn:hover {
+    background: #059669;
+}
+
+/* Grid & Inputs */
+.grid2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+}
+
+.grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #334155;
+    /* Slate 700 */
+    margin-bottom: 0.25rem;
+}
+
+.label span {
+    color: #ef4444;
+    /* Red 500 */
+}
+
+.input,
+.select,
+.textarea {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background-color: white;
+    color: #1e293b;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+    color: #94a3b8;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+    outline: none;
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.input:hover,
+.select:hover,
+.textarea:hover {
+    border-color: #cbd5e1;
+}

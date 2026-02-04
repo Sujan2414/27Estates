@@ -1,0 +1,81 @@
+.preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: var(--dark-turquoise);
+  /* #2B3642 */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0;
+}
+
+/* Split Containers */
+.splitTop,
+.splitBottom {
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+}
+
+.imageWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* TOP SECTION */
+.splitTop {
+  height: 150px;
+  align-items: flex-end;
+  margin-bottom: -25px;
+  /* Pull closer */
+}
+
+.imageUp {
+  width: auto;
+  height: 160px;
+  object-fit: contain;
+}
+
+/* BOTTOM SECTION */
+.splitBottom {
+  height: 100px;
+  align-items: flex-start;
+  margin-top: -25px;
+  /* Pull closer */
+  /* Reduced gap since line is gone */
+}
+
+.imageDown {
+  width: auto;
+  height: 40px;
+  object-fit: contain;
+}
+
+@media (max-width: 480px) {
+  .splitTop {
+    height: 120px;
+  }
+
+  .imageUp {
+    height: 90px;
+  }
+
+  .imageDown {
+    height: 50px;
+  }
+}
