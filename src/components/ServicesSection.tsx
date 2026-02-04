@@ -9,7 +9,7 @@ const ServicesSection: React.FC = () => {
     return (
         <>
             {/* Header Section */}
-            <div className="bg-[#f5f4f3]" style={{ paddingTop: '128px', paddingBottom: '48px' }}>
+            <div className="bg-[#FEFDFB]" style={{ paddingTop: '128px', paddingBottom: '48px' }}>
                 <div className={styles.container}>
                     <div className={styles.header}>
                         <motion.p
