@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Eye, EyeOff, User, Mail, Phone, Building } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 
 // --- HELPER COMPONENTS (ICONS) ---
@@ -55,7 +55,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
 }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [userType, setUserType] = useState<'buyer' | 'seller' | 'agent'>('buyer');
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row w-full" style={{ backgroundColor: 'var(--light-grey, #F6F6F5)' }}>
@@ -84,25 +83,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                         </h1>
                         <p style={{ color: '#666666' }}>{description}</p>
 
-                        {/* User Type Selection */}
-                        <div className="flex gap-2">
-                            {(['buyer', 'seller', 'agent'] as const).map((type) => (
-                                <button
-                                    key={type}
-                                    type="button"
-                                    onClick={() => setUserType(type)}
-                                    className="flex-1 py-2 px-4 rounded-lg text-sm font-medium capitalize transition-all"
-                                    style={{
-                                        backgroundColor: userType === type ? 'var(--dark-turquoise, #1F524B)' : 'transparent',
-                                        color: userType === type ? '#ffffff' : '#666666',
-                                        border: userType === type ? 'none' : '1px solid rgba(31, 82, 75, 0.3)',
-                                    }}
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                        </div>
-
                         <form className="space-y-4" onSubmit={onSignUp}>
                             {/* Name Fields */}
                             <div className="grid grid-cols-2 gap-4">
@@ -121,6 +101,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                             className="w-full bg-transparent text-sm p-4 rounded-lg focus:outline-none"
                                             style={{ color: '#1a1a1a' }}
                                             required
+                                            data-testid="signup-first-name-input"
                                         />
                                     </GlassInputWrapper>
                                 </div>
@@ -139,6 +120,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                             className="w-full bg-transparent text-sm p-4 rounded-lg focus:outline-none"
                                             style={{ color: '#1a1a1a' }}
                                             required
+                                            data-testid="signup-last-name-input"
                                         />
                                     </GlassInputWrapper>
                                 </div>
@@ -160,6 +142,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                         className="w-full bg-transparent text-sm p-4 rounded-lg focus:outline-none"
                                         style={{ color: '#1a1a1a' }}
                                         required
+                                        data-testid="signup-email-input"
                                     />
                                 </GlassInputWrapper>
                             </div>
@@ -170,7 +153,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                     className="text-sm font-medium mb-2 block"
                                     style={{ color: '#666666' }}
                                 >
-                                    Phone Number
+                                    Phone Number (Optional)
                                 </label>
                                 <GlassInputWrapper icon={Phone}>
                                     <input
@@ -179,31 +162,10 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                         placeholder="+91 98765 43210"
                                         className="w-full bg-transparent text-sm p-4 rounded-lg focus:outline-none"
                                         style={{ color: '#1a1a1a' }}
-                                        required
+                                        data-testid="signup-phone-input"
                                     />
                                 </GlassInputWrapper>
                             </div>
-
-                            {/* Company/Agency Name for sellers/agents */}
-                            {(userType === 'seller' || userType === 'agent') && (
-                                <div>
-                                    <label
-                                        className="text-sm font-medium mb-2 block"
-                                        style={{ color: '#666666' }}
-                                    >
-                                        {userType === 'agent' ? 'Agency Name' : 'Company Name'} (Optional)
-                                    </label>
-                                    <GlassInputWrapper icon={Building}>
-                                        <input
-                                            name="companyName"
-                                            type="text"
-                                            placeholder={userType === 'agent' ? 'Your Agency' : 'Your Company'}
-                                            className="w-full bg-transparent text-sm p-4 rounded-lg focus:outline-none"
-                                            style={{ color: '#1a1a1a' }}
-                                        />
-                                    </GlassInputWrapper>
-                                </div>
-                            )}
 
                             {/* Password */}
                             <div>
@@ -222,11 +184,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                             className="w-full bg-transparent text-sm p-4 pr-12 rounded-lg focus:outline-none"
                                             style={{ color: '#1a1a1a' }}
                                             required
+                                            data-testid="signup-password-input"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
                                             className="absolute inset-y-0 right-3 flex items-center"
+                                            data-testid="signup-toggle-password"
                                         >
                                             {showPassword
                                                 ? <EyeOff className="w-5 h-5" style={{ color: '#666666' }} />
@@ -254,11 +218,13 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                             className="w-full bg-transparent text-sm p-4 pr-12 rounded-lg focus:outline-none"
                                             style={{ color: '#1a1a1a' }}
                                             required
+                                            data-testid="signup-confirm-password-input"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                             className="absolute inset-y-0 right-3 flex items-center"
+                                            data-testid="signup-toggle-confirm-password"
                                         >
                                             {showConfirmPassword
                                                 ? <EyeOff className="w-5 h-5" style={{ color: '#666666' }} />
@@ -269,9 +235,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                 </GlassInputWrapper>
                             </div>
 
-                            {/* Hidden user type field */}
-                            <input type="hidden" name="userType" value={userType} />
-
                             {/* Terms */}
                             <div className="flex items-start gap-3">
                                 <input
@@ -280,6 +243,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                     className="w-4 h-4 rounded mt-1"
                                     style={{ accentColor: 'var(--dark-turquoise, #1F524B)' }}
                                     required
+                                    data-testid="signup-terms-checkbox"
                                 />
                                 <span className="text-sm" style={{ color: '#666666' }}>
                                     I agree to the{' '}
@@ -300,6 +264,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                     backgroundColor: 'var(--dark-turquoise, #1F524B)',
                                     color: '#ffffff',
                                 }}
+                                data-testid="signup-submit-button"
                             >
                                 Create Account
                             </button>
@@ -322,6 +287,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                             onClick={onGoogleSignUp}
                             className="w-full flex items-center justify-center gap-3 border rounded-lg py-4 transition-colors hover:bg-white/50"
                             style={{ borderColor: 'rgba(31, 82, 75, 0.3)' }}
+                            data-testid="signup-google-button"
                         >
                             <GoogleIcon />
                             <span style={{ color: '#1a1a1a' }}>Continue with Google</span>
@@ -333,6 +299,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                 href="/auth/signin"
                                 className="hover:underline transition-colors font-medium"
                                 style={{ color: 'var(--dark-turquoise, #1F524B)' }}
+                                data-testid="signup-signin-link"
                             >
                                 Sign In
                             </Link>

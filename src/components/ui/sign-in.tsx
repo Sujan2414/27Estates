@@ -120,6 +120,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                         placeholder="Enter your email address"
                                         className="w-full bg-transparent text-sm p-4 rounded-lg focus:outline-none"
                                         style={{ color: '#1a1a1a' }}
+                                        data-testid="signin-email-input"
                                     />
                                 </GlassInputWrapper>
                             </div>
@@ -139,11 +140,13 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                             placeholder="Enter your password"
                                             className="w-full bg-transparent text-sm p-4 pr-12 rounded-lg focus:outline-none"
                                             style={{ color: '#1a1a1a' }}
+                                            data-testid="signin-password-input"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
                                             className="absolute inset-y-0 right-3 flex items-center"
+                                            data-testid="signin-toggle-password"
                                         >
                                             {showPassword
                                                 ? <EyeOff className="w-5 h-5" style={{ color: '#666666' }} />
@@ -161,6 +164,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                         name="rememberMe"
                                         className="w-4 h-4 rounded"
                                         style={{ accentColor: 'var(--dark-turquoise, #1F524B)' }}
+                                        data-testid="signin-remember-checkbox"
                                     />
                                     <span style={{ color: '#1a1a1a' }}>Keep me signed in</span>
                                 </label>
@@ -169,6 +173,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                     onClick={onResetPassword}
                                     className="hover:underline transition-colors"
                                     style={{ color: 'var(--dark-turquoise, #1F524B)' }}
+                                    data-testid="signin-reset-password-button"
                                 >
                                     Reset password
                                 </button>
@@ -181,6 +186,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                     backgroundColor: 'var(--dark-turquoise, #1F524B)',
                                     color: '#ffffff',
                                 }}
+                                data-testid="signin-submit-button"
                             >
                                 Sign In
                             </button>
@@ -203,6 +209,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                             onClick={onGoogleSignIn}
                             className="w-full flex items-center justify-center gap-3 border rounded-lg py-4 transition-colors hover:bg-white/50"
                             style={{ borderColor: 'rgba(31, 82, 75, 0.3)' }}
+                            data-testid="signin-google-button"
                         >
                             <GoogleIcon />
                             <span style={{ color: '#1a1a1a' }}>Continue with Google</span>
@@ -214,6 +221,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                 href="/auth/signup"
                                 className="hover:underline transition-colors font-medium"
                                 style={{ color: 'var(--dark-turquoise, #1F524B)' }}
+                                data-testid="signin-signup-link"
                             >
                                 Create Account
                             </Link>
