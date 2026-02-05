@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 import styles from './Hero.module.css';
 
 const heroImages = [
@@ -19,6 +20,7 @@ const heroImages = [
 
 const Hero: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const { showAuthModal } = useAuth();
     const { scrollYProgress } = useScroll({
         target: containerRef,
         offset: ["start start", "end start"]
@@ -138,14 +140,14 @@ const Hero: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.7, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                         >
-                            <motion.a
-                                href="#properties"
+                            <motion.button
+                                onClick={() => showAuthModal('/properties')}
                                 className={styles.ctaPrimary}
                                 whileHover={{ y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                             >
                                 View Listings
-                            </motion.a>
+                            </motion.button>
                             <motion.a
                                 href="#contact"
                                 className={styles.ctaSecondary}

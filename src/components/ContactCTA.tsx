@@ -68,13 +68,6 @@ const ContactCTA: React.FC = () => {
                     >
                         Contact Us
                     </motion.a>
-                    <motion.a
-                        href="tel:+919876543210"
-                        className={styles.ctaSecondary}
-                        whileHover={{ y: -2 }}
-                    >
-                        +91 98765 43210
-                    </motion.a>
                 </motion.div>
             </div>
         </section>
@@ -82,3 +75,4 @@ const ContactCTA: React.FC = () => {
 };
 
 export default ContactCTA;
+

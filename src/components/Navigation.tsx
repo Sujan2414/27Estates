@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { services } from '@/lib/services-data';
+import { useAuth } from '@/context/AuthContext';
 import styles from './Navigation.module.css';
 
 interface NavigationProps {
@@ -14,6 +15,7 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { showAuthModal } = useAuth();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -24,12 +26,22 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Links that require auth modal
+    const protectedPaths = ['/properties', '/properties/search'];
+
     const navLinks = [
         { href: '/services', label: 'Services', target: undefined },
         { href: '/properties', label: 'Properties', target: undefined },
         { href: '/blog', label: 'Insights', target: undefined },
         { href: '/#calculator', label: 'Mortgage Calculator', target: undefined },
     ];
+
+    const handleNavClick = (e: React.MouseEvent, href: string) => {
+        if (protectedPaths.includes(href)) {
+            e.preventDefault();
+            showAuthModal(href);
+        }
+    };
 
     return (
         <motion.nav
@@ -60,6 +72,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                             href={link.href}
                             target={link.target}
                             className={`${styles.navLink} flex items-center gap-1 group`}
+                            onClick={(e) => handleNavClick(e, link.href)}
                         >
                             {link.label}
                         </Link>
@@ -109,7 +122,10 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                         key={link.href}
                         href={link.href}
                         className={styles.mobileLink}
-                        onClick={() => setIsMobileMenuOpen(false)}
+                        onClick={(e) => {
+                            handleNavClick(e, link.href);
+                            setIsMobileMenuOpen(false);
+                        }}
                     >
                         {link.label}
                     </Link>
@@ -123,3 +139,4 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
 };
 
 export default Navigation;
+
