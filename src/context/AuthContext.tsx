@@ -1,14 +1,19 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { AuthModal } from '@/components/ui/auth-modal';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
+    user: User | null;
     isLoggedIn: boolean;
+    loading: boolean;
     showAuthModal: (redirectPath?: string) => void;
     hideAuthModal: () => void;
     checkAuthAndNavigate: (path: string) => void;
+    signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,8 +21,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [redirectPath, setRedirectPath] = useState('/properties');
-    const [isLoggedIn] = useState(false); // TODO: Implement actual auth check
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
+    const supabase = createClient();
+
+    // Check auth session on mount
+    useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                setUser(session?.user ?? null);
+            } catch (error) {
+                console.error('Error checking session:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        checkSession();
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
+    }, [supabase.auth]);
 
     const showAuthModal = useCallback((path: string = '/properties') => {
         setRedirectPath(path);
@@ -29,19 +60,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const checkAuthAndNavigate = useCallback((path: string) => {
-        if (isLoggedIn) {
+        if (user) {
             router.push(path);
         } else {
             showAuthModal(path);
         }
-    }, [isLoggedIn, router, showAuthModal]);
+    }, [user, router, showAuthModal]);
 
     const handleContinueAsGuest = useCallback(() => {
         router.push(redirectPath);
     }, [router, redirectPath]);
 
+    const signOut = useCallback(async () => {
+        try {
+            await supabase.auth.signOut();
+            setUser(null);
+            router.push('/');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    }, [supabase.auth, router]);
+
     return (
-        <AuthContext.Provider value={{ isLoggedIn, showAuthModal, hideAuthModal, checkAuthAndNavigate }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            isLoggedIn: !!user, 
+            loading,
+            showAuthModal, 
+            hideAuthModal, 
+            checkAuthAndNavigate,
+            signOut
+        }}>
             {children}
             <AuthModal
                 isOpen={isModalOpen}
