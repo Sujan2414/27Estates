@@ -2,13 +2,37 @@
     padding: 6rem 0;
     background: var(--dark-turquoise);
     overflow: hidden;
+    border-radius: 24px;
     /* Hide scrollbar for ticker */
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
-    padding: 0 clamp(1.5rem, 4vw, 4rem);
+    padding: 0;
+}
+
+@keyframes ticker-scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-1910px);
+        /* 5 items * (350px card + 32px gap) */
+    }
+}
+
+.tickerTrack {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem 0;
+    width: max-content;
+    animation: ticker-scroll 30s linear infinite;
+}
+
+.tickerTrack:hover {
+    animation-play-state: paused;
 }
 
 .header {
@@ -60,11 +84,7 @@
             transparent);
 }
 
-.tickerTrack {
-    display: flex;
-    gap: 2rem;
-    padding: 1rem 0;
-}
+
 
 /* Testimonial Card */
 .card {
@@ -131,7 +151,55 @@
 .role {
     font-family: var(--font-body);
     font-size: 0.75rem;
-    text-transform: uppercase;
+    /* text-transform: uppercase; Removed to allow lowercase usernames */
     letter-spacing: 0.05em;
     color: var(--gold);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .section {
+        padding: 4rem 0;
+    }
+
+    .header {
+        margin-bottom: 2.5rem;
+    }
+
+    .tickerWrapper {
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        mask-image: none;
+        -webkit-mask-image: none;
+        padding: 0 1rem;
+    }
+
+    .tickerTrack {
+        animation: none;
+    }
+
+    .card {
+        min-width: 280px;
+        max-width: 280px;
+        padding: 1.75rem;
+        scroll-snap-align: center;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .section {
+        padding: 3rem 0;
+    }
+
+    .card {
+        min-width: 250px;
+        max-width: 250px;
+        padding: 1.5rem;
+    }
+
+    .quote {
+        font-size: 1rem;
+    }
 }

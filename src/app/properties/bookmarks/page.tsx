@@ -15,13 +15,16 @@ interface Property {
     description: string;
     images: string[];
     price: number;
+    price_text: string | null;
     location: string;
+    city: string | null;
     bedrooms: number;
     bathrooms: number;
     sqft: number;
     property_type: string;
     category: string;
     is_featured: boolean;
+    [key: string]: unknown;
 }
 
 const Bookmarks = () => {

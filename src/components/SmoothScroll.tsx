@@ -9,15 +9,14 @@ const SmoothScroll: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const pathname = usePathname();
 
     useEffect(() => {
-        // Disable Lenis on /properties pages to prevent fixed positioning issues
-        if (pathname?.startsWith('/properties')) {
+        // Disable Lenis on /properties, /auth, and /admin pages
+        if (pathname?.startsWith('/properties') || pathname?.startsWith('/auth') || pathname?.startsWith('/admin')) {
             return;
         }
 
-        // Initialize Lenis for smooth inertia scrolling
         const lenis = new Lenis({
             duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Custom easing for "soft inertia"
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             orientation: 'vertical',
             gestureOrientation: 'vertical',
             smoothWheel: true,
@@ -25,6 +24,7 @@ const SmoothScroll: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         });
 
         lenisRef.current = lenis;
+        (window as any).lenis = lenis;
 
         function raf(time: number) {
             lenis.raf(time);

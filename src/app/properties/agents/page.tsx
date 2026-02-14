@@ -52,10 +52,6 @@ const Agents = () => {
         <div className={styles.page}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Agents</h1>
-                <p className={styles.subtitle}>
-                    With the &quot;list agents shortcode&quot; you can show your agents in any page, alongside with their
-                    contact details and link to their agent profile.
-                </p>
             </div>
 
             <div className={styles.grid}>
@@ -77,11 +73,11 @@ const Agents = () => {
 
                             <div className={styles.contactInfo}>
                                 <a href={`mailto:${agent.email}`} className={styles.contactLink}>
-                                    <Mail size={16} strokeWidth={1.5} />
+                                    <Mail size={14} strokeWidth={1.5} />
                                     <span>{agent.email}</span>
                                 </a>
                                 <a href={`tel:${agent.phone}`} className={styles.contactLink}>
-                                    <Phone size={16} strokeWidth={1.5} />
+                                    <Phone size={14} strokeWidth={1.5} />
                                     <span>{agent.phone}</span>
                                 </a>
                             </div>

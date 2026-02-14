@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import styles from './admin-login.module.css'
 
@@ -70,7 +71,7 @@ export default function AdminLoginPage() {
             <div className={styles.card}>
                 <div className={styles.header}>
                     <div className={styles.logo}>
-                        <span className={styles.logoIcon}>27</span>
+                        <Image src="/newlogo.png" alt="27 Estates" width={180} height={52} priority />
                     </div>
                     <h1 className={styles.title}>Admin Portal</h1>
                     <p className={styles.subtitle}>27 Estates Management</p>

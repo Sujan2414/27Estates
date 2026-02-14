@@ -26,12 +26,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
     const supabase = createClient();
 
-    // Check auth session on mount
+    // Check auth session on mount, handle "remember me" logic
     useEffect(() => {
         const checkSession = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                setUser(session?.user ?? null);
+
+                if (session?.user) {
+                    const rememberMe = localStorage.getItem('rememberMe');
+                    const sessionActive = sessionStorage.getItem('session_active');
+
+                    if (!rememberMe && !sessionActive) {
+                        // Browser was closed and reopened without "Remember Me"
+                        // Sign out to enforce session-only persistence
+                        await supabase.auth.signOut();
+                        setUser(null);
+                        setLoading(false);
+                        return;
+                    }
+
+                    // Mark this browser tab/window as having an active session
+                    sessionStorage.setItem('session_active', 'true');
+                    setUser(session.user);
+                } else {
+                    setUser(null);
+                }
             } catch (error) {
                 console.error('Error checking session:', error);
             } finally {
@@ -43,6 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user) {
+                sessionStorage.setItem('session_active', 'true');
+            }
             setUser(session?.user ?? null);
             setLoading(false);
         });
@@ -67,14 +89,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [user, router, showAuthModal]);
 
-    const handleContinueAsGuest = useCallback(() => {
+    const handleContinueAsGuest = useCallback(async () => {
+        // Sign out any existing session so the user is truly a guest
+        try {
+            await supabase.auth.signOut();
+            setUser(null);
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('session_active');
+        } catch (error) {
+            console.error('Error signing out for guest mode:', error);
+        }
         router.push(redirectPath);
-    }, [router, redirectPath]);
+    }, [supabase.auth, router, redirectPath]);
 
     const signOut = useCallback(async () => {
         try {
             await supabase.auth.signOut();
             setUser(null);
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('session_active');
             router.push('/');
         } catch (error) {
             console.error('Error signing out:', error);

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, Search, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, FileSpreadsheet } from 'lucide-react'
+import BulkUploadModal from '@/components/admin/BulkUploadModal'
 import styles from '../admin.module.css'
 import propertyStyles from './properties.module.css'
 
@@ -34,6 +35,7 @@ export default function PropertiesPage() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [deleteId, setDeleteId] = useState<string | null>(null)
+    const [showBulkModal, setShowBulkModal] = useState(false)
     const supabase = createClient()
 
     useEffect(() => {
@@ -99,10 +101,16 @@ export default function PropertiesPage() {
                     <h1 className={styles.pageTitle}>Properties</h1>
                     <p className={styles.pageSubtitle}>Manage your property listings</p>
                 </div>
-                <Link href="/admin/properties/new" className={styles.addButton}>
-                    <Plus size={18} />
-                    Add Property
-                </Link>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => setShowBulkModal(true)} className={styles.addButton} style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db' }}>
+                        <FileSpreadsheet size={18} />
+                        Bulk Import
+                    </button>
+                    <Link href="/admin/properties/new" className={styles.addButton}>
+                        <Plus size={18} />
+                        Add Property
+                    </Link>
+                </div>
             </div>
 
             {/* Search */}
@@ -135,13 +143,6 @@ export default function PropertiesPage() {
                                 ) : (
                                     <div className={propertyStyles.noImage}>No Image</div>
                                 )}
-                                <button
-                                    className={`${propertyStyles.featuredBtn} ${property.is_featured ? propertyStyles.featuredActive : ''}`}
-                                    onClick={() => toggleFeatured(property.id, property.is_featured)}
-                                    title={property.is_featured ? 'Remove from featured' : 'Add to featured'}
-                                >
-                                    <Star size={16} fill={property.is_featured ? '#BFA270' : 'none'} />
-                                </button>
                             </div>
 
                             <div className={propertyStyles.content}>
@@ -205,6 +206,13 @@ export default function PropertiesPage() {
                         </div>
                     </div>
                 </div>
+            )}
+            {showBulkModal && (
+                <BulkUploadModal
+                    type="property"
+                    onClose={() => setShowBulkModal(false)}
+                    onComplete={() => { fetchProperties(); }}
+                />
             )}
         </div>
     )

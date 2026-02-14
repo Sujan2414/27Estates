@@ -1,0 +1,717 @@
+/* Project Detail Page - Based on PropertyDetail.module.css */
+
+.pageContainer {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: 100vh;
+    background-color: #fafafa;
+}
+
+@media (max-width: 768px) {
+    .pageContainer {
+        padding: 1rem;
+    }
+}
+
+.backButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    margin-bottom: 2rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #525252;
+    transition: color 0.2s ease;
+}
+
+.backButton:hover {
+    color: #0a0a0a;
+}
+
+/* Two Column Layout */
+.layoutGrid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 4rem;
+    align-items: stretch;
+    margin-bottom: 4rem;
+}
+
+@media (max-width: 1024px) {
+    .layoutGrid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
+
+/* Left Column: Container that defines the sticky scroll boundary */
+.leftColumn {
+    position: relative;
+}
+
+/* The actual sticky element inside the left column */
+.stickyGallery {
+    position: sticky;
+    top: 2rem;
+}
+
+@media (max-width: 1024px) {
+    .stickyGallery {
+        position: relative;
+        top: 0;
+    }
+}
+
+.imageGallery {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    border-radius: 1.5rem;
+    overflow: hidden;
+}
+
+.mainImage {
+    grid-column: span 2;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+    border-radius: 1rem;
+}
+
+.mainImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.subImage {
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    border-radius: 1rem;
+}
+
+.subImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.mainImage:hover img,
+.subImage:hover img {
+    transform: scale(1.05);
+}
+
+/* Right Column: Content */
+.rightColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.headerSection {
+    margin-bottom: 0.5rem;
+}
+
+.badges {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid #e5e5e5;
+    background-color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #525252;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.titleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0a0a0a;
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+
+.price {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #0a0a0a;
+    white-space: nowrap;
+}
+
+.locationRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #525252;
+    margin-bottom: 1.5rem;
+}
+
+.locationText {
+    font-size: 1rem;
+}
+
+/* Highlights / Stats Row */
+.highlightsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+@media (max-width: 480px) {
+    .highlightsGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.highlightCard {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 1rem;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.75rem;
+}
+
+.highlightLabel {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #a3a3a3;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.highlightValue {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #0a0a0a;
+}
+
+.statsRow {
+    display: flex;
+    gap: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e5e5e5;
+    margin-bottom: 2rem;
+}
+
+.statItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #525252;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Developer Card */
+.developerCard {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 1rem;
+}
+
+.developerLogo {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.developerLogo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.developerInfo h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0a0a0a;
+    margin: 0 0 0.25rem 0;
+}
+
+.viewDeveloper {
+    font-size: 0.875rem;
+    color: #1F524B;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.viewDeveloper:hover {
+    text-decoration: underline;
+}
+
+/* Sections */
+.sectionTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #0a0a0a;
+    margin-bottom: 1.5rem;
+}
+
+.description {
+    font-size: 1rem;
+    line-height: 1.75;
+    color: #525252;
+}
+
+/* Details Grid */
+.detailsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.detailColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.detailItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detailLabel {
+    font-size: 0.875rem;
+    color: #a3a3a3;
+}
+
+.detailValue {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #0a0a0a;
+}
+
+/* Category-Specific Cards */
+.cardsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .cardsGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.configCard {
+    padding: 1.25rem;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.configCardTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0a0a0a;
+    margin: 0;
+}
+
+.configCardRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.configCardLabel {
+    font-size: 0.8125rem;
+    color: #a3a3a3;
+}
+
+.configCardValue {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #0a0a0a;
+}
+
+.statusBadge {
+    display: inline-flex;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.statusAvailable {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.statusSoldOut {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.statusUpcoming {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+/* Amenities Grid */
+.amenitiesGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+}
+
+@media (max-width: 640px) {
+    .amenitiesGrid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
+
+.amenityGroup h4 {
+    font-size: 0.875rem;
+    color: #a3a3a3;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+.amenityList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.amenityList li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #0a0a0a;
+    font-size: 0.9375rem;
+    font-weight: 500;
+}
+
+.bullet {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: #0a0a0a;
+    flex-shrink: 0;
+}
+
+/* Floor Plans */
+.floorPlanTabs {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.tabButton {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e5e5;
+    background: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tabButton.active {
+    background: #1F524B;
+    color: #fff;
+    border-color: #1F524B;
+}
+
+.floorPlanImage {
+    width: 100%;
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
+    padding: 1rem;
+    background: #fff;
+}
+
+.floorPlanImage img {
+    width: 100%;
+    height: auto;
+}
+
+/* Specifications Grid */
+.specsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+@media (max-width: 640px) {
+    .specsGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.specsGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.specsGroupTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1F524B;
+    text-transform: capitalize;
+    margin: 0;
+}
+
+.specItem {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.specLabel {
+    font-size: 0.875rem;
+    color: #737373;
+}
+
+.specValue {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #0a0a0a;
+}
+
+/* Connectivity Grid */
+.connectivityGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .connectivityGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .connectivityGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.connectivityCard {
+    padding: 1rem;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.connectivityType {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #a3a3a3;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.connectivityName {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #0a0a0a;
+}
+
+.connectivityDistance {
+    font-size: 0.8125rem;
+    color: #737373;
+}
+
+/* Video */
+.videoContainer {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 1rem;
+    overflow: hidden;
+    background-color: #000;
+}
+
+.videoFrame {
+    width: 100%;
+    height: 100%;
+}
+
+/* Contact Floating Button */
+.contactFloat {
+    position: fixed;
+    bottom: 6rem;
+    right: 1rem;
+    background-color: #1F524B;
+    color: #ffffff;
+    padding: 0.875rem 1.25rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 12px rgba(31, 82, 75, 0.3);
+    cursor: pointer;
+    z-index: 100;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+    .contactFloat {
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        gap: 0.75rem;
+        font-size: 1rem;
+    }
+}
+
+.contactFloat:hover {
+    background-color: #2a6b62;
+    transform: translateY(-2px);
+}
+
+/* Map Section (Full Width) */
+.mapSection {
+    margin-top: 4rem;
+    padding-top: 4rem;
+    border-top: 1px solid #e5e5e5;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.mapPlaceholder {
+    width: 100%;
+    height: 400px;
+    background-color: #e5e5e5;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #737373;
+    font-weight: 500;
+}
+
+/* Full Width Content (Below split layout) */
+.fullWidthContent {
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+    margin-top: 4rem;
+}
+
+.sectionContainer {
+    padding-top: 4rem;
+    border-top: 1px solid #e5e5e5;
+}
+
+/* Similar Projects */
+.similarSection {
+    margin-top: 4rem;
+    padding-top: 4rem;
+    border-top: 1px solid #e5e5e5;
+}
+
+.similarGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+    .similarGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .similarGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Loading & Not Found */
+.loadingContainer,
+.notFound {
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.bookmarkBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #737373;
+    transition: color 0.2s ease;
+}
+
+.bookmarkBtn:hover {
+    color: #dc2626;
+}
+
+.bookmarkBtnActive {
+    color: #dc2626;
+}

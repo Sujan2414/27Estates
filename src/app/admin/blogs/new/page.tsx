@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
+import ImageUpload from '@/components/admin/ImageUpload'
 import styles from '../../admin.module.css'
 import formStyles from '../../properties/form.module.css'
 
@@ -179,27 +180,23 @@ export default function NewBlogPage() {
                             />
                         </div>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>Author Image URL</label>
-                            <input
-                                type="url"
-                                name="author_image"
+                            <label className={formStyles.label}>Author Image</label>
+                            <ImageUpload
                                 value={formData.author_image}
-                                onChange={handleChange}
-                                className={formStyles.input}
-                                placeholder="https://example.com/author.jpg"
+                                onChange={(url) => setFormData(prev => ({ ...prev, author_image: url }))}
+                                folder="blogs/authors"
+                                label="Upload Author Photo"
                             />
                         </div>
                     </div>
 
                     <div className={formStyles.field}>
-                        <label className={formStyles.label}>Cover Image URL</label>
-                        <input
-                            type="url"
-                            name="cover_image"
+                        <label className={formStyles.label}>Cover Image</label>
+                        <ImageUpload
                             value={formData.cover_image}
-                            onChange={handleChange}
-                            className={formStyles.input}
-                            placeholder="https://example.com/cover.jpg"
+                            onChange={(url) => setFormData(prev => ({ ...prev, cover_image: url }))}
+                            folder="blogs/covers"
+                            label="Upload Cover Image"
                         />
                     </div>
                 </div>

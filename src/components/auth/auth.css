@@ -1,0 +1,206 @@
+/* Auth Pages - Isolated Style System */
+/* This file overrides global styles for auth pages */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Reset for auth pages */
+.auth-page-root {
+    font-family: 'Inter', sans-serif !important;
+    --background: 0 0% 100%;
+    --foreground: 220 20% 10%;
+    --primary: 220 15% 15%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 38 95% 55%;
+    --accent-foreground: 220 15% 15%;
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 38 95% 55%;
+    --radius: 0.5rem;
+    line-height: 1.5 !important;
+    /* Tailwind default, overriding global 1.6 */
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+}
+
+.auth-page-root * {
+    border-color: hsl(220, 13%, 90%) !important;
+    box-sizing: border-box !important;
+    line-height: inherit !important;
+}
+
+.auth-page-root h1 {
+    font-family: 'Inter', sans-serif !important;
+    color: hsl(220, 20%, 10%) !important;
+}
+
+/* Force Spacing */
+.auth-page-root h2 {
+    font-family: 'Inter', sans-serif !important;
+    color: hsl(220, 20%, 10%) !important;
+    margin-bottom: 24px !important;
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+    font-weight: 600 !important;
+}
+
+/* Force Vertical Centering via Absolute Positioning */
+.auth-page-root .auth-form-container {
+    /* Removed absolute positioning to allow scrolling */
+    width: 100% !important;
+}
+
+
+
+.auth-page-root form {
+    display: flex !important;
+    flex-direction: column !important;
+    /* gap: 16px !important;  Removed: gap can be flaky with some resets */
+}
+
+/* Fallback: Standard Margin approach matches reference space-y-4 */
+.auth-page-root form>input,
+.auth-page-root form>.relative,
+.auth-page-root form>div.flex,
+/* Added to handle split name row */
+.auth-page-root form>button {
+    margin-bottom: 12px !important;
+}
+
+.auth-page-root form>button {
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+}
+
+/* Remove utility reliance for form spacing */
+.auth-page-root form>* {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Force Logo Spacing */
+.auth-page-root .flex.items-center.gap-2.mb-12 {
+    margin-bottom: 32px !important;
+}
+
+.auth-page-root h1 {
+    font-size: 2.25rem !important;
+    /* text-4xl */
+    line-height: 1.2 !important;
+}
+
+@media (min-width: 1280px) {
+    .auth-page-root h1 {
+        font-size: 3rem !important;
+        /* xl:text-5xl */
+    }
+}
+
+.auth-page-root p {
+    line-height: 1.5 !important;
+    font-family: 'Inter', sans-serif !important;
+    color: hsl(220, 20%, 10%) !important;
+}
+
+.auth-page-root h3,
+.auth-page-root h4,
+.auth-page-root h5,
+.auth-page-root h6 {
+    font-family: 'Inter', sans-serif !important;
+    color: hsl(220, 20%, 10%) !important;
+}
+
+.auth-page-root .auth-input,
+.auth-page-root input {
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 0.5rem !important;
+    border: 1px solid hsl(220, 13%, 90%) !important;
+    background-color: #ffffff !important;
+    color: hsl(220, 20%, 10%) !important;
+    font-size: 0.875rem !important;
+    font-family: 'Inter', sans-serif !important;
+    outline: none !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+}
+
+/* Fix Chrome Autofill Background */
+.auth-page-root input:-webkit-autofill,
+.auth-page-root input:-webkit-autofill:hover,
+.auth-page-root input:-webkit-autofill:focus,
+.auth-page-root input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: hsl(220, 20%, 10%) !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.auth-page-root input::placeholder {
+    color: hsl(215, 16%, 47%) !important;
+}
+
+.auth-page-root input:focus {
+    border-color: hsl(38, 95%, 55%) !important;
+    box-shadow: 0 0 0 2px hsla(38, 95%, 55%, 0.3) !important;
+}
+
+.auth-page-root .auth-button,
+.auth-page-root button[type="submit"] {
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 0.5rem !important;
+    background-color: hsl(220, 15%, 15%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    /* Increased to 16px */
+    font-family: 'Inter', sans-serif !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: opacity 0.2s ease !important;
+}
+
+.auth-page-root button[type="submit"]:hover {
+    opacity: 0.9 !important;
+}
+
+.auth-page-root button[type="submit"]:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* Link Colors */
+.auth-page-root a {
+    color: hsl(220, 20%, 10%) !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Auth Links Hover Effect */
+.auth-page-root a:hover {
+    text-decoration: underline !important;
+    text-underline-offset: 4px;
+}
+
+/* Text Colors */
+.auth-page-root .text-foreground {
+    color: hsl(220, 20%, 10%) !important;
+}
+
+.auth-page-root .text-muted-foreground {
+    color: hsl(215, 16%, 47%) !important;
+}
+
+/* Center eye icon vertically for inputs */
+.auth-page-root button[type="button"].absolute {
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    right: 1rem !important;
+}
+
+/* Increase eye icon size */
+.auth-page-root button[type="button"].absolute svg {
+    width: 1.75rem !important;
+    /* Increased to 28px */
+    height: 1.75rem !important;
+    color: hsl(215, 16%, 47%) !important;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from './TestimonialSection.module.css';
 
@@ -9,40 +9,55 @@ const testimonials = [
         id: 1,
         quote: "27 Estates helped us find our dream villa in North Bangalore. Their transparency and attention to detail were unmatched.",
         name: "Rajesh S.",
-        role: "Business Owner",
-        initial: "R"
+        username: "@raj_singh",
+        image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
         id: 2,
         quote: "As an NRI investor, I needed a partner I could trust blindly. The team's professionalism made the process seamless.",
-        name: "Priya M.",
-        role: "Tech Executive",
-        initial: "P"
+        name: "Varada M.",
+        username: "@varuu_21",
+        image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
         id: 3,
         quote: "They don't just sell properties; they curate lifestyles. The plots at Nandi Hills are exactly what I was looking for.",
         name: "Arun K.",
-        role: "Architect",
-        initial: "A"
+        username: "@arun_ofc",
+        image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
         id: 4,
         quote: "Exceptional service from start to finish. The corporate leasing team understood our requirements perfectly.",
-        name: "Sarah J.",
-        role: "Director of Ops",
-        initial: "S"
+        name: "Sanya J.",
+        username: "@sanya_j",
+        image: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     },
     {
         id: 5,
         quote: "Honest advice and zero pressure. A rare find in the real estate market today. Highly recommended.",
         name: "Vikram R.",
-        role: "Doctor",
-        initial: "V"
+        username: "@dr_vikram_r",
+        image: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80"
     }
 ];
 
 const TestimonialSection: React.FC = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // On mobile: show originals only (no ticker duplicates)
+    // On desktop: triple for seamless ticker loop
+    const displayCards = isMobile
+        ? testimonials
+        : [...testimonials, ...testimonials, ...testimonials];
+
     return (
         <section className={styles.section}>
             <div className={styles.container}>
@@ -77,38 +92,27 @@ const TestimonialSection: React.FC = () => {
                     </motion.p>
                 </div>
 
-                {/* Ticker */}
+                {/* Ticker / Carousel */}
                 <div className={styles.tickerWrapper}>
-                    <motion.div
-                        className={styles.tickerTrack}
-                        animate={{
-                            x: [0, -1775], // Approx width of 5 cards (350px + 32px gap) * 5.  Adjust based on content.
-                        }}
-                        transition={{
-                            x: {
-                                repeat: Infinity,
-                                repeatType: "loop",
-                                duration: 30, // Slow speed
-                                ease: "linear",
-                            },
-                        }}
-                    >
-                        {/* Render twice for seamless loop */}
-                        {[...testimonials, ...testimonials, ...testimonials].map((item, idx) => (
+                    <div className={styles.tickerTrack}>
+                        {displayCards.map((item, idx) => (
                             <div key={`${item.id}-${idx}`} className={styles.card}>
                                 <p className={styles.quote}>"{item.quote}"</p>
                                 <div className={styles.author}>
-                                    <div className={styles.avatar}>
-                                        {item.initial}
-                                    </div>
+                                    <img
+                                        src={item.image}
+                                        alt={item.name}
+                                        className={styles.avatarImage || styles.avatar} // Use existing avatar class for shape, maybe add new class for image specific styles if needed
+                                        style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+                                    />
                                     <div className={styles.info}>
                                         <span className={styles.name}>{item.name}</span>
-                                        <span className={styles.role}>{item.role}</span>
+                                        <span className={styles.role}>{item.username}</span>
                                     </div>
                                 </div>
                             </div>
                         ))}
-                    </motion.div>
+                    </div>
                 </div>
             </div>
         </section>

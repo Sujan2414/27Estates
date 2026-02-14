@@ -1,10 +1,12 @@
 import React from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import PageTransition from '@/components/ui/PageTransition';
-import { blogPosts, getBlogBySlug } from '@/lib/blog-data';
+import { createClient } from '@/lib/supabase/server';
+import { fetchBlogBySlug, fetchRelatedPosts, mapDbBlogToPost } from '@/lib/blog-utils';
 import { notFound } from 'next/navigation';
 import BlogPostContent from './BlogPostContent';
+
+export const dynamic = 'force-dynamic';
 
 interface BlogPostPageProps {
     params: Promise<{
@@ -12,28 +14,27 @@ interface BlogPostPageProps {
     }>;
 }
 
-// Generate static params for export if using static generation
 export async function generateStaticParams() {
-    return blogPosts.map((post) => ({
-        slug: post.slug,
-    }));
+    return [];
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
     const resolvedParams = await params;
-    const post = getBlogBySlug(resolvedParams.slug);
+    const supabase = await createClient();
 
-    if (!post) {
+    const dbBlog = await fetchBlogBySlug(supabase, resolvedParams.slug);
+    if (!dbBlog) {
         notFound();
     }
 
+    const post = mapDbBlogToPost(dbBlog);
+    const relatedPosts = await fetchRelatedPosts(supabase, dbBlog.slug, dbBlog.tags, 3);
+
     return (
-        <PageTransition>
-            <main className="min-h-screen bg-white">
-                <Navigation />
-                <BlogPostContent post={post} />
-                <Footer />
-            </main>
-        </PageTransition>
+        <main className="min-h-screen bg-white">
+            <Navigation />
+            <BlogPostContent post={post} relatedPosts={relatedPosts} />
+            <Footer />
+        </main>
     );
 }

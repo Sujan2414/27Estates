@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowRight, ArrowLeft } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { ArrowRight, ArrowLeft, Search, X, Check } from 'lucide-react'
 import styles from '../property-wizard.module.css'
+import { AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from '@/lib/amenities-data'
 
 interface StepProps {
     initialData: any
@@ -40,22 +41,53 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
 
     const [formData, setFormData] = useState({
         ...defaultCommercial,
-        ...defaultWarehouse, // In a real app, merging might handle overlaps better
+        ...defaultWarehouse,
         ...initialData
     })
+
+    const [selectedAmenities, setSelectedAmenities] = useState<string[]>(() => flattenAmenities(initialData.amenities))
+    const [amenitySearch, setAmenitySearch] = useState('')
+    const [amenityDropdownOpen, setAmenityDropdownOpen] = useState(false)
+    const amenityDropdownRef = useRef<HTMLDivElement>(null)
+
+    const toggleAmenity = (label: string) => {
+        setSelectedAmenities(prev =>
+            prev.includes(label) ? prev.filter(a => a !== label) : [...prev, label]
+        )
+    }
+    const removeSelectedAmenity = (label: string) => {
+        setSelectedAmenities(prev => prev.filter(a => a !== label))
+    }
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (amenityDropdownRef.current && !amenityDropdownRef.current.contains(e.target as Node)) {
+                setAmenityDropdownOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [])
+
+    const filteredAmenityCategories = AMENITY_CATEGORIES.map(cat => ({
+        category: cat,
+        items: AMENITIES_BY_CATEGORY[cat].filter(a =>
+            a.label.toLowerCase().includes(amenitySearch.toLowerCase())
+        ),
+    })).filter(g => g.items.length > 0)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target
         if (type === 'checkbox') {
-            setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }))
+            setFormData((prev: any) => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }))
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }))
+            setFormData((prev: any) => ({ ...prev, [name]: value }))
         }
     }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onNext(formData)
+        onNext({ ...formData, amenities: selectedAmenities })
     }
 
     return (
@@ -188,6 +220,72 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
                     <input type="checkbox" name="dock_levellers" checked={formData.dock_levellers} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
                     <label style={{ marginBottom: 0 }}>Dock Levellers</label>
                 </div>
+            </div>
+
+            {/* Amenities */}
+            <h3 className={styles.stepTitle} style={{ fontSize: '1.1rem', textAlign: 'left', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>Amenities</h3>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '12px' }}>
+                Select amenities available in this property.
+            </p>
+
+            {selectedAmenities.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                    {selectedAmenities.map(label => (
+                        <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '9999px', fontSize: '0.8125rem', fontWeight: 500, color: '#166534' }}>
+                            {label}
+                            <button type="button" onClick={() => removeSelectedAmenity(label)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#166534' }}>
+                                <X size={14} />
+                            </button>
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            <div ref={amenityDropdownRef} style={{ position: 'relative', marginBottom: '16px' }}>
+                <div
+                    onClick={() => setAmenityDropdownOpen(!amenityDropdownOpen)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: '#ffffff' }}
+                >
+                    <Search size={16} color="#94a3b8" />
+                    <input
+                        type="text"
+                        value={amenitySearch}
+                        onChange={(e) => { setAmenitySearch(e.target.value); setAmenityDropdownOpen(true) }}
+                        onFocus={() => setAmenityDropdownOpen(true)}
+                        placeholder="Search amenities..."
+                        style={{ border: 'none', outline: 'none', flex: 1, fontSize: '0.875rem', background: 'transparent' }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{selectedAmenities.length} selected</span>
+                </div>
+
+                {amenityDropdownOpen && (
+                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, maxHeight: '360px', overflowY: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 50, padding: '8px' }}>
+                        {filteredAmenityCategories.map(({ category, items }) => (
+                            <div key={category}>
+                                <div style={{ padding: '8px 10px 4px', fontSize: '0.6875rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{category}</div>
+                                {items.map(amenity => {
+                                    const isSelected = selectedAmenities.includes(amenity.label)
+                                    return (
+                                        <button
+                                            key={amenity.label}
+                                            type="button"
+                                            onClick={() => toggleAmenity(amenity.label)}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '8px 10px', border: 'none', borderRadius: '6px', background: isSelected ? '#f0fdf4' : 'transparent', cursor: 'pointer', fontSize: '0.8125rem', color: isSelected ? '#166534' : '#334155', fontWeight: isSelected ? 600 : 400, transition: 'background 0.15s' }}
+                                        >
+                                            <span style={{ width: '18px', height: '18px', borderRadius: '4px', border: isSelected ? '2px solid #22c55e' : '2px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: isSelected ? '#22c55e' : 'transparent' }}>
+                                                {isSelected && <Check size={12} color="#fff" />}
+                                            </span>
+                                            {amenity.label}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        ))}
+                        {filteredAmenityCategories.length === 0 && (
+                            <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.8125rem' }}>No amenities match your search</div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div className={styles.actions}>

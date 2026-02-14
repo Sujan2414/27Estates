@@ -1,8 +1,9 @@
 .section {
     position: relative;
     padding: 8rem 0 4rem;
-    background: #FEFDFB;
+    background: var(--background);
     overflow: hidden;
+    z-index: 10;
 }
 
 .palmShadow {
@@ -19,7 +20,6 @@
     mix-blend-mode: multiply;
     z-index: 0;
     transform: rotate(0deg);
-    /* Reset rotation to ensure simple positioning first */
 }
 
 .container {
@@ -125,5 +125,23 @@
 
     .divider {
         margin-top: 4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .section {
+        padding: 3rem 0 0;
+    }
+
+    .palmShadow {
+        display: none;
+    }
+
+    .container {
+        padding: 0 1.25rem;
+    }
+
+    .title {
+        margin-bottom: 1.5rem;
     }
 }

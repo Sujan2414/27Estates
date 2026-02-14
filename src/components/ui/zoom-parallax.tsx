@@ -123,7 +123,7 @@ export function ZoomParallax({ images }: ZoomParallaxProps) {
                             style={{ y: contentY }}
                         >
                             <motion.a
-                                href="mailto:hello@27estates.com"
+                                href="mailto:connect@27estates.com"
                                 style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',

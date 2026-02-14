@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import ImageUpload from '@/components/admin/ImageUpload'
 import styles from '../../admin.module.css'
 import formStyles from '../../properties/form.module.css'
 
@@ -123,14 +124,12 @@ export default function NewAgentPage() {
                     </div>
 
                     <div className={formStyles.field}>
-                        <label className={formStyles.label}>Profile Image URL</label>
-                        <input
-                            type="url"
-                            name="image"
+                        <label className={formStyles.label}>Profile Image</label>
+                        <ImageUpload
                             value={formData.image}
-                            onChange={handleChange}
-                            className={formStyles.input}
-                            placeholder="https://example.com/profile.jpg"
+                            onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                            folder="agents"
+                            label="Upload Profile Photo"
                         />
                     </div>
 

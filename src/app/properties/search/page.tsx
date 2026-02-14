@@ -1,10 +1,21 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Search as SearchIcon, Map, List, Building2, Home, Building, Factory, Briefcase, TreePine, ChevronDown, Search, Plus } from "lucide-react";
 import LatestPropertyCard from "@/components/emergent/LatestPropertyCard";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 import styles from "@/components/emergent/Search.module.css";
+
+const PropertyMap = dynamic(() => import("@/components/emergent/PropertyMap"), {
+    ssr: false,
+    loading: () => (
+        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f5f5f5", borderRadius: "1rem" }}>
+            <p style={{ color: "#737373" }}>Loading map...</p>
+        </div>
+    ),
+});
 
 // Property type
 interface Property {
@@ -29,6 +40,8 @@ interface Property {
     sub_category: string | null;
     project_name: string | null;
     display_name: string | null;
+    latitude: number | null;
+    longitude: number | null;
     [key: string]: any;
 }
 
@@ -88,6 +101,7 @@ const bathroomOptions = ["Any", "1", "2", "3", "4+"];
 
 const SearchPage = () => {
     const supabase = createClient();
+    const { user } = useAuth();
     const [properties, setProperties] = useState<Property[]>([]);
     const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
     const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
@@ -198,9 +212,10 @@ const SearchPage = () => {
     };
     // ... rest of component logic (useEffect, etc.) remains same as dynamic values are used in render loop
 
+    // Re-fetch when user changes (login/logout/switch user)
     useEffect(() => {
         fetchProperties();
-    }, []);
+    }, [user?.id]);
 
     // Apply filters matching new states
     useEffect(() => {
@@ -734,11 +749,15 @@ const SearchPage = () => {
                 <div className={styles.listingsScrollArea} data-lenis-prevent>
 
                     {viewMode === 'map' ? (
-                        /* Map View Placeholder */
-                        <div className={styles.mapContainer} style={{ height: 'calc(100vh - 12rem)', backgroundColor: '#e5e5e5', borderRadius: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <Map size={48} color="#a3a3a3" strokeWidth={1} />
-                            <p style={{ marginTop: '1rem', color: '#737373', fontWeight: 500 }}>Map View Integration</p>
-                            <p style={{ marginTop: '0.5rem', color: '#a3a3a3', fontSize: '0.875rem' }}>Interactive map with property pins will be displayed here.</p>
+                        /* Map View */
+                        <div className={styles.mapContainer}>
+                            <PropertyMap
+                                properties={filteredProperties.map(p => ({
+                                    ...p,
+                                    type: "property" as const,
+                                    category: p.category,
+                                }))}
+                            />
                         </div>
                     ) : (
                         /* Property Grid */

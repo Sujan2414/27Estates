@@ -97,6 +97,13 @@
     border-radius: 0.75rem;
 }
 
+.sidebarLogo {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.75rem;
+    object-fit: contain;
+}
+
 .logoText {
     color: #ffffff;
     font-size: 1.25rem;
@@ -253,7 +260,13 @@
 
 @media (min-width: 1024px) {
     .statsGrid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .statsGrid {
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 
@@ -305,6 +318,11 @@
 .statIconPurple {
     background-color: rgba(139, 92, 246, 0.1);
     color: #8b5cf6;
+}
+
+.statIconGreen {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
 }
 
 .statValue {
@@ -403,6 +421,47 @@
     text-align: center;
     padding: 3rem;
     color: #6b7280;
+}
+
+.emptyStateIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    background-color: #f3f4f6;
+    border-radius: 1rem;
+    color: #9ca3af;
+}
+
+.emptyStateTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.emptyStateText {
+    font-size: 0.9375rem;
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+}
+
+/* Loading Container */
+.loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    gap: 1rem;
+}
+
+.loadingText {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
 }
 
 /* Buttons */

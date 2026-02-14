@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, User, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // --- HELPER COMPONENTS (ICONS) ---
 
@@ -63,13 +64,14 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                 <div className="w-full max-w-md py-8">
                     <div className="flex flex-col gap-5">
                         {/* Logo */}
-                        <Link href="/" className="mb-2">
-                            <span
-                                className="text-2xl font-semibold"
-                                style={{ color: 'var(--dark-turquoise, #1F524B)' }}
-                            >
-                                27 Estates
-                            </span>
+                        <Link href="/" className="mb-2 block relative w-48 h-12">
+                            <Image
+                                src="/Final_logo.png"
+                                alt="27 Estates"
+                                fill
+                                className="object-contain object-left"
+                                priority
+                            />
                         </Link>
 
                         <h1
@@ -159,7 +161,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                     <input
                                         name="phone"
                                         type="tel"
-                                        placeholder="+91 98765 43210"
+                                        placeholder="+91 99999 99999"
                                         className="w-full bg-transparent text-sm p-4 rounded-lg focus:outline-none"
                                         style={{ color: '#1a1a1a' }}
                                         data-testid="signup-phone-input"

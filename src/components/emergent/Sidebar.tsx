@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Heart, Users, Building2 } from "lucide-react";
+import { Search, Heart, Users, Building2, LogOut, LogIn } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import styles from "./Sidebar.module.css";
 
 // Custom Home icon similar to reference
@@ -15,11 +16,12 @@ const PropertyIcon = () => (
 
 const Sidebar = () => {
     const pathname = usePathname();
+    const { user, signOut, showAuthModal } = useAuth();
 
     const navItems = [
         { icon: PropertyIcon, label: "Home", path: "/properties" },
-        { icon: Search, label: "Properties", path: "/properties/search" },
         { icon: Building2, label: "Projects", path: "/properties/projects" },
+        { icon: Search, label: "Properties", path: "/properties/search" },
         { icon: Heart, label: "Bookmarks", path: "/properties/bookmarks" },
         { icon: Users, label: "Agents", path: "/properties/agents" },
     ];
@@ -27,6 +29,9 @@ const Sidebar = () => {
     const isActive = (path: string) => {
         if (path === "/properties") {
             return pathname === "/properties";
+        }
+        if (path === "/properties/projects") {
+            return pathname === "/properties/projects" || pathname?.startsWith("/projects/");
         }
         return pathname === path;
     };
@@ -59,14 +64,33 @@ const Sidebar = () => {
                 })}
             </nav>
 
-            {/* Account at bottom */}
+            {/* Auth action at bottom */}
             <div className={styles.backSection}>
-                <div className={styles.backItem}>
-                    <Link href="/" className={styles.backLink}>
-                        <Users size={22} strokeWidth={1.5} />
-                    </Link>
-                    <span className={styles.tooltip}>Account</span>
-                </div>
+                {user ? (
+                    <div className={styles.backItem}>
+                        <button
+                            onClick={signOut}
+                            className={styles.backLink}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+                            title="Sign Out"
+                        >
+                            <LogOut size={22} strokeWidth={1.5} />
+                        </button>
+                        <span className={styles.tooltip}>Sign Out</span>
+                    </div>
+                ) : (
+                    <div className={styles.backItem}>
+                        <button
+                            onClick={() => showAuthModal('/properties')}
+                            className={styles.backLink}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+                            title="Sign In"
+                        >
+                            <LogIn size={22} strokeWidth={1.5} />
+                        </button>
+                        <span className={styles.tooltip}>Sign In</span>
+                    </div>
+                )}
             </div>
         </aside>
     );

@@ -1,8 +1,6 @@
-"use client";
-
-import { MapPin, Heart, BedDouble, Bath, Maximize, MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { MapPin, BedDouble, Bath, Maximize, MessageSquare, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./LatestPropertyCard.module.css";
 
@@ -42,17 +40,30 @@ const formatIndianRupee = (amount: number): string => {
 
 interface LatestPropertyCardProps {
     property: Property;
-    isBookmarked: boolean;
+    isBookmarked?: boolean;
     onBookmarkChange?: () => void;
+    showBookmark?: boolean;
 }
 
-const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkChange }: LatestPropertyCardProps) => {
+const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkChange, showBookmark = true }: LatestPropertyCardProps) => {
     const router = useRouter();
     const supabase = createClient();
     const [bookmarked, setBookmarked] = useState(initialBookmarked);
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        setBookmarked(initialBookmarked);
+    }, [initialBookmarked]);
+
     const mainImage = property.images?.[0] || '/placeholder-property.jpg';
+
+    const handleCardClick = () => {
+        if ((property as any).is_project) {
+            router.push(`/projects/${property.id}`);
+        } else {
+            router.push(`/properties/${property.id}`);
+        }
+    };
 
     const handleBookmark = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -87,14 +98,6 @@ const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookm
         }
     };
 
-    const handleCardClick = () => {
-        if (property.is_project) {
-            router.push(`/projects/${property.id}`);
-        } else {
-            router.push(`/properties/${property.id}`);
-        }
-    };
-
     // Generate tags based on property type
     const tags = [
         property.property_type === "Rent" ? "Rent" : "Sale",
@@ -121,17 +124,32 @@ const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookm
                             <span key={index} className={styles.tag}>{tag}</span>
                         ))}
                     </div>
-                    <button
-                        onClick={handleBookmark}
-                        disabled={loading}
-                        className={styles.bookmarkBtn}
-                    >
-                        <Heart
-                            size={16}
-                            fill={bookmarked ? "#dc2626" : "none"}
-                            className={bookmarked ? styles.bookmarkIconActive : styles.bookmarkIcon}
-                        />
-                    </button>
+                    {showBookmark && (
+                        <button
+                            onClick={handleBookmark}
+                            disabled={loading}
+                            className={styles.bookmarkBtn}
+                            style={{
+                                background: 'white',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '32px',
+                                height: '32px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                        >
+                            <Heart
+                                size={16}
+                                fill={bookmarked ? "#dc2626" : "none"}
+                                stroke={bookmarked ? "#dc2626" : "#666"}
+                                className={bookmarked ? '' : ''}
+                            />
+                        </button>
+                    )}
                 </div>
             </div>
 

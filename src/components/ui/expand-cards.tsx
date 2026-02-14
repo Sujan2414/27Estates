@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { services } from "@/lib/services-data";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,8 +37,8 @@ const ExpandOnHover = () => {
     };
 
     return (
-        <section className="w-full bg-[#FEFDFB] pb-24">
-            <div className="w-full px-16">
+        <section className="w-full bg-[var(--background)] pb-24">
+            <div className="w-full px-4 md:px-8 lg:px-16">
                 {/* Carousel Container */}
                 <div className="flex items-center gap-4 justify-center">
                     {/* Left Navigation */}
@@ -45,22 +46,23 @@ const ExpandOnHover = () => {
                         variant="outline"
                         size="icon"
                         onClick={handlePrev}
-                        className="rounded-2xl bg-white border border-gray-200 text-[var(--dark-turquoise)] hover:bg-[var(--dark-turquoise)]/10 hover:text-[var(--dark-turquoise)] hover:border-[var(--dark-turquoise)]/50 transition-all duration-300 flex-shrink-0 z-50 h-[48px] w-[48px] shadow-lg"
+                        className="rounded-[4px] bg-white border border-gray-200 text-[var(--dark-turquoise)] hover:bg-[var(--dark-turquoise)]/10 hover:text-[var(--dark-turquoise)] hover:border-[var(--dark-turquoise)]/50 transition-all duration-300 flex-shrink-0 z-50 h-[36px] w-[36px] md:h-[48px] md:w-[48px]"
                         aria-label="Previous Service"
                     >
-                        <ChevronLeft size={24} strokeWidth={2.5} />
+                        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
                     </Button>
 
                     {/* Cards */}
-                    <div className="flex h-[60vh] min-h-[500px] flex-1">
+                    <div className="flex h-auto min-h-[300px] md:min-h-[400px] lg:min-h-[500px] md:h-[60vh] flex-1">
                         {visibleServices.map((service, idx) => {
                             const isExpanded = idx === expandedIndex;
                             return (
-                                <div
+                                <Link
+                                    href={`/services/${service.slug}`}
                                     key={`${service.id}-${startIndex}`}
                                     className={`relative cursor-pointer overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] h-full ${getCardWidth(idx)}`}
                                     onMouseEnter={() => setExpandedIndex(idx)}
-                                    style={{ position: 'relative' }}
+                                    style={{ position: 'relative', display: 'block', textDecoration: 'none' }}
                                 >
                                     {/* Image - Must fill entire card */}
                                     <img
@@ -109,7 +111,7 @@ const ExpandOnHover = () => {
                                             </p>
                                         </div>
                                     )}
-                                </div>
+                                </Link>
                             );
                         })}
                     </div>
@@ -119,10 +121,10 @@ const ExpandOnHover = () => {
                         variant="outline"
                         size="icon"
                         onClick={handleNext}
-                        className="rounded-2xl bg-white border border-gray-200 text-[var(--dark-turquoise)] hover:bg-[var(--dark-turquoise)]/10 hover:text-[var(--dark-turquoise)] hover:border-[var(--dark-turquoise)]/50 transition-all duration-300 flex-shrink-0 z-50 h-[48px] w-[48px] shadow-lg"
+                        className="rounded-[4px] bg-white border border-gray-200 text-[var(--dark-turquoise)] hover:bg-[var(--dark-turquoise)]/10 hover:text-[var(--dark-turquoise)] hover:border-[var(--dark-turquoise)]/50 transition-all duration-300 flex-shrink-0 z-50 h-[36px] w-[36px] md:h-[48px] md:w-[48px]"
                         aria-label="Next Service"
                     >
-                        <ChevronRight size={24} strokeWidth={2.5} />
+                        <ChevronRight className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
                     </Button>
                 </div>
 

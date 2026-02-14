@@ -62,7 +62,7 @@ const ContactCTA: React.FC = () => {
                     transition={{ delay: 0.3, duration: 0.6 }}
                 >
                     <motion.a
-                        href="mailto:hello@27estates.com"
+                        href="mailto:connect@27estates.com"
                         className={styles.ctaPrimary}
                         whileHover={{ y: -2 }}
                     >

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import SmoothScroll from "@/components/SmoothScroll";
+import PageTransitionLayout from "@/components/PageTransitionLayout";
 import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
+
+import StickyViewListingsBtn from '@/components/ui/StickyViewListingsBtn';
 
 const playfair = Playfair_Display({
     subsets: ["latin"],
@@ -45,8 +48,11 @@ export default function RootLayout({
             <body className={`${playfair.variable} ${inter.variable}`}>
                 <AuthProvider>
                     <SmoothScroll>
-                        {children}
+                        <PageTransitionLayout>
+                            {children}
+                        </PageTransitionLayout>
                     </SmoothScroll>
+                    <StickyViewListingsBtn />
                 </AuthProvider>
             </body>
         </html>

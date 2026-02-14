@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PropertyCard from "@/components/emergent/PropertyCard";
 import LatestPropertyCard from "@/components/emergent/LatestPropertyCard";
-import FilterModal, { FilterState } from "@/components/emergent/FilterModal";
-import { Search as SearchIcon, SlidersHorizontal } from "lucide-react";
+import { Search as SearchIcon, ChevronDown, X, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 import styles from "@/components/emergent/Dashboard.module.css";
 
 // Property type matching Supabase V2 schema
@@ -19,7 +19,6 @@ interface Property {
     price: number;
     price_text: string | null;
     price_per_sqft: number | null;
-    // Location - Separate columns
     location: string;
     address: string | null;
     street: string | null;
@@ -28,23 +27,19 @@ interface Property {
     state: string | null;
     pincode: string | null;
     country: string | null;
-    // Property Details
     rooms: number | null;
     bedrooms: number;
     bathrooms: number;
     sqft: number;
     lot_size: number | null;
     floors: number | null;
-    // Type & Category
     property_type: 'Sale' | 'Rent';
     category: string;
     sub_category: string | null;
     furnishing: string | null;
     project_name: string | null;
-    // Status
     is_featured: boolean;
     agent_id: string | null;
-    // Media
     amenities: {
         interior?: string[];
         outdoor?: string[];
@@ -53,35 +48,187 @@ interface Property {
     } | null;
     video_url?: string | null;
     floor_plans?: { name: string; image: string }[] | null;
-    // Index signature for compatibility with PropertyCard
     is_project?: boolean;
     [key: string]: unknown;
 }
 
+// Raw project type from Supabase
+interface RawProject {
+    id: string;
+    project_id?: string;
+    project_name: string;
+    description: string | null;
+    images: string[];
+    min_price: string | null;
+    max_price: string | null;
+    min_price_numeric?: number | null;
+    min_area?: number | null;
+    location: string;
+    address?: string | null;
+    city: string | null;
+    state?: string | null;
+    pincode?: string | null;
+    country?: string | null;
+    status: string;
+    bhk_options: string[] | null;
+    possession_date: string | null;
+    developer_name: string | null;
+    is_rera_approved: boolean;
+    is_featured: boolean;
+    video_url?: string | null;
+    created_at: string;
+    [key: string]: any;
+}
+
+// Normalize a raw project into a Property shape for PropertyCard
+const normalizeProject = (p: RawProject): Property => ({
+    id: p.id,
+    property_id: p.project_id || p.id,
+    title: p.project_name,
+    display_name: p.project_name,
+    description: p.description,
+    images: p.images || [],
+    price: p.min_price_numeric || 0,
+    price_text: p.min_price && p.max_price ? `${p.min_price} - ${p.max_price}` : (p.min_price || 'Price on Request'),
+    price_per_sqft: null,
+    location: p.location || '',
+    address: p.address || null,
+    street: null,
+    area: p.location,
+    city: p.city,
+    state: p.state || null,
+    pincode: p.pincode || null,
+    country: p.country || null,
+    rooms: null,
+    bedrooms: 0,
+    bathrooms: 0,
+    sqft: p.min_area || 0,
+    lot_size: null,
+    floors: null,
+    property_type: 'Sale',
+    category: 'Project',
+    sub_category: null,
+    furnishing: null,
+    project_name: p.project_name,
+    is_featured: p.is_featured || false,
+    agent_id: null,
+    amenities: null,
+    video_url: p.video_url,
+    floor_plans: null,
+    is_project: true,
+    _status: p.status, // Preserve project status for filtering
+});
+
+const statusOptions = [
+    { id: null, label: "All" },
+    { id: "Upcoming", label: "Upcoming" },
+    { id: "Under Construction", label: "Under Construction" },
+    { id: "Ready to Move", label: "Ready to Move" },
+    { id: "New Launch", label: "New Launch" },
+];
+
+const cityOptions = ["Bangalore", "Mumbai", "Delhi", "Hyderabad", "Chennai", "Pune", "Kolkata", "Goa"];
+const configOptions = ["1 BHK", "2 BHK", "3 BHK", "4 BHK", "4+ BHK", "Villa", "Plot", "Penthouse"];
+
+const formatBudgetLabel = (val: number) => {
+    if (val >= 10000000) return `${(val / 10000000).toFixed(val % 10000000 === 0 ? 0 : 1)} Cr`;
+    if (val >= 100000) return `${(val / 100000).toFixed(val % 100000 === 0 ? 0 : 1)} L`;
+    return `${val}`;
+};
+
 const Dashboard = () => {
-    const [properties, setProperties] = useState<Property[]>([]);
-    const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
-    const [featuredProjects, setFeaturedProjects] = useState<Property[]>([]);
+    const [allProperties, setAllProperties] = useState<Property[]>([]);
+    const [allProjects, setAllProjects] = useState<Property[]>([]);
     const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [showProjects, setShowProjects] = useState(false);
-    const [filters, setFilters] = useState<FilterState>({
-        featured: false,
-        category: null,
-        city: null,
-        area: null,
-        minPrice: null,
-        maxPrice: null
-    });
+    const [projectStatusFilter, setProjectStatusFilter] = useState<string | null>(null);
+    const [projectsVisible, setProjectsVisible] = useState(6);
+    const [propertiesVisible, setPropertiesVisible] = useState(6);
 
+    // New filter state
+    const [listingType, setListingType] = useState<'Buy' | 'Rent'>('Buy');
+    const [selectedCity, setSelectedCity] = useState<string>('');
+    const [selectedConfig, setSelectedConfig] = useState<string>('');
+    const [budgetMin, setBudgetMin] = useState<number>(100000);
+    const [budgetMax, setBudgetMax] = useState<number>(100000000);
+    const [tempBudgetMin, setTempBudgetMin] = useState<number>(100000);
+    const [tempBudgetMax, setTempBudgetMax] = useState<number>(100000000);
+    const [budgetApplied, setBudgetApplied] = useState(false);
+
+    // Dropdown open states
+    const [cityOpen, setCityOpen] = useState(false);
+    const [configOpen, setConfigOpen] = useState(false);
+    const [budgetOpen, setBudgetOpen] = useState(false);
+
+    const cityRef = useRef<HTMLDivElement>(null);
+    const configRef = useRef<HTMLDivElement>(null);
+    const budgetRef = useRef<HTMLDivElement>(null);
+
+    const [profileName, setProfileName] = useState<string | null>(null);
     const supabase = createClient();
+    const { user } = useAuth();
 
-    const fetchProperties = async () => {
+    // Close dropdowns on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (cityRef.current && !cityRef.current.contains(e.target as Node)) setCityOpen(false);
+            if (configRef.current && !configRef.current.contains(e.target as Node)) setConfigOpen(false);
+            if (budgetRef.current && !budgetRef.current.contains(e.target as Node)) setBudgetOpen(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Fetch profile name
+    useEffect(() => {
+        if (!user) {
+            setProfileName(null);
+            return;
+        }
+
+        const fetchProfile = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('first_name, full_name')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error) {
+                    console.error('Error fetching profile:', error);
+                }
+
+                if (data?.first_name) {
+                    setProfileName(data.first_name);
+                } else if (data?.full_name) {
+                    setProfileName(data.full_name.split(' ')[0]);
+                } else {
+                    const metaFirstName = user.user_metadata?.first_name;
+                    const metaFullName = user.user_metadata?.full_name;
+                    if (metaFirstName) {
+                        setProfileName(String(metaFirstName));
+                    } else if (metaFullName) {
+                        setProfileName(String(metaFullName).split(' ')[0]);
+                    } else if (user.email) {
+                        setProfileName(user.email.split('@')[0]);
+                    } else {
+                        setProfileName(null);
+                    }
+                }
+            } catch (err) {
+                console.error('Error in fetchProfile:', err);
+                setProfileName(null);
+            }
+        };
+
+        fetchProfile();
+    }, [user?.id]);
+
+    const fetchData = async () => {
         try {
             // Fetch properties
-            const { data: allProps, error: propsError } = await supabase
+            const { data: propsData, error: propsError } = await supabase
                 .from('properties')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -89,172 +236,117 @@ const Dashboard = () => {
             if (propsError) throw propsError;
 
             // Fetch projects
-            const { data: allProjects, error: projectsError } = await supabase
+            const { data: projData, error: projError } = await supabase
                 .from('projects')
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (projectsError) console.error("Error fetching projects:", projectsError);
-
-            // Normalize projects to Property shape
-            const projectsAsProperties: Property[] = (allProjects || []).map((p: any) => ({
-                id: p.id,
-                property_id: p.project_id || p.id,
-                title: p.project_name,
-                display_name: p.project_name,
-                description: p.description,
-                images: p.images || [],
-                price: p.min_price_numeric || 0,
-                price_text: p.min_price && p.max_price ? `${p.min_price} - ${p.max_price}` : (p.min_price || 'Price on Request'),
-                price_per_sqft: null,
-                location: p.location || '',
-                address: p.address,
-                street: null,
-                area: p.location,
-                city: p.city,
-                state: p.state,
-                pincode: p.pincode,
-                country: p.country,
-                rooms: null,
-                bedrooms: 0,
-                bathrooms: 0,
-                sqft: p.min_area || 0,
-                lot_size: null,
-                floors: null,
-                property_type: 'Sale', // Projects are essentially for sale
-                category: 'Project', // New category
-                sub_category: null,
-                furnishing: null,
-                project_name: p.project_name,
-                is_featured: p.is_featured || false,
-                agent_id: null,
-                amenities: null,
-                video_url: p.video_url,
-                floor_plans: null,
-                is_project: true, // Marker
-            }));
+            if (projError) console.error("Error fetching projects:", projError);
 
             // Fetch bookmarks for current user
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user: authUser } } = await supabase.auth.getUser();
             let bookmarks: string[] = [];
-            if (user) {
+            if (authUser) {
                 const { data: bookmarkData } = await supabase
                     .from('user_bookmarks')
                     .select('property_id')
-                    .eq('user_id', user.id);
+                    .eq('user_id', authUser.id);
                 bookmarks = bookmarkData?.map(b => b.property_id) || [];
             }
 
-            const propertiesOnly = allProps || [];
-            const projectsOnly = projectsAsProperties;
-            const combined = [...propertiesOnly, ...projectsOnly].sort((a, b) => {
-                return new Date(b.created_at as string || 0).getTime() - new Date(a.created_at as string || 0).getTime();
-            });
-
-            setProperties(combined);
-            setFeaturedProperties(propertiesOnly.filter(p => p.is_featured));
-            setFeaturedProjects(projectsOnly.filter(p => p.is_featured));
+            setAllProperties(propsData || []);
+            setAllProjects((projData || []).map(normalizeProject));
             setBookmarkIds(bookmarks);
         } catch (error) {
-            console.error("Error fetching properties:", error);
+            console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchProperties();
-    }, []);
+        fetchData();
+    }, [user?.id]);
 
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!searchQuery.trim()) {
-            fetchProperties();
-            return;
+    const handleSearch = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+
+        // Build property query
+        let propQuery = supabase.from('properties').select('*');
+
+        // Filter by Buy/Rent
+        propQuery = propQuery.eq('property_type', listingType === 'Buy' ? 'Sale' : 'Rent');
+
+        // City filter
+        if (selectedCity) {
+            propQuery = propQuery.ilike('city', `%${selectedCity}%`);
         }
 
-        // Search Properties
-        const { data: propData } = await supabase
-            .from('properties')
-            .select('*')
-            .or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-
-        // Search Projects
-        const { data: projData } = await supabase
-            .from('projects')
-            .select('*')
-            .or(`project_name.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-
-        // Normalize Projects
-        const projectsAsProperties: Property[] = (projData || []).map((p: any) => ({
-            id: p.id,
-            property_id: p.project_id || p.id,
-            title: p.project_name,
-            display_name: p.project_name,
-            description: p.description,
-            images: p.images || [],
-            price: p.min_price_numeric || 0,
-            price_text: p.min_price && p.max_price ? `${p.min_price} - ${p.max_price}` : (p.min_price || 'Price on Request'),
-            price_per_sqft: null,
-            location: p.location || '',
-            address: p.address,
-            street: null,
-            area: p.location,
-            city: p.city,
-            state: p.state,
-            pincode: p.pincode,
-            country: p.country,
-            rooms: null,
-            bedrooms: 0,
-            bathrooms: 0,
-            sqft: p.min_area || 0,
-            lot_size: null,
-            floors: null,
-            property_type: 'Sale',
-            category: 'Project',
-            sub_category: null,
-            furnishing: null,
-            project_name: p.project_name,
-            is_featured: p.is_featured || false,
-            agent_id: null,
-            amenities: null,
-            video_url: p.video_url,
-            floor_plans: null,
-            is_project: true,
-        }));
-
-        setProperties([...(propData || []), ...projectsAsProperties]);
-    };
-
-    const handleApplyFilters = async (newFilters: FilterState) => {
-        setFilters(newFilters);
-
-        let query = supabase.from('properties').select('*');
-
-        if (newFilters.category) {
-            query = query.eq('category', newFilters.category);
+        // Search text
+        if (searchQuery.trim()) {
+            propQuery = propQuery.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,project_name.ilike.%${searchQuery}%`);
         }
 
-        if (newFilters.featured) {
-            query = query.eq('is_featured', true);
+        // Budget filter
+        if (budgetApplied) {
+            propQuery = propQuery.gte('price', budgetMin).lte('price', budgetMax);
         }
 
-        const { data } = await query.order('created_at', { ascending: false });
+        // Configuration filter
+        if (selectedConfig) {
+            const bedroomMatch = selectedConfig.match(/^(\d+)/);
+            if (bedroomMatch) {
+                const beds = parseInt(bedroomMatch[1]);
+                if (selectedConfig.includes('+')) {
+                    propQuery = propQuery.gte('bedrooms', beds);
+                } else {
+                    propQuery = propQuery.eq('bedrooms', beds);
+                }
+            } else {
+                propQuery = propQuery.ilike('category', `%${selectedConfig}%`);
+            }
+        }
 
-        setProperties(data || []);
-        setFeaturedProperties((data || []).filter(p => p.is_featured));
+        const { data: propData } = await propQuery.order('created_at', { ascending: false });
+
+        // Build project query
+        let projQuery = supabase.from('projects').select('*');
+
+        if (selectedCity) {
+            projQuery = projQuery.ilike('city', `%${selectedCity}%`);
+        }
+
+        if (searchQuery.trim()) {
+            projQuery = projQuery.or(`project_name.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+        }
+
+        if (budgetApplied) {
+            projQuery = projQuery.gte('min_price_numeric', budgetMin);
+        }
+
+        const { data: projData } = await projQuery.order('created_at', { ascending: false });
+
+        setAllProperties(propData || []);
+        setAllProjects((projData || []).map(normalizeProject));
+        setProjectsVisible(6);
+        setPropertiesVisible(6);
     };
 
     const isBookmarked = (propertyId: string) => {
         return bookmarkIds.includes(propertyId);
     };
 
-    // Get latest (non-featured) properties
-    const latestProperties = properties.filter(p => !p.is_featured);
+    // Filter projects by status (stored in _status from normalizeProject)
+    const filteredProjects = projectStatusFilter
+        ? allProjects.filter(p => p._status === projectStatusFilter)
+        : allProjects;
 
     if (loading) {
         return (
             <div className={styles.loadingContainer}>
+                <div className="animate-spin text-[var(--dark-turquoise)]">
+                    <Loader2 size={40} />
+                </div>
                 <div className={styles.loadingText}>Loading properties...</div>
             </div>
         );
@@ -262,110 +354,268 @@ const Dashboard = () => {
 
     return (
         <div className={styles.page}>
-            {/* Header with Search */}
+            {/* Header */}
             <div className={styles.header}>
-                <h1 className={styles.pageTitle}>Hi 👋</h1>
-
-                <div className={styles.headerRight}>
-                    <form onSubmit={handleSearch} className={styles.searchForm}>
-                        <div className={styles.searchContainer}>
-                            <SearchIcon className={styles.searchIcon} size={18} strokeWidth={1.5} />
-                            <input
-                                type="text"
-                                placeholder="Search properties"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className={styles.searchInput}
-                            />
-                        </div>
-                    </form>
-
-                    <button
-                        onClick={() => setIsFilterOpen(true)}
-                        className={styles.filterButton}
-                    >
-                        <SlidersHorizontal size={18} strokeWidth={1.5} />
-                        <span>Filters</span>
-                    </button>
-                </div>
+                <h1 className={styles.pageTitle}>
+                    Hi, {profileName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Guest'} 👋
+                </h1>
             </div>
 
-            {/* Featured Toggle */}
-            {!searchQuery && (featuredProperties.length > 0 || featuredProjects.length > 0) && (
-                <section className={styles.section}>
-                    <div className={styles.featuredHeader}>
-                        <h2 className={styles.sectionTitle}>
-                            {showProjects ? 'FEATURED PROJECTS' : 'FEATURED PROPERTIES'}
-                        </h2>
-                        <div className={styles.toggleTabs}>
+            {/* Buy / Rent Toggle */}
+            <div className={styles.listingToggle}>
+                <button
+                    className={`${styles.listingBtn} ${listingType === 'Buy' ? styles.listingBtnActive : ''}`}
+                    onClick={() => setListingType('Buy')}
+                >
+                    Buy
+                </button>
+                <button
+                    className={`${styles.listingBtn} ${listingType === 'Rent' ? styles.listingBtnActive : ''}`}
+                    onClick={() => setListingType('Rent')}
+                >
+                    Rent
+                </button>
+            </div>
+
+            {/* Filter Bar */}
+            <div className={styles.filterBar}>
+                {/* City Dropdown */}
+                <div className={styles.filterDropdown} ref={cityRef}>
+                    <button
+                        className={styles.filterDropdownBtn}
+                        onClick={() => { setCityOpen(!cityOpen); setConfigOpen(false); setBudgetOpen(false); }}
+                    >
+                        <span>{selectedCity || 'City'}</span>
+                        <ChevronDown size={16} style={{ transition: 'transform 0.2s', transform: cityOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                    </button>
+                    {cityOpen && (
+                        <div className={styles.filterDropdownMenu}>
                             <button
-                                className={`${styles.toggleTab} ${!showProjects ? styles.toggleTabActive : ''}`}
-                                onClick={() => setShowProjects(false)}
+                                className={`${styles.filterDropdownItem} ${!selectedCity ? styles.filterDropdownItemActive : ''}`}
+                                onClick={() => { setSelectedCity(''); setCityOpen(false); }}
                             >
-                                Properties ({featuredProperties.length})
+                                All Cities
                             </button>
+                            {cityOptions.map((city) => (
+                                <button
+                                    key={city}
+                                    className={`${styles.filterDropdownItem} ${selectedCity === city ? styles.filterDropdownItemActive : ''}`}
+                                    onClick={() => { setSelectedCity(city); setCityOpen(false); }}
+                                >
+                                    {city}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Search Input */}
+                <div className={styles.filterSearchWrap}>
+                    <SearchIcon size={16} className={styles.filterSearchIcon} />
+                    <input
+                        type="text"
+                        placeholder="Enter your location or project"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className={styles.filterSearchInput}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+                    />
+                </div>
+
+                {/* Configuration Dropdown */}
+                <div className={styles.filterDropdown} ref={configRef}>
+                    <button
+                        className={styles.filterDropdownBtn}
+                        onClick={() => { setConfigOpen(!configOpen); setCityOpen(false); setBudgetOpen(false); }}
+                    >
+                        <span>{selectedConfig || 'Configuration'}</span>
+                        <ChevronDown size={16} style={{ transition: 'transform 0.2s', transform: configOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                    </button>
+                    {configOpen && (
+                        <div className={styles.filterDropdownMenu}>
                             <button
-                                className={`${styles.toggleTab} ${showProjects ? styles.toggleTabActive : ''}`}
-                                onClick={() => setShowProjects(true)}
+                                className={`${styles.filterDropdownItem} ${!selectedConfig ? styles.filterDropdownItemActive : ''}`}
+                                onClick={() => { setSelectedConfig(''); setConfigOpen(false); }}
                             >
-                                Projects ({featuredProjects.length})
+                                All
+                            </button>
+                            {configOptions.map((cfg) => (
+                                <button
+                                    key={cfg}
+                                    className={`${styles.filterDropdownItem} ${selectedConfig === cfg ? styles.filterDropdownItemActive : ''}`}
+                                    onClick={() => { setSelectedConfig(cfg); setConfigOpen(false); }}
+                                >
+                                    {cfg}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Budget Dropdown with Slider */}
+                <div className={styles.filterDropdown} ref={budgetRef}>
+                    <button
+                        className={`${styles.filterDropdownBtn} ${budgetApplied ? styles.filterDropdownBtnApplied : ''}`}
+                        onClick={() => { setBudgetOpen(!budgetOpen); setCityOpen(false); setConfigOpen(false); }}
+                    >
+                        <span>{budgetApplied ? `${formatBudgetLabel(budgetMin)} – ${formatBudgetLabel(budgetMax)}` : 'Budget'}</span>
+                        <ChevronDown size={16} style={{ transition: 'transform 0.2s', transform: budgetOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                    </button>
+                    {budgetOpen && (
+                        <div className={styles.budgetPanel}>
+                            <div className={styles.budgetHeader}>
+                                <span className={styles.budgetTitle}>Budget Range</span>
+                                {budgetApplied && (
+                                    <button
+                                        className={styles.budgetRemoveBtn}
+                                        onClick={() => {
+                                            setBudgetApplied(false);
+                                            setTempBudgetMin(100000);
+                                            setTempBudgetMax(100000000);
+                                            setBudgetMin(100000);
+                                            setBudgetMax(100000000);
+                                            setBudgetOpen(false);
+                                        }}
+                                    >
+                                        <X size={14} /> Remove
+                                    </button>
+                                )}
+                            </div>
+                            <div className={styles.budgetValues}>
+                                <span>{formatBudgetLabel(tempBudgetMin)}</span>
+                                <span>{formatBudgetLabel(tempBudgetMax)}</span>
+                            </div>
+                            <div className={styles.budgetSliders}>
+                                <label className={styles.budgetSliderLabel}>Min</label>
+                                <input
+                                    type="range"
+                                    min={100000}
+                                    max={100000000}
+                                    step={100000}
+                                    value={tempBudgetMin}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        if (val < tempBudgetMax) setTempBudgetMin(val);
+                                    }}
+                                    className={styles.budgetSlider}
+                                />
+                                <label className={styles.budgetSliderLabel} style={{ marginTop: '12px' }}>Max</label>
+                                <input
+                                    type="range"
+                                    min={100000}
+                                    max={100000000}
+                                    step={100000}
+                                    value={tempBudgetMax}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        if (val > tempBudgetMin) setTempBudgetMax(val);
+                                    }}
+                                    className={styles.budgetSlider}
+                                />
+                            </div>
+                            <button
+                                className={styles.budgetApplyBtn}
+                                onClick={() => {
+                                    setBudgetMin(tempBudgetMin);
+                                    setBudgetMax(tempBudgetMax);
+                                    setBudgetApplied(true);
+                                    setBudgetOpen(false);
+                                }}
+                            >
+                                Apply
                             </button>
                         </div>
-                    </div>
-                    <div className={styles.grid}>
-                        {(showProjects ? featuredProjects : featuredProperties).map((property) => (
-                            <PropertyCard
-                                key={property.id}
-                                property={property}
-                                isBookmarked={isBookmarked(property.id)}
-                                onBookmarkChange={fetchProperties}
-                            />
-                        ))}
-                    </div>
-                </section>
-            )}
+                    )}
+                </div>
 
-            {/* Latest Properties - Smaller Cards with Details */}
-            {latestProperties.length > 0 && !searchQuery && (
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>LATEST PROPERTIES</h2>
-                    <div className={styles.latestGrid}>
-                        {latestProperties.map((property) => (
-                            <LatestPropertyCard
-                                key={property.id}
-                                property={property}
-                                isBookmarked={isBookmarked(property.id)}
-                                onBookmarkChange={fetchProperties}
-                            />
-                        ))}
-                    </div>
-                </section>
-            )}
+                {/* Search Button */}
+                <button
+                    className={styles.filterSearchBtn}
+                    onClick={() => handleSearch()}
+                >
+                    <SearchIcon size={18} />
+                </button>
+            </div>
 
-            {/* Search Results */}
-            {searchQuery && (
-                <section>
-                    <h2 className={styles.sectionTitle}>SEARCH RESULTS</h2>
-                    <div className={styles.latestGrid}>
-                        {properties.map((property) => (
-                            <LatestPropertyCard
-                                key={property.id}
-                                property={property}
-                                isBookmarked={isBookmarked(property.id)}
-                                onBookmarkChange={fetchProperties}
-                            />
-                        ))}
+            {/* Section 1: PROJECTS */}
+            <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>PROJECTS</h2>
+                <div className={styles.statusFilters}>
+                    {statusOptions.map((opt) => (
+                        <button
+                            key={opt.label}
+                            className={`${styles.statusPill} ${projectStatusFilter === opt.id ? styles.statusPillActive : ''}`}
+                            onClick={() => {
+                                setProjectStatusFilter(opt.id);
+                                setProjectsVisible(6);
+                            }}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+                {filteredProjects.length > 0 ? (
+                    <>
+                        <div className={styles.grid}>
+                            {filteredProjects.slice(0, projectsVisible).map((project) => (
+                                <PropertyCard
+                                    key={project.id}
+                                    property={project}
+                                    isBookmarked={false}
+                                    onBookmarkChange={fetchData}
+                                />
+                            ))}
+                        </div>
+                        {projectsVisible < filteredProjects.length && (
+                            <div className={styles.loadMoreContainer}>
+                                <button
+                                    className={styles.loadMoreButton}
+                                    onClick={() => setProjectsVisible(prev => prev + 6)}
+                                >
+                                    Load More Projects
+                                </button>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className={styles.emptyState}>
+                        <p className={styles.emptyText}>No projects found</p>
                     </div>
-                </section>
-            )}
+                )}
+            </section>
 
-            {/* Filter Modal */}
-            <FilterModal
-                isOpen={isFilterOpen}
-                onClose={() => setIsFilterOpen(false)}
-                onApplyFilters={handleApplyFilters}
-                initialFilters={filters}
-            />
+            {/* Section 2: PROPERTIES */}
+            <section className={styles.section}>
+                <h2 className={styles.sectionTitle}>PROPERTIES</h2>
+                {allProperties.length > 0 ? (
+                    <>
+                        <div className={styles.latestGrid}>
+                            {allProperties.slice(0, propertiesVisible).map((property) => (
+                                <LatestPropertyCard
+                                    key={property.id}
+                                    property={property}
+                                    isBookmarked={isBookmarked(property.id)}
+                                    onBookmarkChange={fetchData}
+                                />
+                            ))}
+                        </div>
+                        {propertiesVisible < allProperties.length && (
+                            <div className={styles.loadMoreContainer}>
+                                <button
+                                    className={styles.loadMoreButton}
+                                    onClick={() => setPropertiesVisible(prev => prev + 6)}
+                                >
+                                    Load More Properties
+                                </button>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className={styles.emptyState}>
+                        <p className={styles.emptyText}>No properties found</p>
+                    </div>
+                )}
+            </section>
         </div>
     );
 };

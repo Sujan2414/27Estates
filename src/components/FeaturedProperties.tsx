@@ -1,48 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import styles from './FeaturedProperties.module.css';
+import { useAuth } from '@/context/AuthContext';
+import { createClient } from '@/lib/supabase/client';
+import FeaturedAdCard from '@/components/FeaturedAdCard';
 
-interface Property {
-    id: number;
+interface FeaturedProperty {
+    id: string;
     title: string;
     location: string;
-    price: string;
-    type: string;
-    size: string;
-    image: string;
+    city: string | null;
+    price: number;
+    price_text: string | null;
+    category: string;
+    property_type: string;
+    bedrooms: number;
+    sqft: number;
+    images: string[];
 }
-
-const properties: Property[] = [
-    {
-        id: 1,
-        title: "L&T Elara Celestia",
-        location: "Hebbal, Bangalore",
-        price: "Starting ₹2.4 Cr",
-        type: "3 BHK Apartments",
-        size: "From 1,850 sq.ft",
-        image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
-    },
-    {
-        id: 2,
-        title: "Surya Valencia",
-        location: "Near Airport, Bangalore",
-        price: "Starting ₹4.2 Cr",
-        type: "4-5 BHK Villas",
-        size: "3,100 - 3,950 sq.ft",
-        image: "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80"
-    },
-    {
-        id: 3,
-        title: "Divyashree Whispers",
-        location: "Nandi Hills, Bangalore",
-        price: "Starting ₹48 L",
-        type: "Premium Plots",
-        size: "1,200 - 4,000 sq.ft",
-        image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
-    }
-];
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -54,116 +31,127 @@ const containerVariants = {
     }
 };
 
-const itemVariants: any = {
+const itemVariants = {
     hidden: { opacity: 0, y: 30 },
     visible: {
         opacity: 1,
         y: 0,
         transition: {
             duration: 0.6,
-            ease: [0.16, 1, 0.3, 1]
+            ease: [0.16, 1, 0.3, 1] as const
         }
     }
 };
 
+const formatPrice = (price: number, priceText: string | null) => {
+    if (priceText) return priceText;
+    if (price >= 10000000) return `₹${(price / 10000000).toFixed(1)} Cr`;
+    if (price >= 100000) return `₹${(price / 100000).toFixed(0)} L`;
+    return `₹${price.toLocaleString('en-IN')}`;
+};
+
 const FeaturedProperties: React.FC = () => {
+    const { checkAuthAndNavigate, showAuthModal } = useAuth();
+    const [properties, setProperties] = useState<FeaturedProperty[]>([]);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const fetchFeatured = async () => {
+            const { data } = await supabase
+                .from('properties')
+                .select('id, title, location, city, price, price_text, category, property_type, bedrooms, sqft, images')
+                .eq('is_featured', true)
+                .limit(6);
+
+            if (data) setProperties(data);
+        };
+        fetchFeatured();
+    }, [supabase]);
+
+    if (properties.length === 0) return null;
+
     return (
         <section id="properties" className={styles.section}>
             <div className={styles.container}>
-                {/* Header */}
-                <div className={styles.header}>
-                    <motion.p
-                        className={styles.subtitle}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        Featured Properties
-                    </motion.p>
-                    <motion.h2
-                        className={styles.title}
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ delay: 0.1, duration: 0.7 }}
-                    >
-                        Curated Selection
-                    </motion.h2>
-                    <motion.p
-                        className={styles.description}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ delay: 0.2, duration: 0.6 }}
-                    >
-                        Handpicked properties across Bangalore&apos;s most
-                        coveted locations.
-                    </motion.p>
-                </div>
-
-                {/* Properties Grid */}
-                <motion.div
-                    className={styles.grid}
-                    variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, margin: "-50px" }}
-                >
-                    {properties.map((property) => (
-                        <motion.article
-                            key={property.id}
-                            className={styles.card}
-                            variants={itemVariants}
+                <div className={styles.contentCard}>
+                    {/* Header */}
+                    <div className={styles.header}>
+                        <motion.p
+                            className={styles.subtitle}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-100px" }}
+                            transition={{ duration: 0.6 }}
                         >
-                            {/* Image */}
-                            <div className={styles.imageWrapper}>
-                                <motion.img
-                                    src={property.image}
-                                    alt={property.title}
-                                    className={styles.image}
-                                    whileHover={{ scale: 1.04 }}
-                                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                            Featured Properties
+                        </motion.p>
+                        <motion.h2
+                            className={styles.title}
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-100px" }}
+                            transition={{ delay: 0.1, duration: 0.7 }}
+                        >
+                            Curated Selection
+                        </motion.h2>
+                        <motion.p
+                            className={styles.description}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-100px" }}
+                            transition={{ delay: 0.2, duration: 0.6 }}
+                        >
+                            Handpicked properties across Bangalore&apos;s most
+                            coveted locations.
+                        </motion.p>
+                    </div>
+
+                    {/* Properties Grid */}
+                    <motion.div
+                        className={styles.grid}
+                        variants={containerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true, margin: "-50px" }}
+                    >
+                        {properties.map((property) => (
+                            <motion.div
+                                key={property.id}
+                                variants={itemVariants}
+                            >
+                                <FeaturedAdCard
+                                    id={property.id}
+                                    type="property"
+                                    image={property.images?.[0] || '/placeholder-property.jpg'}
+                                    title={property.title}
+                                    location={property.location}
+                                    city={property.city || undefined}
+                                    price={formatPrice(property.price, property.price_text)}
+                                    category={property.category}
+                                    bhk={property.bedrooms ? `${property.bedrooms} BHK` : undefined}
+                                    area={property.sqft ? `${property.sqft.toLocaleString()} sqft` : undefined}
+                                    onCardClick={checkAuthAndNavigate}
                                 />
-                            </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
 
-                            {/* Content */}
-                            <div className={styles.content}>
-                                <span className={styles.type}>{property.type}</span>
-                                <h3 className={styles.propertyTitle}>{property.title}</h3>
-                                <p className={styles.location}>{property.location}</p>
-
-                                <div className={styles.details}>
-                                    <span className={styles.size}>{property.size}</span>
-                                </div>
-
-                                <div className={styles.footer}>
-                                    <span className={styles.price}>{property.price}</span>
-                                    <motion.a
-                                        href="#contact"
-                                        className={styles.viewBtn}
-                                        whileHover={{ x: 4 }}
-                                    >
-                                        Enquire →
-                                    </motion.a>
-                                </div>
-                            </div>
-                        </motion.article>
-                    ))}
-                </motion.div>
-
-                {/* View All Link */}
-                <motion.div
-                    className={styles.viewAllWrapper}
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5 }}
-                >
-                    <a href="/properties" className={styles.viewAllBtn}>
-                        View All Properties
-                    </a>
-                </motion.div>
+                    {/* View All Link */}
+                    <motion.div
+                        className={styles.viewAllWrapper}
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.5 }}
+                    >
+                        <button
+                            className={styles.viewAllBtn}
+                            onClick={() => showAuthModal('/properties')}
+                        >
+                            View All Properties
+                        </button>
+                    </motion.div>
+                </div>
             </div>
         </section>
     );

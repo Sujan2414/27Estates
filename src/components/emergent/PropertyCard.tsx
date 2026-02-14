@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPin, Heart } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./PropertyCard.module.css";
@@ -33,6 +33,10 @@ const PropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkCha
     const supabase = createClient();
     const [bookmarked, setBookmarked] = useState(initialBookmarked);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        setBookmarked(initialBookmarked);
+    }, [initialBookmarked]);
 
     const mainImage = property.images?.[0] || '/placeholder-property.jpg';
 
@@ -115,7 +119,7 @@ const PropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkCha
 
             {/* Content Overlay - Bottom */}
             <div className={styles.content}>
-                <h3 className={styles.title}>{property.display_name || property.project_name || property.title}</h3>
+                <h3 className={styles.title}>{(property.display_name as string) || property.project_name || property.title}</h3>
                 <p className={styles.description}>{property.description || ''}</p>
             </div>
 

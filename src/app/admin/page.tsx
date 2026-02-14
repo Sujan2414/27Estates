@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Building2, FileText, MessageSquare, Users, Plus } from 'lucide-react'
+import { Building2, FolderKanban, FileText, MessageSquare, Users, Plus } from 'lucide-react'
 import styles from './admin.module.css'
 
 interface DashboardStats {
     properties: number
+    projects: number
     blogs: number
     inquiries: number
     agents: number
@@ -25,6 +26,7 @@ interface RecentInquiry {
 export default function AdminDashboard() {
     const [stats, setStats] = useState<DashboardStats>({
         properties: 0,
+        projects: 0,
         blogs: 0,
         inquiries: 0,
         agents: 0
@@ -36,8 +38,9 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             // Fetch counts
-            const [propertiesCount, blogsCount, inquiriesCount, agentsCount] = await Promise.all([
+            const [propertiesCount, projectsCount, blogsCount, inquiriesCount, agentsCount] = await Promise.all([
                 supabase.from('properties').select('id', { count: 'exact', head: true }),
+                supabase.from('projects').select('id', { count: 'exact', head: true }),
                 supabase.from('blogs').select('id', { count: 'exact', head: true }),
                 supabase.from('inquiries').select('id', { count: 'exact', head: true }),
                 supabase.from('agents').select('id', { count: 'exact', head: true })
@@ -45,6 +48,7 @@ export default function AdminDashboard() {
 
             setStats({
                 properties: propertiesCount.count || 0,
+                projects: projectsCount.count || 0,
                 blogs: blogsCount.count || 0,
                 inquiries: inquiriesCount.count || 0,
                 agents: agentsCount.count || 0
@@ -91,6 +95,16 @@ export default function AdminDashboard() {
 
                 <div className={styles.statCard}>
                     <div className={styles.statHeader}>
+                        <span className={styles.statLabel}>Total Projects</span>
+                        <div className={`${styles.statIcon} ${styles.statIconGreen}`}>
+                            <FolderKanban size={20} />
+                        </div>
+                    </div>
+                    <div className={styles.statValue}>{loading ? '-' : stats.projects}</div>
+                </div>
+
+                <div className={styles.statCard}>
+                    <div className={styles.statHeader}>
                         <span className={styles.statLabel}>Blog Posts</span>
                         <div className={`${styles.statIcon} ${styles.statIconGold}`}>
                             <FileText size={20} />
@@ -129,6 +143,10 @@ export default function AdminDashboard() {
                     <Link href="/admin/properties/new" className={styles.addButton}>
                         <Plus size={18} />
                         Add Property
+                    </Link>
+                    <Link href="/admin/projects/new" className={styles.addButton}>
+                        <Plus size={18} />
+                        New Project
                     </Link>
                     <Link href="/admin/blogs/new" className={styles.addButton}>
                         <Plus size={18} />

@@ -37,7 +37,7 @@ const Hero: React.FC = () => {
 
     const [titleNumber, setTitleNumber] = useState(0);
     const titles = useMemo(
-        () => ["Luxury", "Lifestyle", "Excellence"],
+        () => ["Luxury", "Elegance", "Excellence"],
         []
     );
 
@@ -53,7 +53,7 @@ const Hero: React.FC = () => {
     }, [titleNumber, titles]);
 
     const y = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
-    const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+    const opacity = useTransform(scrollYProgress, [0, 0.9], [1, 0]);
 
     return (
         <section ref={containerRef} className={styles.hero}>
@@ -92,7 +92,7 @@ const Hero: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                         >
-                            Luxury Real Estate Advisory
+                            OWN THE EXTRAORDINARY
                         </motion.p>
 
                         {/* Headline */}
@@ -102,7 +102,7 @@ const Hero: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                         >
-                            Experience&nbsp;True<br />
+                            Your&nbsp;Gateway&nbsp;To<br />
                             <span className={styles.rotatingWrapper}>
                                 {titles.map((title, index) => (
                                     <motion.span
@@ -129,7 +129,7 @@ const Hero: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.55, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                         >
-                            Premium apartments, villas, and plots in Bangalore&apos;s most
+                            Premium apartments, villas, and plots in India&apos;s most
                             coveted locations. Your journey to extraordinary living starts here.
                         </motion.p>
 
@@ -148,14 +148,7 @@ const Hero: React.FC = () => {
                             >
                                 View Listings
                             </motion.button>
-                            <motion.a
-                                href="#contact"
-                                className={styles.ctaSecondary}
-                                whileHover={{ y: -2 }}
-                                whileTap={{ scale: 0.98 }}
-                            >
-                                Contact Agent
-                            </motion.a>
+
                         </motion.div>
 
                         {/* Trust Text */}
@@ -170,7 +163,7 @@ const Hero: React.FC = () => {
                     </div>
                 </div>
             </motion.div>
-        </section>
+        </section >
     );
 };
 

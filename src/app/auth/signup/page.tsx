@@ -1,39 +1,60 @@
 'use client';
 
-import React, { useState } from 'react';
-import { SignUpPage } from '@/components/ui/sign-up';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useState, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import AuthLayout from "@/components/auth/AuthLayout";
+import Logo from "@/components/auth/Logo";
+import PasswordInput from "@/components/auth/PasswordInput";
+import PasswordRequirements from "@/components/auth/PasswordRequirements";
+import AuthFooter from "@/components/auth/AuthFooter";
+import { createClient } from "@/lib/supabase/client";
 
-export default function SignUpPageRoute() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
+export default function SignUpPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SignUpContent />
+        </Suspense>
+    );
+}
+
+function SignUpContent() {
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const supabase = createClient();
 
-    const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         setError(null);
-        setLoading(true);
 
-        const formData = new FormData(event.currentTarget);
-        const firstName = formData.get('firstName') as string;
-        const lastName = formData.get('lastName') as string;
-        const email = formData.get('email') as string;
-        const phone = formData.get('phone') as string;
-        const password = formData.get('password') as string;
-        const confirmPassword = formData.get('confirmPassword') as string;
-
-        // Validate passwords match
         if (password !== confirmPassword) {
-            setError('Passwords do not match');
-            setLoading(false);
+            setError("Passwords do not match.");
             return;
         }
 
+        // Validate password requirements
+        const hasMinLength = password.length >= 8;
+        const hasUppercase = /[A-Z]/.test(password);
+        const hasLowercase = /[a-z]/.test(password);
+        const hasDigit = /\d/.test(password);
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        if (!hasMinLength || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+            setError("Please ensure your password meets all requirements.");
+            return;
+        }
+
+        setLoading(true);
+
         try {
-            // Sign up with Supabase
             const { data, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
@@ -41,8 +62,8 @@ export default function SignUpPageRoute() {
                     data: {
                         first_name: firstName,
                         last_name: lastName,
-                        full_name: `${firstName} ${lastName}`,
-                        phone: phone || null,
+                        full_name: `${firstName} ${lastName}`.trim(),
+                        phone: phone,
                     },
                 },
             });
@@ -50,23 +71,24 @@ export default function SignUpPageRoute() {
             if (signUpError) throw signUpError;
 
             if (data.user) {
-                // Update profile in profiles table
+                // Upsert profile to ensure it exists with the correct data
                 const { error: profileError } = await supabase
                     .from('profiles')
-                    .update({
-                        full_name: `${firstName} ${lastName}`,
+                    .upsert({
+                        id: data.user.id,
+                        email: email,
                         first_name: firstName,
                         last_name: lastName,
+                        full_name: `${firstName} ${lastName}`.trim(),
                         phone: phone || null,
-                    })
-                    .eq('id', data.user.id);
+                        updated_at: new Date().toISOString(),
+                    }, { onConflict: 'id' });
 
                 if (profileError) {
-                    console.error('Error updating profile:', profileError);
+                    console.error("Error upserting profile:", profileError);
                 }
 
-                // Redirect to intended page or dashboard
-                const redirectTo = searchParams.get('redirect') || '/properties';
+                const redirectTo = searchParams?.get('redirect') || '/properties';
                 router.push(redirectTo);
             }
         } catch (err: any) {
@@ -77,46 +99,92 @@ export default function SignUpPageRoute() {
         }
     };
 
-    const handleGoogleSignUp = async () => {
-        try {
-            const redirectTo = searchParams.get('redirect') || '/properties';
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
-                },
-            });
-
-            if (error) throw error;
-        } catch (err: any) {
-            console.error('Google sign up error:', err);
-            setError(err.message || 'Failed to sign up with Google. Please try again.');
-        }
-    };
-
     return (
-        <>
-            <SignUpPage
-                heroImageSrc="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&auto=format&fit=crop&q=80"
-                onSignUp={handleSignUp}
-                onGoogleSignUp={handleGoogleSignUp}
-            />
+        <AuthLayout>
+            <Logo />
+
+            <h2 className="text-2xl font-semibold mb-6 text-foreground">Sign Up</h2>
+
             {error && (
-                <div 
-                    className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
-                    data-testid="signup-error-message"
-                >
+                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
                     {error}
                 </div>
             )}
-            {loading && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" data-testid="signup-loading">
-                    <div className="bg-white rounded-lg p-6">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1F524B] mx-auto"></div>
-                        <p className="mt-4 text-center">Creating your account...</p>
+
+            <form onSubmit={handleSubmit}>
+                <div className="flex gap-4 w-full" style={{ marginBottom: '12px' }}>
+                    <div className="w-1/2">
+                        <input
+                            type="text"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            placeholder="First name"
+                            className="auth-input"
+                            required
+                        />
+                    </div>
+                    <div className="w-1/2">
+                        <input
+                            type="text"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            placeholder="Last name"
+                            className="auth-input"
+                            required
+                        />
                     </div>
                 </div>
-            )}
-        </>
+
+                <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    className="auth-input"
+                    required
+                />
+
+                <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone Number"
+                    className="auth-input"
+                />
+
+                <PasswordInput
+                    value={password}
+                    onChange={setPassword}
+                    placeholder="Password"
+                />
+
+                <PasswordInput
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    placeholder="Confirm Password"
+                />
+
+                <button
+                    type="submit"
+                    className="auth-button"
+                    disabled={loading}
+                >
+                    {loading ? 'Signing Up...' : 'Sign Up'}
+                </button>
+            </form>
+
+            <div style={{ marginTop: '20px' }}>
+                <PasswordRequirements password={password} />
+            </div>
+
+            <p className="mt-5 text-foreground">
+                Already have an account?{" "}
+                <Link href="/auth/signin" className="font-medium hover:underline text-foreground">
+                    Log in
+                </Link>
+            </p>
+
+            <AuthFooter />
+        </AuthLayout>
     );
 }

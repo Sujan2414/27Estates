@@ -4,12 +4,15 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 import {
     LayoutDashboard,
     Building2,
+    FolderKanban,
     FileText,
     MessageSquare,
     Users,
+    Contact,
     LogOut,
     Menu,
     X
@@ -71,9 +74,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const navItems = [
         { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
         { name: 'Properties', href: '/admin/properties', icon: Building2 },
+        { name: 'Projects', href: '/admin/projects', icon: FolderKanban },
         { name: 'Blog Posts', href: '/admin/blogs', icon: FileText },
         { name: 'Inquiries', href: '/admin/inquiries', icon: MessageSquare },
         { name: 'Agents', href: '/admin/agents', icon: Users },
+        { name: 'Users', href: '/admin/users', icon: Users },
+        { name: 'Owners', href: '/admin/owners', icon: Contact },
     ]
 
     // Skip layout for login page - AFTER hooks
@@ -102,14 +108,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {/* Sidebar */}
             <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
                 <div className={styles.sidebarHeader}>
-                    <div className={styles.logoIcon}>27</div>
+                    <Image src="/sidebar-logo.png" alt="27 Estates" width={40} height={40} className={styles.sidebarLogo} />
                     <span className={styles.logoText}>Admin</span>
                 </div>
 
                 <nav className={styles.nav}>
                     {navItems.map((item) => {
                         const isActive = pathname === item.href ||
-                            (item.href !== '/admin' && pathname.startsWith(item.href))
+                            (item.href !== '/admin' && pathname?.startsWith(item.href))
                         return (
                             <Link
                                 key={item.name}

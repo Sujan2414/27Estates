@@ -88,7 +88,7 @@
     background-color: #1F524B;
     color: #ffffff;
     border: none;
-    border-radius: 0.75rem;
+    border-radius: 4px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -98,8 +98,6 @@
 
 .button:hover {
     background-color: #2d7a6e;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(31, 82, 75, 0.3);
 }
 
 .button:disabled {

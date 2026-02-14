@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import ImageUpload from '@/components/admin/ImageUpload'
 import styles from '../../../admin.module.css'
 import formStyles from '../../../properties/form.module.css'
 
@@ -39,7 +40,7 @@ export default function EditBlogPage() {
         const { data, error } = await supabase
             .from('blogs')
             .select('*')
-            .eq('id', params.id)
+            .eq('id', params?.id as string)
             .single()
 
         if (error || !data) {
@@ -94,7 +95,7 @@ export default function EditBlogPage() {
             const { error: updateError } = await supabase
                 .from('blogs')
                 .update(blogData)
-                .eq('id', params.id)
+                .eq('id', params?.id as string)
 
             if (updateError) throw updateError
 
@@ -210,25 +211,23 @@ export default function EditBlogPage() {
                             />
                         </div>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>Author Image URL</label>
-                            <input
-                                type="url"
-                                name="author_image"
+                            <label className={formStyles.label}>Author Image</label>
+                            <ImageUpload
                                 value={formData.author_image}
-                                onChange={handleChange}
-                                className={formStyles.input}
+                                onChange={(url) => setFormData(prev => ({ ...prev, author_image: url }))}
+                                folder="blogs/authors"
+                                label="Upload Author Photo"
                             />
                         </div>
                     </div>
 
                     <div className={formStyles.field}>
-                        <label className={formStyles.label}>Cover Image URL</label>
-                        <input
-                            type="url"
-                            name="cover_image"
+                        <label className={formStyles.label}>Cover Image</label>
+                        <ImageUpload
                             value={formData.cover_image}
-                            onChange={handleChange}
-                            className={formStyles.input}
+                            onChange={(url) => setFormData(prev => ({ ...prev, cover_image: url }))}
+                            folder="blogs/covers"
+                            label="Upload Cover Image"
                         />
                     </div>
                 </div>

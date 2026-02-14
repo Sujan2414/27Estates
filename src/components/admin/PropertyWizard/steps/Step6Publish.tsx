@@ -1,10 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowLeft, Save, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import styles from '../property-wizard.module.css'
+
+interface Agent {
+    id: string
+    name: string
+}
 
 interface StepProps {
     initialData: any
@@ -16,6 +22,7 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
     const router = useRouter()
     const supabase = createClient()
     const [submitting, setSubmitting] = useState(false)
+    const [agents, setAgents] = useState<Agent[]>([])
 
     const [formData, setFormData] = useState({
         refer_by: initialData.refer_by || '',
@@ -23,7 +30,7 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
         folder: initialData.folder || '',
         source: initialData.source || '',
         branch: initialData.branch || '',
-        assignee: initialData.assignee || '',
+        agent_id: initialData.agent_id || '',
         is_featured: initialData.is_featured || false,
         visibility: initialData.visibility || 'Public',
 
@@ -36,6 +43,14 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
 
     const [images, setImages] = useState<string[]>(initialData.images || [])
 
+    useEffect(() => {
+        async function fetchAgents() {
+            const { data } = await supabase.from('agents').select('id, name').order('name')
+            if (data) setAgents(data)
+        }
+        fetchAgents()
+    }, [])
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target
         if (type === 'checkbox') {
@@ -45,14 +60,7 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
         }
     }
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Mock image upload logic for UI demo
-        if (e.target.files && e.target.files.length > 0) {
-            // In real app, upload to storage here
-            const newImages = Array.from(e.target.files).map(file => URL.createObjectURL(file))
-            setImages(prev => [...prev, ...newImages])
-        }
-    }
+
 
     const handleFinalSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -130,9 +138,9 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                 status: 'Available',
                 is_featured: allData.is_featured,
 
-                // Agent/CRM
-                agent_id: allData.agent_id, // From Step 1 owner selection
-                // assignee: allData.assignee, // No column yet, using agent_id usually
+                // Owner & Agent
+                owner_id: allData.owner_id || null, // From Step 1 owner selection
+                agent_id: allData.agent_id || null, // Assigned agent from this step
                 branch: allData.branch,
                 refer_by: allData.refer_by,
                 channel: allData.channel,
@@ -181,20 +189,12 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
 
             <div className={styles.field}>
                 <label className={styles.label}>Images</label>
-                <div style={{ border: '2px dashed #e2e8f0', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
-                    <input type="file" multiple onChange={handleImageUpload} style={{ display: 'none' }} id="img-upload" />
-                    <label htmlFor="img-upload" style={{ cursor: 'pointer', color: '#0ea5e9', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                        <Upload size={32} />
-                        <span>Click to Upload Images</span>
-                    </label>
-                </div>
-                {images.length > 0 && (
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-                        {images.map((img, idx) => (
-                            <img key={idx} src={img} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
-                        ))}
-                    </div>
-                )}
+                <MultiImageUpload
+                    images={images}
+                    onChange={setImages}
+                    folder="properties"
+                    label="Upload Property Images"
+                />
             </div>
 
             <div className={styles.grid2}>
@@ -227,10 +227,12 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                     </select>
                 </div>
                 <div className={styles.field}>
-                    <label className={styles.label}>Assignee <span>*</span></label>
-                    <select name="assignee" value={formData.assignee} onChange={handleChange} className={styles.select} required>
-                        <option value="">Select Assignee</option>
-                        <option value="Me">Me</option>
+                    <label className={styles.label}>Assigned Agent <span>*</span></label>
+                    <select name="agent_id" value={formData.agent_id} onChange={handleChange} className={styles.select} required>
+                        <option value="">Select Agent</option>
+                        {agents.map(agent => (
+                            <option key={agent.id} value={agent.id}>{agent.name}</option>
+                        ))}
                     </select>
                 </div>
             </div>

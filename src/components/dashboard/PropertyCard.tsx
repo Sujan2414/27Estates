@@ -23,10 +23,12 @@ export interface PropertyProps {
 
 interface PropertyCardProps {
     property: PropertyProps;
-    isOwner?: boolean; // If true, show edit/delete instead of bookmark
+    isBookmarked?: boolean;
+    onToggleBookmark?: (id: string) => void;
+    isOwner?: boolean;
 }
 
-const PropertyCard = ({ property, isOwner = false }: PropertyCardProps) => {
+const PropertyCard = ({ property, isOwner = false, isBookmarked = false, onToggleBookmark }: PropertyCardProps) => {
     const [isHovered, setIsHovered] = useState(false);
 
     return (
@@ -69,10 +71,17 @@ const PropertyCard = ({ property, isOwner = false }: PropertyCardProps) => {
                             </button>
                         </>
                     ) : (
-                        <button className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm group-hover:scale-110">
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onToggleBookmark?.(property.id);
+                            }}
+                            className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm group-hover:scale-110"
+                        >
                             <Heart
                                 size={18}
-                                className="text-gray-600 hover:fill-red-500 hover:text-red-500 transition-colors"
+                                className={`transition-colors ${isBookmarked ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:fill-red-500 hover:text-red-500'}`}
                             />
                         </button>
                     )}

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import ImageUpload from '@/components/admin/ImageUpload'
 import styles from '../../../admin.module.css'
 import formStyles from '../../../properties/form.module.css'
 
@@ -33,7 +34,7 @@ export default function EditAgentPage() {
         const { data, error } = await supabase
             .from('agents')
             .select('*')
-            .eq('id', params.id)
+            .eq('id', params?.id as string)
             .single()
 
         if (error || !data) {
@@ -67,7 +68,7 @@ export default function EditAgentPage() {
             const { error: updateError } = await supabase
                 .from('agents')
                 .update(formData)
-                .eq('id', params.id)
+                .eq('id', params?.id as string)
 
             if (updateError) throw updateError
 
@@ -162,13 +163,12 @@ export default function EditAgentPage() {
                     </div>
 
                     <div className={formStyles.field}>
-                        <label className={formStyles.label}>Profile Image URL</label>
-                        <input
-                            type="url"
-                            name="image"
+                        <label className={formStyles.label}>Profile Image</label>
+                        <ImageUpload
                             value={formData.image}
-                            onChange={handleChange}
-                            className={formStyles.input}
+                            onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                            folder="agents"
+                            label="Upload Profile Photo"
                         />
                     </div>
 

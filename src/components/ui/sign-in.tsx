@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // --- HELPER COMPONENTS (ICONS) ---
 
@@ -85,13 +86,14 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 <div className="w-full max-w-md">
                     <div className="flex flex-col gap-6">
                         {/* Logo */}
-                        <Link href="/" className="mb-4">
-                            <span
-                                className="text-2xl font-semibold"
-                                style={{ color: 'var(--dark-turquoise, #1F524B)' }}
-                            >
-                                27 Estates
-                            </span>
+                        <Link href="/" className="mb-4 block relative w-48 h-12">
+                            <Image
+                                src="/Final_logo.png"
+                                alt="27 Estates"
+                                fill
+                                className="object-contain object-left"
+                                priority
+                            />
                         </Link>
 
                         <h1
@@ -111,13 +113,13 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                     className="text-sm font-medium mb-2 block"
                                     style={{ color: '#666666' }}
                                 >
-                                    Email Address
+                                    Email or Phone
                                 </label>
                                 <GlassInputWrapper>
                                     <input
-                                        name="email"
-                                        type="email"
-                                        placeholder="Enter your email address"
+                                        name="emailOrPhone"
+                                        type="text"
+                                        placeholder="Enter your email or phone number"
                                         className="w-full bg-transparent text-sm p-4 rounded-lg focus:outline-none"
                                         style={{ color: '#1a1a1a' }}
                                         data-testid="signin-email-input"

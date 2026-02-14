@@ -2,30 +2,16 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useTransform, motion, useScroll } from 'framer-motion';
-import { MapPin } from 'lucide-react';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { Database } from '@/lib/supabase/database.types';
-
-type Project = Database['public']['Tables']['projects']['Row'];
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface ProjectCardData {
     id: string;
     title: string;
-    location: string;
-    price: string;
-    status: string;
     image: string;
+    linkTo: string;
 }
-
-// Real estate project ad style images
-const projectImages = [
-    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&auto=format&fit=crop&q=80',
-];
 
 // CTA Button styles matching ContactCTA
 const ctaButtonStyles: React.CSSProperties = {
@@ -54,6 +40,7 @@ interface CardProps {
 
 const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) => {
     const cardRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     const { scrollYProgress } = useScroll({
         target: cardRef,
@@ -66,14 +53,16 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
     return (
         <div
             ref={cardRef}
-            className="h-screen flex items-center justify-center sticky top-0"
+            className="h-[70vh] md:h-screen flex items-center justify-center sticky top-0"
         >
             <motion.div
                 style={{
                     scale,
                     top: `calc(-5vh + ${i * 25}px)`,
+                    cursor: 'pointer',
                 }}
-                className="relative -top-[25%] w-[90%] max-w-[1200px] h-[70vh] rounded-xl overflow-hidden shadow-2xl origin-top"
+                className="relative -top-[25%] w-[90%] max-w-[1200px] h-[50vh] md:h-[70vh] rounded-xl overflow-hidden shadow-2xl origin-top"
+                onClick={() => router.push(project.linkTo)}
             >
                 {/* Full Background Image */}
                 <motion.div
@@ -86,56 +75,6 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
                         className="w-full h-full object-cover"
                     />
                 </motion.div>
-
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-
-                {/* Status Badge - Top Left */}
-                <div className="absolute top-6 left-6 z-10">
-                    <span
-                        className="px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full"
-                        style={{
-                            backgroundColor: 'var(--gold, #BFA270)',
-                            color: '#1a1a1a'
-                        }}
-                    >
-                        {project.status}
-                    </span>
-                </div>
-
-                {/* Content Overlay - Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 z-10">
-                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                        {/* Text Content */}
-                        <div>
-                            <h3
-                                className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white mb-3"
-                                style={{ fontFamily: 'var(--font-heading)' }}
-                            >
-                                {project.title}
-                            </h3>
-                            <div className="flex items-center gap-2 text-white/80">
-                                <MapPin className="w-4 h-4" />
-                                <span className="text-sm md:text-base">{project.location}</span>
-                                <span className="mx-2 text-white/40">|</span>
-                                <span className="text-sm md:text-base" style={{ color: 'var(--gold, #BFA270)' }}>
-                                    {project.price}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* CTA Button - matching ContactCTA style */}
-                        <motion.div whileHover={{ y: -2 }}>
-                            <Link
-                                href={`/projects/${project.id}`}
-                                style={ctaButtonStyles}
-                                className="hover:bg-[#2d7a6e] hover:border-[#2d7a6e]"
-                            >
-                                View Project
-                            </Link>
-                        </motion.div>
-                    </div>
-                </div>
             </motion.div>
         </div>
     );
@@ -149,6 +88,7 @@ function StackingCardsContent({
     projects: ProjectCardData[];
     showHeader: boolean;
 }) {
+    const { showAuthModal } = useAuth();
     const containerRef = useRef<HTMLDivElement>(null);
 
     const { scrollYProgress } = useScroll({
@@ -160,7 +100,7 @@ function StackingCardsContent({
         <section ref={containerRef} style={{ backgroundColor: 'var(--light-grey, #F6F6F5)' }}>
             {/* Header */}
             {showHeader && (
-                <div className="h-[50vh] flex flex-col items-center justify-center text-center px-6">
+                <div className="h-[30vh] md:h-[50vh] flex flex-col items-center justify-center text-center px-6">
                     <motion.p
                         className="text-sm font-medium uppercase tracking-[0.2em] mb-3"
                         style={{ color: 'var(--gold, #BFA270)' }}
@@ -174,7 +114,7 @@ function StackingCardsContent({
                         className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-4"
                         style={{
                             fontFamily: 'var(--font-heading)',
-                            color: '#1a1a1a'
+                            color: '#1F524B'
                         }}
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -216,13 +156,13 @@ function StackingCardsContent({
             {/* View All Button */}
             <div className="h-40 flex items-center justify-center">
                 <motion.div whileHover={{ y: -2 }}>
-                    <Link
-                        href="/projects"
+                    <button
+                        onClick={() => showAuthModal('/properties')}
                         style={ctaButtonStyles}
-                        className="hover:bg-[#2d7a6e] hover:border-[#2d7a6e]"
+                        className="hover:bg-[#2d7a6e] hover:border-[#2d7a6e] cursor-pointer"
                     >
                         View All Projects
-                    </Link>
+                    </button>
                 </motion.div>
             </div>
         </section>
@@ -232,6 +172,28 @@ function StackingCardsContent({
 interface StackingCardsProps {
     showHeader?: boolean;
 }
+
+// Fallback data in case DB is empty
+const fallbackProjects: ProjectCardData[] = [
+    {
+        id: '1',
+        title: 'Serenity Heights',
+        image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&auto=format&fit=crop&q=80',
+        linkTo: '/projects',
+    },
+    {
+        id: '2',
+        title: 'Azure Villas',
+        image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&auto=format&fit=crop&q=80',
+        linkTo: '/projects',
+    },
+    {
+        id: '3',
+        title: 'The Grand Arch',
+        image: 'https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=1200&auto=format&fit=crop&q=80',
+        linkTo: '/projects',
+    }
+];
 
 export function StackingCards({ showHeader = true }: StackingCardsProps) {
     const [projects, setProjects] = useState<ProjectCardData[]>([]);
@@ -244,22 +206,48 @@ export function StackingCards({ showHeader = true }: StackingCardsProps) {
 
     useEffect(() => {
         const fetchProjects = async () => {
-            const { data } = await supabase
-                .from('projects')
-                .select('*')
-                .eq('is_featured', true)
-                .limit(5);
+            try {
+                // First try: projects with ad cards enabled for homepage
+                const { data: adProjects } = await supabase
+                    .from('projects')
+                    .select('id, project_name, ad_card_image')
+                    .eq('show_ad_on_home', true)
+                    .not('ad_card_image', 'is', null)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
 
-            if (data && data.length > 0) {
-                const formattedProjects: ProjectCardData[] = data.map((p, index) => ({
-                    id: p.id,
-                    title: p.project_name,
-                    location: p.location || p.city || 'Bangalore',
-                    price: p.min_price || 'Price on Request',
-                    status: p.status || 'New Launch',
-                    image: p.images?.[0] || projectImages[index % projectImages.length],
-                }));
-                setProjects(formattedProjects);
+                if (adProjects && adProjects.length > 0) {
+                    const formatted: ProjectCardData[] = adProjects.map(p => ({
+                        id: p.id,
+                        title: p.project_name,
+                        image: p.ad_card_image!,
+                        linkTo: `/projects/${p.id}`,
+                    }));
+                    setProjects(formatted);
+                    return;
+                }
+
+                // Fallback: featured projects
+                const { data: featuredProjects } = await supabase
+                    .from('projects')
+                    .select('id, project_name, images, location, city')
+                    .eq('is_featured', true)
+                    .limit(5);
+
+                if (featuredProjects && featuredProjects.length > 0) {
+                    const formatted: ProjectCardData[] = featuredProjects.map((p, index) => ({
+                        id: p.id,
+                        title: p.project_name,
+                        image: p.images?.[0] || fallbackProjects[index % fallbackProjects.length].image,
+                        linkTo: `/projects/${p.id}`,
+                    }));
+                    setProjects(formatted);
+                } else {
+                    setProjects(fallbackProjects);
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                setProjects(fallbackProjects);
             }
         };
 
@@ -269,7 +257,7 @@ export function StackingCards({ showHeader = true }: StackingCardsProps) {
     // Don't render until mounted to avoid hydration issues
     if (!mounted || projects.length === 0) {
         return (
-            <div className="h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--light-grey, #F6F6F5)' }}>
+            <div className="h-[70vh] md:h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--light-grey, #F6F6F5)' }}>
                 <div className="text-gray-400">Loading projects...</div>
             </div>
         );

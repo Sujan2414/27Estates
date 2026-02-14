@@ -1,6 +1,6 @@
 .section {
     padding: 8rem 0;
-    background: #FEFDFB;
+    background: var(--background);
     position: relative;
     overflow: hidden;
 }
@@ -64,7 +64,7 @@
     padding: 0.75rem 1.5rem;
     background: white;
     border: 2px solid #E5E4E2;
-    border-radius: 50px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     font-family: var(--font-body);
@@ -72,14 +72,38 @@
 
 .stepNavBtn:hover {
     border-color: #BFA270;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(191, 162, 112, 0.15);
+    animation: hwwTextWave 0.6s ease-in-out;
 }
 
 .stepNavBtn.active {
     background: #1F524B;
     border-color: #1F524B;
-    box-shadow: 0 4px 16px rgba(31, 82, 75, 0.2);
+}
+
+@keyframes hwwTextWave {
+    0% {
+        transform: translateY(0);
+    }
+
+    20% {
+        transform: translateY(-3px);
+    }
+
+    40% {
+        transform: translateY(1px);
+    }
+
+    60% {
+        transform: translateY(-2px);
+    }
+
+    80% {
+        transform: translateY(0.5px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
 }
 
 .stepNavNumber {
@@ -199,5 +223,24 @@
 
     .stepNumber {
         font-size: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .section {
+        padding: 3rem 0;
+    }
+
+    .imageContainer {
+        height: 280px;
+    }
+
+    .stepNavBtn {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+    }
+
+    .title {
+        font-size: 1.75rem;
     }
 }

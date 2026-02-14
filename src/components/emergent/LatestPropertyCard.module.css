@@ -7,6 +7,8 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
+    min-width: 0;
 }
 
 /* Image Section with rounded corners and hover zoom */
@@ -91,6 +93,8 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .title {
@@ -202,4 +206,23 @@
     margin: auto 0 0 0;
     /* Push to bottom */
     padding-top: 0.5rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .title {
+        font-size: 1rem;
+    }
+
+    .price {
+        font-size: 1.125rem;
+    }
+
+    .detailsRow {
+        gap: 0.5rem;
+    }
+
+    .detail {
+        font-size: 0.75rem;
+    }
 }

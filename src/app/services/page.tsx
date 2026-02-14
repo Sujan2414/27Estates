@@ -8,6 +8,7 @@ import { motion, Variants } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
 
 import { services } from "@/lib/services-data";
+import PageHero from "@/components/PageHero";
 
 // Map shared data to component props
 const servicesData = services.map(service => ({
@@ -39,8 +40,8 @@ const Card = ({ heading, description, imgSrc, href }: CardProps) => {
             <div
                 style={{
                     position: 'relative',
-                    height: '420px',
-                    borderRadius: '12px',
+                    minHeight: '280px',
+                    height: 'clamp(280px, 50vw, 420px)',
                     overflow: 'hidden',
                     backgroundColor: '#1a1a1a',
                     isolation: 'isolate',
@@ -102,7 +103,7 @@ const Card = ({ heading, description, imgSrc, href }: CardProps) => {
 
                     <div>
                         <h3 style={{
-                            fontSize: '2.25rem',
+                            fontSize: '1.75rem',
                             fontWeight: '700',
                             marginBottom: '0.5rem',
                             color: '#ffffff',
@@ -161,61 +162,102 @@ const AnimatedLetter = ({ letter, isHovered }: AnimatedLetterProps) => {
 export default function ServicesPage() {
     return (
         <main className="min-h-screen bg-light-grey">
-            <Navigation alwaysScrolled={true} />
+            <Navigation alwaysScrolled={false} />
 
             {/* Hero Section */}
-            <div className="relative pt-40 pb-24 px-4 min-h-[50vh] flex items-center justify-center overflow-hidden">
-                <div
-                    className="absolute inset-0 z-0 bg-[#F6F6F5]"
-                >
+            <PageHero
+                title="Our Services"
+                backgroundImage="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070"
+            />
+
+            {/* Content scrolls over the sticky hero with rounded top corners */}
+            <div style={{
+                position: 'relative',
+                zIndex: 10,
+                borderRadius: '24px 24px 0 0',
+                overflow: 'hidden',
+                marginTop: '-24px',
+                backgroundColor: '#ffffff',
+            }}>
+                <div className="container mx-auto px-4" style={{ paddingTop: '5rem', paddingBottom: '5rem' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: '-100px' }}
+                            transition={{ duration: 0.6 }}
+                            style={{
+                                fontFamily: 'var(--font-body)',
+                                fontSize: '0.75rem',
+                                fontWeight: 500,
+                                letterSpacing: '0.2em',
+                                textTransform: 'uppercase',
+                                color: '#BFA270',
+                                marginBottom: '1rem',
+                            }}
+                        >
+                            Our Services
+                        </motion.p>
+                        <motion.h2
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: '-100px' }}
+                            transition={{ delay: 0.1, duration: 0.7 }}
+                            style={{
+                                fontFamily: 'var(--font-heading)',
+                                fontSize: 'clamp(2rem, 4vw, 3.5rem)',
+                                fontWeight: 500,
+                                letterSpacing: '-0.02em',
+                                color: '#1F524B',
+                                marginBottom: '1.25rem',
+                                lineHeight: 1.2,
+                            }}
+                        >
+                            Comprehensive Solutions
+                        </motion.h2>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: '-100px' }}
+                            transition={{ delay: 0.2, duration: 0.6 }}
+                            style={{
+                                fontFamily: 'var(--font-body)',
+                                fontSize: '1.0625rem',
+                                lineHeight: 1.7,
+                                color: '#0E110F',
+                                opacity: 0.8,
+                                maxWidth: '500px',
+                                margin: '0 auto',
+                            }}
+                        >
+                            Expert guidance across all sectors of real estate, from corporate offices to luxury homes. We provide comprehensive solutions tailored to your unique needs.
+                        </motion.p>
+                    </div>
+
                     <div
-                        className="absolute inset-0 opacity-20"
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8"
                         style={{
-                            backgroundImage: 'url(https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070)',
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
+                            maxWidth: '1800px',
+                            margin: '0 auto',
+                            padding: '0 1rem',
+                            width: '100%',
+                            boxSizing: 'border-box',
                         }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-b from-[#F6F6F5]/90 via-[#F6F6F5]/80 to-[#F6F6F5]" />
+                    >
+                        {servicesData.map((service, index) => (
+                            <Card
+                                key={index}
+                                heading={service.heading}
+                                description={service.description}
+                                imgSrc={service.imgSrc}
+                                href={service.href}
+                            />
+                        ))}
+                    </div>
                 </div>
 
-                <div className="relative z-10 container mx-auto text-center">
-                    <h1 className="text-5xl md:text-6xl font-heading font-medium mb-6 tracking-tight text-[#1F524B]">
-                        Our Premium Services
-                    </h1>
-                    <p className="max-w-2xl mx-auto text-lg md:text-xl font-light text-[#0E110F] opacity-80">
-                        Expert guidance across all sectors of real estate, from corporate offices to luxury homes.
-                    </p>
-                </div>
+                <Footer />
             </div>
-
-            {/* Services Cards */}
-            <div className="py-12 bg-[#f7f7f6]">
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: '1.5rem',
-                        maxWidth: '1800px',
-                        margin: '0 auto',
-                        padding: '0 1.5rem',
-                        width: '100%',
-                        boxSizing: 'border-box'
-                    }}
-                >
-                    {servicesData.map((service, index) => (
-                        <Card
-                            key={index}
-                            heading={service.heading}
-                            description={service.description}
-                            imgSrc={service.imgSrc}
-                            href={service.href}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            <Footer />
         </main>
     );
 }

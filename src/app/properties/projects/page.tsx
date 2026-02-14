@@ -1,10 +1,20 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search as SearchIcon, Map, List, Building2, Calendar, ChevronDown, Search } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Search as SearchIcon, Map, List, Building2, Calendar, ChevronDown, Search, Home, Building, Factory, Briefcase, TreePine, Rows3 } from "lucide-react";
 import ProjectCard from "@/components/emergent/ProjectCard";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/components/emergent/Search.module.css";
+
+const PropertyMap = dynamic(() => import("@/components/emergent/PropertyMap"), {
+    ssr: false,
+    loading: () => (
+        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f5f5f5", borderRadius: "1rem" }}>
+            <p style={{ color: "#737373" }}>Loading map...</p>
+        </div>
+    ),
+});
 
 // Project type
 interface Project {
@@ -22,6 +32,8 @@ interface Project {
     developer_name: string | null;
     is_rera_approved: boolean;
     is_featured: boolean;
+    latitude: number | null;
+    longitude: number | null;
     created_at: string;
     [key: string]: any;
 }
@@ -49,6 +61,18 @@ const priceOptions = [
     { value: "30000000", label: "3 Cr" },
     { value: "50000000", label: "5 Cr" },
     { value: "100000000", label: "10 Cr" },
+];
+
+// Project category options
+const categoryOptions = [
+    { id: "Apartment", label: "Apartment", icon: Home },
+    { id: "Villa", label: "Villas", icon: Home },
+    { id: "Plot", label: "Plots", icon: Map },
+    { id: "Commercial", label: "Commercial", icon: Factory },
+    { id: "Duplex", label: "Duplex", icon: Building },
+    { id: "Penthouse", label: "Penthouse", icon: Building2 },
+    { id: "Farmhouse", label: "Farmhouse", icon: TreePine },
+    { id: "Row Villa", label: "Row Villa", icon: Rows3 },
 ];
 
 // Possession year options
@@ -85,6 +109,7 @@ const ProjectsSearchPage = () => {
     const [selectedDeveloper, setSelectedDeveloper] = useState<string | null>(null);
     const [reraApprovedOnly, setReraApprovedOnly] = useState(false);
     const [featuredOnly, setFeaturedOnly] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState("newest");
 
     // Area options based on selected city
@@ -106,6 +131,7 @@ const ProjectsSearchPage = () => {
 
     // Collapsible sections
     const [openSections, setOpenSections] = useState({
+        category: true,
         status: true,
         location: true,
         area_filter: true,
@@ -161,6 +187,10 @@ const ProjectsSearchPage = () => {
                 p.description?.toLowerCase().includes(query) ||
                 p.developer_name?.toLowerCase().includes(query)
             );
+        }
+
+        if (selectedCategory) {
+            result = result.filter(p => p.category === selectedCategory);
         }
 
         if (selectedStatus) {
@@ -234,13 +264,14 @@ const ProjectsSearchPage = () => {
 
         setFilteredProjects(result);
     }, [
-        searchQuery, selectedStatus, selectedCity, selectedArea,
+        searchQuery, selectedCategory, selectedStatus, selectedCity, selectedArea,
         minPrice, maxPrice, selectedBhk, selectedPossession,
         selectedDeveloper, reraApprovedOnly, featuredOnly, sortBy, projects
     ]);
 
     const handleReset = () => {
         setSearchQuery("");
+        setSelectedCategory(null);
         setSelectedStatus(null);
         setSelectedCity(null);
         setSelectedArea(null);
@@ -316,6 +347,31 @@ const ProjectsSearchPage = () => {
                             >
                                 <span className={`${styles.toggleIndicator} ${reraApprovedOnly ? styles.toggleIndicatorActive : ''}`} />
                             </button>
+                        </div>
+                    </div>
+
+                    {/* Project Type */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('category')}>
+                            <label className={styles.filterLabel}>Project Type</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.category ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.category ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <div className={styles.categoryGrid}>
+                                {categoryOptions.map((cat) => {
+                                    const Icon = cat.icon;
+                                    return (
+                                        <button
+                                            key={cat.id}
+                                            className={`${styles.categoryButton} ${selectedCategory === cat.id ? styles.categoryButtonActive : ''}`}
+                                            onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
+                                        >
+                                            <Icon size={18} strokeWidth={1.5} />
+                                            <span>{cat.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
 
@@ -524,9 +580,23 @@ const ProjectsSearchPage = () => {
 
                 <div className={styles.listingsScrollArea} data-lenis-prevent>
                     {viewMode === 'map' ? (
-                        <div className={styles.mapContainer} style={{ height: 'calc(100vh - 12rem)', backgroundColor: '#e5e5e5', borderRadius: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <Map size={48} color="#a3a3a3" strokeWidth={1} />
-                            <p style={{ marginTop: '1rem', color: '#737373', fontWeight: 500 }}>Map View Coming Soon</p>
+                        <div className={styles.mapContainer}>
+                            <PropertyMap
+                                properties={[]}
+                                projects={filteredProjects.map(p => ({
+                                    id: p.id,
+                                    title: p.project_name,
+                                    project_name: p.project_name,
+                                    images: p.images || [],
+                                    location: p.location || '',
+                                    latitude: p.latitude,
+                                    longitude: p.longitude,
+                                    min_price: p.min_price,
+                                    max_price: p.max_price,
+                                    type: "project" as const,
+                                    category: p.category || undefined,
+                                }))}
+                            />
                         </div>
                     ) : (
                         filteredProjects.length > 0 ? (
@@ -542,6 +612,8 @@ const ProjectsSearchPage = () => {
                                         bhk_options={project.bhk_options}
                                         image={project.images?.[0] || '/placeholder-project.jpg'}
                                         status={project.status}
+                                        developer_name={project.developer_name}
+                                        is_rera_approved={project.is_rera_approved}
                                     />
                                 ))}
                             </div>

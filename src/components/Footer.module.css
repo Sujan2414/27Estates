@@ -3,11 +3,12 @@
     background: var(--light-grey);
     padding: 4rem 0 2rem;
     border-top: 1px solid rgba(43, 54, 66, 0.06);
+    overflow: hidden;
 }
 
-
-
 .container {
+    position: relative;
+    z-index: 1;
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 2rem;
@@ -143,4 +144,20 @@
     font-size: 0.75rem;
     font-style: italic;
     color: var(--gold);
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .linksGrid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .container {
+        padding: 0 1.25rem;
+    }
+
+    .footer {
+        padding: 3rem 0 1.5rem;
+    }
 }

@@ -22,11 +22,17 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
         autoSlideTimeout: NodeJS.Timeout | null;
         renderer: any;
         isActive: boolean;
+        effectId: number;
+        handleVisibility: (() => void) | null;
+        handleResize: (() => void) | null;
     }>({
         progressInterval: null,
         autoSlideTimeout: null,
         renderer: null,
         isActive: true,
+        effectId: 0,
+        handleVisibility: null,
+        handleResize: null,
     });
 
     useEffect(() => {
@@ -34,6 +40,12 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
 
         // Mark this instance as active
         cleanupRef.current.isActive = true;
+
+        // Effect counter: prevents React 18 strict mode double-mount race condition.
+        // Each effect run gets a unique ID. Stale runs (from the first mount in strict mode)
+        // will see a mismatched effectId and abort their async chains.
+        const myEffectId = ++cleanupRef.current.effectId;
+        const isStale = () => !cleanupRef.current.isActive || cleanupRef.current.effectId !== myEffectId;
 
         const loadScripts = async () => {
             const loadScript = (src: string, globalName: string) => new Promise<void>((res, rej) => {
@@ -60,10 +72,20 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                 return;
             }
 
+            // Ensure DOM is fully painted before initializing WebGL
+            await new Promise<void>(resolve => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => resolve());
+                });
+            });
+
             // Only continue if still active
-            if (!cleanupRef.current.isActive) return;
+            if (isStale()) return;
             initApplication();
         };
+
+        // Remove 'loaded' class on fresh mount so opacity transition replays
+        if (containerRef.current) containerRef.current.classList.remove("loaded");
 
         const initApplication = async () => {
             const SLIDER_CONFIG: any = {
@@ -162,15 +184,15 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
             };
 
             const updateContent = (idx: number) => {
-                if (!cleanupRef.current.isActive) return;
+                if (isStale()) return;
 
                 const post = posts[idx];
                 currentSlugRef.current = post.slug;
 
-                const titleEl = document.getElementById('insightsTitle');
-                const descEl = document.getElementById('insightsDesc');
-                const categoryEl = document.getElementById('insightsCategory');
-                const readBtn = document.getElementById('insightsReadBtn') as HTMLAnchorElement;
+                const titleEl = containerRef.current?.querySelector('#insightsTitle') as HTMLElement | null;
+                const descEl = containerRef.current?.querySelector('#insightsDesc') as HTMLElement | null;
+                const categoryEl = containerRef.current?.querySelector('#insightsCategory') as HTMLElement | null;
+                const readBtn = containerRef.current?.querySelector('#insightsReadBtn') as HTMLAnchorElement | null;
 
                 if (titleEl && descEl && categoryEl) {
                     gsap.to(titleEl.children, { y: -20, opacity: 0, duration: 0.5, stagger: 0.02, ease: "power2.in" });
@@ -178,7 +200,7 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                     gsap.to(categoryEl, { y: -10, opacity: 0, duration: 0.3, ease: "power2.in" });
 
                     setTimeout(() => {
-                        if (!cleanupRef.current.isActive) return;
+                        if (isStale()) return;
 
                         titleEl.innerHTML = splitText(post.title);
                         descEl.textContent = post.excerpt;
@@ -217,20 +239,20 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
 
             // Reset ALL progress bars to 0
             const resetAllProgress = () => {
-                document.querySelectorAll(".insights-slide-progress-fill").forEach((el) => {
+                containerRef.current?.querySelectorAll(".insights-slide-progress-fill").forEach((el) => {
                     (el as HTMLElement).style.width = "0%";
                     (el as HTMLElement).style.opacity = "0";
                 });
             };
 
             const updateNavigationState = (idx: number) => {
-                document.querySelectorAll(".insights-slide-nav-item").forEach((el, i) => {
+                containerRef.current?.querySelectorAll(".insights-slide-nav-item").forEach((el, i) => {
                     el.classList.toggle("active", i === idx);
                 });
             };
 
             const updateSlideProgress = (idx: number, prog: number) => {
-                const items = document.querySelectorAll(".insights-slide-nav-item");
+                const items = containerRef.current?.querySelectorAll(".insights-slide-nav-item") || [];
                 // Only update the current slide's progress, reset others
                 items.forEach((item, i) => {
                     const el = item.querySelector(".insights-slide-progress-fill") as HTMLElement;
@@ -247,14 +269,14 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
             };
 
             const updateCounter = (idx: number) => {
-                const sn = document.getElementById("insightsSlideNumber");
+                const sn = containerRef.current?.querySelector("#insightsSlideNumber") as HTMLElement | null;
                 if (sn) sn.textContent = String(idx + 1).padStart(2, "0");
-                const st = document.getElementById("insightsSlideTotal");
+                const st = containerRef.current?.querySelector("#insightsSlideTotal") as HTMLElement | null;
                 if (st) st.textContent = String(posts.length).padStart(2, "0");
             };
 
             const navigateToSlide = (targetIndex: number) => {
-                if (!cleanupRef.current.isActive) return;
+                if (isStale()) return;
                 if (isTransitioning || targetIndex === currentSlideIndex) return;
 
                 stopAllTimers();
@@ -282,7 +304,7 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                         duration: TRANSITION_DURATION(),
                         ease: "power2.inOut",
                         onComplete: () => {
-                            if (!cleanupRef.current.isActive) return;
+                            if (isStale()) return;
 
                             shaderMaterial.uniforms.uProgress.value = 0;
                             shaderMaterial.uniforms.uTexture1.value = targetTexture;
@@ -295,13 +317,13 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
             };
 
             const handleSlideChange = () => {
-                if (!cleanupRef.current.isActive) return;
+                if (isStale()) return;
                 if (isTransitioning || !texturesLoaded || !sliderEnabled) return;
                 navigateToSlide((currentSlideIndex + 1) % posts.length);
             };
 
             const startAutoSlideTimer = () => {
-                if (!cleanupRef.current.isActive) return;
+                if (isStale()) return;
                 if (!texturesLoaded || !sliderEnabled) return;
 
                 stopAllTimers();
@@ -311,7 +333,7 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                 const increment = (100 / SLIDE_DURATION()) * PROGRESS_UPDATE_INTERVAL;
 
                 cleanupRef.current.progressInterval = setInterval(() => {
-                    if (!cleanupRef.current.isActive || !sliderEnabled) {
+                    if (isStale() || !sliderEnabled) {
                         stopAllTimers();
                         return;
                     }
@@ -326,7 +348,7 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
             };
 
             const createSlidesNavigation = () => {
-                const nav = document.getElementById("insightsSlidesNav");
+                const nav = containerRef.current?.querySelector("#insightsSlidesNav") as HTMLElement | null;
                 if (!nav) return;
                 nav.innerHTML = "";
                 posts.forEach((post, i) => {
@@ -354,9 +376,9 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
             });
 
             const initRenderer = async () => {
-                if (!cleanupRef.current.isActive) return;
+                if (isStale()) return;
 
-                const canvas = document.querySelector(".insights-webgl-canvas") as HTMLCanvasElement;
+                const canvas = containerRef.current?.querySelector(".insights-webgl-canvas") as HTMLCanvasElement;
                 if (!canvas) return;
 
                 scene = new THREE.Scene();
@@ -380,7 +402,7 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                 scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), shaderMaterial));
 
                 for (const post of posts) {
-                    if (!cleanupRef.current.isActive) return;
+                    if (isStale()) return;
                     try {
                         slideTextures.push(await loadImageTexture(post.heroImage));
                     } catch {
@@ -388,7 +410,7 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                     }
                 }
 
-                if (!cleanupRef.current.isActive) return;
+                if (isStale()) return;
 
                 // Both textures start with the SAME first image
                 if (slideTextures.length >= 1) {
@@ -401,11 +423,21 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                     texturesLoaded = true;
                     sliderEnabled = slideTextures.length >= 2;
                     updateShaderUniforms();
-                    document.querySelector(".insights-slider-wrapper")?.classList.add("loaded");
+
+                    // Force renderer to recalculate size
+                    if (renderer) {
+                        const w = window.innerWidth;
+                        const h = window.innerHeight;
+                        renderer.setSize(w, h);
+                        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                        shaderMaterial.uniforms.uResolution.value.set(w, h);
+                    }
+
+                    containerRef.current?.classList.add("loaded");
 
                     if (sliderEnabled) {
                         cleanupRef.current.autoSlideTimeout = setTimeout(() => {
-                            if (cleanupRef.current.isActive) {
+                            if (!isStale()) {
                                 startAutoSlideTimer();
                             }
                         }, 2000);
@@ -413,7 +445,7 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                 }
 
                 const render = () => {
-                    if (!cleanupRef.current.isActive) return;
+                    if (isStale()) return;
                     requestAnimationFrame(render);
                     if (renderer) renderer.render(scene, camera);
                 };
@@ -423,17 +455,28 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
             createSlidesNavigation();
             updateCounter(0);
 
+            // Kill any existing GSAP tweens on these elements (critical for client-side nav)
+            const tEl = containerRef.current?.querySelector('#insightsTitle') as HTMLElement | null;
+            const dEl = containerRef.current?.querySelector('#insightsDesc') as HTMLElement | null;
+            const cEl = containerRef.current?.querySelector('#insightsCategory') as HTMLElement | null;
+
+            if (tEl) gsap.killTweensOf(tEl.children);
+            if (dEl) gsap.killTweensOf(dEl);
+            if (cEl) gsap.killTweensOf(cEl);
+
             // Init text content
-            const tEl = document.getElementById('insightsTitle');
-            const dEl = document.getElementById('insightsDesc');
-            const cEl = document.getElementById('insightsCategory');
             if (tEl && dEl && cEl && posts[0]) {
                 tEl.innerHTML = splitText(posts[0].title);
                 dEl.textContent = posts[0].excerpt;
                 cEl.textContent = posts[0].category;
-                gsap.fromTo(cEl, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out", delay: 0.3 });
+
+                // Force reset state before animating
+                gsap.set(cEl, { y: 10, opacity: 0 });
+                gsap.set(dEl, { y: 20, opacity: 0 });
+
+                gsap.to(cEl, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out", delay: 0.3 });
                 gsap.fromTo(tEl.children, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1, stagger: 0.03, ease: "power3.out", delay: 0.5 });
-                gsap.fromTo(dEl, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.8 });
+                gsap.to(dEl, { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.8 });
             }
 
             initRenderer();
@@ -441,7 +484,7 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
             const handleVisibility = () => {
                 if (document.hidden) {
                     stopAllTimers();
-                } else if (!isTransitioning && cleanupRef.current.isActive) {
+                } else if (!isTransitioning && !isStale()) {
                     startAutoSlideTimer();
                 }
             };
@@ -452,6 +495,10 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                     shaderMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
                 }
             };
+
+            // Store refs for cleanup
+            cleanupRef.current.handleVisibility = handleVisibility;
+            cleanupRef.current.handleResize = handleResize;
 
             document.addEventListener("visibilitychange", handleVisibility);
             window.addEventListener("resize", handleResize);
@@ -472,8 +519,32 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                 cleanupRef.current.autoSlideTimeout = null;
             }
             if (cleanupRef.current.renderer) {
+                // Force-release the WebGL context so new one can be created on re-navigation
+                try {
+                    cleanupRef.current.renderer.forceContextLoss();
+                } catch (e) { /* ignore */ }
                 cleanupRef.current.renderer.dispose();
                 cleanupRef.current.renderer = null;
+            }
+
+            // Remove event listeners
+            if (cleanupRef.current.handleVisibility) {
+                document.removeEventListener("visibilitychange", cleanupRef.current.handleVisibility);
+                cleanupRef.current.handleVisibility = null;
+            }
+            if (cleanupRef.current.handleResize) {
+                window.removeEventListener("resize", cleanupRef.current.handleResize);
+                cleanupRef.current.handleResize = null;
+            }
+
+            // Kill any remaining GSAP tweens
+            if (typeof gsap !== 'undefined') {
+                const tEl = containerRef.current?.querySelector('#insightsTitle') as HTMLElement | null;
+                const dEl = containerRef.current?.querySelector('#insightsDesc') as HTMLElement | null;
+                const cEl = containerRef.current?.querySelector('#insightsCategory') as HTMLElement | null;
+                if (tEl?.children) gsap.killTweensOf(tEl.children);
+                if (dEl) gsap.killTweensOf(dEl);
+                if (cEl) gsap.killTweensOf(cEl);
             }
         };
     }, [posts]);

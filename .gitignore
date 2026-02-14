@@ -67,3 +67,5 @@ stdout.txt
 
 # Supabase local (optional - uncomment if you don't want to track)
 # /supabase/
+
+.vercel

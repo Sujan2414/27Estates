@@ -1,5 +1,7 @@
 .hero {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 0;
     height: 100vh;
     min-height: 700px;
     display: flex;
@@ -64,12 +66,15 @@
 }
 
 .textContent {
-    max-width: 800px;
+    max-width: 1000px;
+    margin: 0 auto;
+    text-align: center;
     padding: 0;
     background: transparent;
     border: none;
     box-shadow: none;
     backdrop-filter: none;
+    padding-top: 15vh;
 }
 
 @media (max-width: 1024px) {
@@ -94,7 +99,7 @@
 
 .headline {
     font-family: var(--font-heading);
-    font-size: clamp(2.5rem, 5vw + 1rem, 6rem);
+    font-size: clamp(2rem, 4vw, 4.5rem);
     font-weight: 500;
     line-height: 1.1;
     letter-spacing: -0.02em;
@@ -117,6 +122,8 @@
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    text-align: center;
     white-space: nowrap;
     line-height: inherit;
     color: #BFA270 !important;
@@ -125,13 +132,15 @@
 
 .description {
     font-family: var(--font-body);
-    font-size: clamp(1rem, 1.2vw, 1.35rem);
+    font-size: clamp(0.875rem, 1vw, 1.125rem);
     font-weight: 400;
     line-height: 1.7;
     color: #e0e0e0;
     /* Light grey for readability */
     margin-bottom: 2.5rem;
     max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 @media (max-width: 1024px) {
@@ -145,6 +154,7 @@
     display: flex;
     gap: 1rem;
     margin-bottom: 2.5rem;
+    justify-content: center;
 }
 
 @media (max-width: 1024px) {
@@ -167,18 +177,16 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
     text-decoration: none;
-    border-radius: 50px;
+    border-radius: 4px;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     border: 2px solid var(--dark-turquoise);
-    box-shadow: 0 4px 16px rgba(31, 82, 75, 0.3);
 }
 
 .ctaPrimary:hover {
     background-color: #2d7a6e;
     border-color: #2d7a6e;
     color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(31, 82, 75, 0.4);
+    animation: heroTextWave 0.6s ease-in-out;
 }
 
 .ctaSecondary {
@@ -195,7 +203,7 @@
     text-transform: uppercase;
     text-decoration: none;
     border: 2px solid rgba(255, 255, 255, 0.6);
-    border-radius: 50px;
+    border-radius: 4px;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     backdrop-filter: blur(8px);
 }
@@ -204,8 +212,33 @@
     background-color: #ffffff;
     border-color: #ffffff;
     color: var(--dark-turquoise);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.3);
+    animation: heroTextWave 0.6s ease-in-out;
+}
+
+@keyframes heroTextWave {
+    0% {
+        transform: translateY(0);
+    }
+
+    20% {
+        transform: translateY(-3px);
+    }
+
+    40% {
+        transform: translateY(1px);
+    }
+
+    60% {
+        transform: translateY(-2px);
+    }
+
+    80% {
+        transform: translateY(0.5px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
 }
 
 .trustText {
@@ -237,11 +270,34 @@
 }
 
 @media (max-width: 768px) {
+    .hero {
+        min-height: 100svh;
+        min-height: 500px;
+    }
+
     .scrollIndicator {
         bottom: 1.5rem;
     }
 
     .scrollLine {
         height: 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero {
+        min-height: 450px;
+    }
+
+    .ctas {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .ctaPrimary,
+    .ctaSecondary {
+        width: 100%;
+        max-width: 280px;
     }
 }

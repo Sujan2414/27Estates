@@ -1,48 +1,141 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import React from 'react';
+import { StickyScroll } from '@/components/ui/sticky-scroll-reveal';
 import styles from './HowWeWork.module.css';
+import { motion } from 'framer-motion';
 
 const steps = [
     {
-        number: '01',
         title: 'Buy a Property',
-        description: 'We help you find your dream home or investment property by offering a wide range of listings with expert guidance. From modern apartments to luxury villas, we ensure a seamless buying experience.',
-        image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1973&q=80'
+        description: (
+            <div className="space-y-6">
+                <p>
+                    We help you find your dream home or investment property by offering a wide range of listings with expert guidance. From modern apartments to luxury villas, we ensure a seamless buying experience tailored to your needs.
+                </p>
+                <ul className="list-disc pl-5 space-y-4 text-slate-600 leading-loose marker:text-black mt-6">
+                    <li>Exclusive access to premium listings</li>
+                    <li>Expert negotiation and deal structuring</li>
+                    <li>Complete legal documentation support</li>
+                    <li>Post-purchase assistance</li>
+                </ul>
+            </div>
+        ),
+        content: (
+            <div className="h-full w-full flex items-center justify-center text-white">
+                <img
+                    src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1973&q=80"
+                    className="h-full w-full object-cover"
+                    alt="Buy a Property"
+                />
+            </div>
+        ),
     },
     {
-        number: '02',
         title: 'Rent a Property',
-        description: 'Whether you\'re a landlord or a tenant, we make renting easy. Our platform offers a wide selection of properties with flexible lease options and secure agreements.',
-        image: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?ixlib=rb-4.0.3&auto=format&fit=crop&w=1996&q=80'
+        description: (
+            <div className="space-y-8">
+                <p>
+                    Whether you're a landlord or a tenant, we make renting easy. Our platform offers a wide selection of properties with flexible lease options and secure agreements ensuring peace of mind for both parties.
+                </p>
+                <ul className="list-disc pl-5 space-y-4 text-slate-600 leading-loose marker:text-black mt-6">
+                    <li>Verified tenant screening process</li>
+                    <li>Drafting of secure lease agreements</li>
+                    <li>Efficient move-in/move-out coordination</li>
+                    <li>Ongoing tenancy support</li>
+                </ul>
+            </div>
+        ),
+        content: (
+            <div className="h-full w-full flex items-center justify-center text-white">
+                <img
+                    src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    className="h-full w-full object-cover"
+                    alt="Rent a Property"
+                />
+            </div>
+        ),
     },
     {
-        number: '03',
         title: 'Sell a Property',
-        description: 'Get the best value for your property with our professional listing services. We provide market analysis, staging advice, and extensive marketing to attract potential buyers quickly.',
-        image: 'https://images.unsplash.com/photo-1560184897-ae75f418493e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+        description: (
+            <div className="space-y-8">
+                <p>
+                    Get the best value for your property with our professional listing services. We provide market analysis, staging advice, and extensive marketing to attract potential buyers quickly and efficiently.
+                </p>
+                <ul className="list-disc pl-5 space-y-4 text-slate-600 leading-loose marker:text-black mt-6">
+                    <li>Comprehensive market valuation</li>
+                    <li>Professional photography and staging</li>
+                    <li>Multi-channel marketing campaigns</li>
+                    <li>Seamless closing process management</li>
+                </ul>
+            </div>
+        ),
+        content: (
+            <div className="h-full w-full flex items-center justify-center text-white">
+                <img
+                    src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    className="h-full w-full object-cover"
+                    alt="Sell a Property"
+                />
+            </div>
+        ),
     },
     {
-        number: '04',
         title: 'Property Management',
-        description: 'We handle everything from tenant screening to maintenance and rent collection. Our property management services ensure landlords get stress-free income from their investments.',
-        image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+        description: (
+            <div className="space-y-8">
+                <p>
+                    We handle everything from tenant screening to maintenance and rent collection. Our property management services ensure landlords get stress-free income from their investments while maintaining asset value.
+                </p>
+                <ul className="list-disc pl-5 space-y-4 text-slate-600 leading-loose marker:text-black mt-6">
+                    <li>Timely rent collection and payout</li>
+                    <li>Regular property inspections</li>
+                    <li>24/7 maintenance coordination</li>
+                    <li>Detailed financial reporting</li>
+                </ul>
+            </div>
+        ),
+        content: (
+            <div className="h-full w-full flex items-center justify-center text-white">
+                <img
+                    src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    className="h-full w-full object-cover"
+                    alt="Property Management"
+                />
+            </div>
+        ),
     },
     {
-        number: '05',
         title: 'Real Estate Consultation',
-        description: 'Need expert advice on buying, selling, or investing? Our experienced real estate consultants provide insights on market trends, legal requirements, and financial planning.',
-        image: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?ixlib=rb-4.0.3&auto=format&fit=crop&w=1974&q=80'
-    }
+        description: (
+            <div className="space-y-8">
+                <p>
+                    Need expert advice on buying, selling, or investing? Our experienced real estate consultants provide insights on market trends, legal requirements, and financial planning to help you make informed decisions.
+                </p>
+                <ul className="list-disc pl-5 space-y-4 text-slate-600 leading-loose marker:text-black mt-6">
+                    <li>In-depth market trend analysis</li>
+                    <li>Investment portfolio review</li>
+                    <li>Legal and regulatory guidance</li>
+                    <li>Customized financial planning</li>
+                </ul>
+            </div>
+        ),
+        content: (
+            <div className="h-full w-full flex items-center justify-center text-white">
+                <img
+                    src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    className="h-full w-full object-cover"
+                    alt="Real Estate Consultation"
+                />
+            </div>
+        ),
+    },
 ];
 
 const HowWeWork: React.FC = () => {
-    const [activeStep, setActiveStep] = useState(0);
-    const containerRef = useRef<HTMLDivElement>(null);
-
     return (
-        <section className={styles.section} ref={containerRef}>
+        <section className="py-20 bg-[var(--background)]">
             <div className={styles.container}>
                 {/* Header */}
                 <div className={styles.header}>
@@ -53,7 +146,7 @@ const HowWeWork: React.FC = () => {
                         viewport={{ once: true, margin: "-100px" }}
                         transition={{ duration: 0.6 }}
                     >
-                        How we work
+                        Our Process
                     </motion.p>
                     <motion.h2
                         className={styles.title}
@@ -75,56 +168,9 @@ const HowWeWork: React.FC = () => {
                     </motion.p>
                 </div>
 
-                {/* Steps Navigation */}
-                <div className={styles.stepsNav}>
-                    {steps.map((step, index) => (
-                        <motion.button
-                            key={index}
-                            className={`${styles.stepNavBtn} ${activeStep === index ? styles.active : ''}`}
-                            onClick={() => setActiveStep(index)}
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 }}
-                        >
-                            <span className={styles.stepNavNumber}>Step</span>
-                            <span className={styles.stepNavDigit}>{step.number}</span>
-                        </motion.button>
-                    ))}
-                </div>
-
-                {/* Content Area */}
-                <div className={styles.contentWrapper}>
-                    {/* Image Side */}
-                    <motion.div 
-                        className={styles.imageContainer}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        <img
-                            src={steps[activeStep].image}
-                            alt={steps[activeStep].title}
-                            className={styles.image}
-                            key={activeStep}
-                        />
-                    </motion.div>
-
-                    {/* Text Side */}
-                    <div className={styles.textContainer}>
-                        <motion.div
-                            key={activeStep}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            <span className={styles.stepLabel}>STEP</span>
-                            <span className={styles.stepNumber}>{steps[activeStep].number}</span>
-                            <h3 className={styles.stepTitle}>{steps[activeStep].title}</h3>
-                            <p className={styles.stepDescription}>{steps[activeStep].description}</p>
-                        </motion.div>
-                    </div>
+                {/* Sticky Scroll Component */}
+                <div className="mt-10">
+                    <StickyScroll content={steps} />
                 </div>
             </div>
         </section>

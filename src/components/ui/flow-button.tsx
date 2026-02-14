@@ -70,10 +70,10 @@ export function FlowButton({
     );
 
     const baseStyles = `
-    group relative flex items-center gap-1 overflow-hidden rounded-[100px] 
-    border-[1.5px] bg-transparent px-8 py-3.5 cursor-pointer 
-    transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)] 
-    hover:border-transparent hover:rounded-[12px] active:scale-[0.95]
+    group relative flex items-center gap-1 overflow-hidden rounded-[4px]
+    border-[1.5px] bg-transparent px-8 py-3.5 cursor-pointer
+    transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)]
+    hover:border-transparent hover:rounded-[4px] active:scale-[0.95]
     ${className}
   `.trim();
 

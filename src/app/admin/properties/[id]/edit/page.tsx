@@ -5,12 +5,21 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import ImageUpload from '@/components/admin/ImageUpload'
+import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import styles from '../../../admin.module.css'
 import formStyles from '../../form.module.css'
 
 interface Agent {
     id: string
     name: string
+}
+
+interface Owner {
+    id: string
+    name: string
+    phone: string | null
+    company: string | null
 }
 
 interface FloorPlan {
@@ -26,6 +35,7 @@ export default function EditPropertyPage() {
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [agents, setAgents] = useState<Agent[]>([])
+    const [owners, setOwners] = useState<Owner[]>([])
 
     // Basic Info
     const [formData, setFormData] = useState({
@@ -45,6 +55,7 @@ export default function EditPropertyPage() {
         category: 'House',
         is_featured: false,
         agent_id: '',
+        owner_id: '',
         video_url: '',
     })
 
@@ -75,13 +86,14 @@ export default function EditPropertyPage() {
     useEffect(() => {
         fetchProperty()
         fetchAgents()
+        fetchOwners()
     }, [])
 
     const fetchProperty = async () => {
         const { data, error } = await supabase
             .from('properties')
             .select('*')
-            .eq('id', params.id)
+            .eq('id', params?.id as string)
             .single()
 
         if (error || !data) {
@@ -107,6 +119,7 @@ export default function EditPropertyPage() {
             category: data.category || 'House',
             is_featured: data.is_featured || false,
             agent_id: data.agent_id || '',
+            owner_id: data.owner_id || '',
             video_url: data.video_url || '',
         })
 
@@ -132,8 +145,10 @@ export default function EditPropertyPage() {
             other: am.other?.length > 0 ? am.other : [''],
         })
 
-        // Parse images
-        setImages(data.images?.length > 0 ? data.images : [''])
+        // Parse images - filter out null/undefined entries
+        const rawImages = data.images || []
+        const cleanImages = rawImages.filter((img: unknown) => typeof img === 'string' && img.trim() !== '')
+        setImages(cleanImages.length > 0 ? cleanImages : [''])
 
         // Parse floor plans
         const fp = data.floor_plans || []
@@ -143,8 +158,13 @@ export default function EditPropertyPage() {
     }
 
     const fetchAgents = async () => {
-        const { data } = await supabase.from('agents').select('id, name')
+        const { data } = await supabase.from('agents').select('id, name').order('name')
         if (data) setAgents(data)
+    }
+
+    const fetchOwners = async () => {
+        const { data } = await supabase.from('owners').select('id, name, phone, company').order('name')
+        if (data) setOwners(data)
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -217,13 +237,17 @@ export default function EditPropertyPage() {
             }
 
             const amenitiesData = {
-                interior: amenities.interior.filter(a => a.trim() !== ''),
-                outdoor: amenities.outdoor.filter(a => a.trim() !== ''),
-                utilities: amenities.utilities.filter(a => a.trim() !== ''),
-                other: amenities.other.filter(a => a.trim() !== ''),
+                interior: (amenities.interior || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
+                outdoor: (amenities.outdoor || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
+                utilities: (amenities.utilities || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
+                other: (amenities.other || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
             }
 
-            const floorPlansData = floorPlans.filter(fp => fp.name.trim() !== '' || fp.image.trim() !== '')
+            const floorPlansData = (floorPlans || []).filter(fp => {
+                const name = fp?.name || ''
+                const image = fp?.image || ''
+                return name.trim() !== '' || image.trim() !== ''
+            })
 
             const propertyData = {
                 property_id: formData.property_id,
@@ -243,8 +267,9 @@ export default function EditPropertyPage() {
                 category: formData.category,
                 is_featured: formData.is_featured,
                 agent_id: formData.agent_id || null,
+                owner_id: formData.owner_id || null,
                 video_url: formData.video_url || null,
-                images: images.filter(img => img.trim() !== ''),
+                images: (images || []).filter(img => img && typeof img === 'string' && img.trim() !== ''),
                 amenities: amenitiesData,
                 floor_plans: floorPlansData.length > 0 ? floorPlansData : null,
             }
@@ -252,13 +277,19 @@ export default function EditPropertyPage() {
             const { error: updateError } = await supabase
                 .from('properties')
                 .update(propertyData)
-                .eq('id', params.id)
+                .eq('id', params?.id as string)
 
-            if (updateError) throw updateError
+            if (updateError) {
+                console.error('Supabase update error:', updateError)
+                console.error('Property data sent:', JSON.stringify(propertyData, null, 2))
+                throw new Error(updateError.message || updateError.details || JSON.stringify(updateError))
+            }
 
             router.push('/admin/properties')
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to update property')
+        } catch (err: any) {
+            console.error('Property save failed:', err)
+            const msg = err?.message || err?.details || (typeof err === 'string' ? err : 'Failed to update property')
+            setError(msg)
         } finally {
             setSaving(false)
         }
@@ -347,10 +378,24 @@ export default function EditPropertyPage() {
                             </select>
                         </div>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>Agent</label>
+                            <label className={formStyles.label}>Assigned Agent</label>
                             <select name="agent_id" value={formData.agent_id} onChange={handleChange} className={formStyles.select}>
                                 <option value="">Select Agent</option>
                                 {agents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className={formStyles.grid2}>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Owner / Landlord</label>
+                            <select name="owner_id" value={formData.owner_id} onChange={handleChange} className={formStyles.select}>
+                                <option value="">Select Owner</option>
+                                {owners.map(owner => (
+                                    <option key={owner.id} value={owner.id}>
+                                        {owner.name}{owner.phone ? ` • ${owner.phone}` : ''}{owner.company ? ` • ${owner.company}` : ''}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -483,19 +528,12 @@ export default function EditPropertyPage() {
 
                     <div className={formStyles.field}>
                         <label className={formStyles.label}>Property Images</label>
-                        {images.map((img, index) => (
-                            <div key={index} className={formStyles.imageInput}>
-                                <input type="url" value={img} onChange={(e) => handleImageChange(index, e.target.value)} className={formStyles.input} placeholder="Image URL" />
-                                {images.length > 1 && (
-                                    <button type="button" onClick={() => removeImage(index)} className={formStyles.removeBtn}>
-                                        <X size={18} />
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        <button type="button" onClick={addImage} className={formStyles.addImageBtn}>
-                            <Plus size={16} /> Add Image
-                        </button>
+                        <MultiImageUpload
+                            images={images}
+                            onChange={setImages}
+                            folder="properties"
+                            label="Upload Property Images"
+                        />
                     </div>
                 </div>
 
@@ -513,20 +551,19 @@ export default function EditPropertyPage() {
                                     className={formStyles.input}
                                     placeholder="Floor name (e.g., Ground Floor)"
                                 />
-                                <div className={formStyles.imageInput}>
-                                    <input
-                                        type="url"
+                                <div style={{ marginTop: '8px' }}>
+                                    <ImageUpload
                                         value={fp.image}
-                                        onChange={(e) => handleFloorPlanChange(index, 'image', e.target.value)}
-                                        className={formStyles.input}
-                                        placeholder="Floor plan image URL"
+                                        onChange={(url) => handleFloorPlanChange(index, 'image', url)}
+                                        folder="properties/floor-plans"
+                                        label="Upload Floor Plan"
                                     />
-                                    {floorPlans.length > 1 && (
-                                        <button type="button" onClick={() => removeFloorPlan(index)} className={formStyles.removeBtn}>
-                                            <X size={18} />
-                                        </button>
-                                    )}
                                 </div>
+                                {floorPlans.length > 1 && (
+                                    <button type="button" onClick={() => removeFloorPlan(index)} className={formStyles.removeBtn} style={{ alignSelf: 'flex-start', marginTop: '8px' }}>
+                                        <X size={18} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}

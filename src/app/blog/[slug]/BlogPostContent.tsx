@@ -1,75 +1,125 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import Section from '@/components/ui/Section';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Clock, Calendar, User, Share2, ArrowRight } from 'lucide-react';
-import { BlogPost, getRelatedPosts } from '@/lib/blog-data';
+import { ArrowLeft, Clock, Calendar, ArrowRight, Share2 } from 'lucide-react';
+import { BlogPost } from '@/lib/blog-data';
+import styles from './blogpost.module.css';
 
 interface BlogPostContentProps {
     post: BlogPost;
+    relatedPosts?: BlogPost[];
 }
 
-export default function BlogPostContent({ post }: BlogPostContentProps) {
-    const heroRef = useRef<HTMLDivElement>(null);
-    const { scrollY } = useScroll();
+// Social share icons as inline SVGs for clean rendering
+const TwitterIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+);
 
-    // Parallax and fade effect for hero
-    const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
-    const heroScale = useTransform(scrollY, [0, 400], [1, 1.1]);
-    const heroY = useTransform(scrollY, [0, 400], [0, 100]);
-    const contentY = useTransform(scrollY, [0, 300], [0, -50]);
+const FacebookIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+);
 
-    // Get related posts
-    const relatedPosts = getRelatedPosts(post.slug, 3);
+const LinkedInIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+    </svg>
+);
 
-    // Generate content with inline images
+const WhatsAppIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+);
+
+const CopyLinkIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+);
+
+export default function BlogPostContent({ post, relatedPosts: relatedPostsProp }: BlogPostContentProps) {
+    const heroRef = React.useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({
+        target: heroRef,
+        offset: ["start start", "end start"]
+    });
+
+    const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
+    const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
+    const relatedPosts = relatedPostsProp || [];
+
+    // Progress bar
+    const [progress, setProgress] = React.useState(0);
+    const [copied, setCopied] = React.useState(false);
+
+    React.useEffect(() => {
+        const updateProgress = () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            setProgress(docHeight > 0 ? (scrollTop / docHeight) * 100 : 0);
+        };
+        window.addEventListener('scroll', updateProgress, { passive: true });
+        return () => window.removeEventListener('scroll', updateProgress);
+    }, []);
+
+    // Share handlers
+    const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareText = `${post.title} — 27 Estates`;
+
+    const handleShare = (platform: string) => {
+        const urls: Record<string, string> = {
+            twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(pageUrl)}`,
+            facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
+            linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pageUrl)}`,
+            whatsapp: `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + pageUrl)}`,
+        };
+
+        if (platform === 'copy') {
+            navigator.clipboard.writeText(pageUrl).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            });
+            return;
+        }
+
+        window.open(urls[platform], '_blank', 'noopener,noreferrer,width=600,height=400');
+    };
+
+    // Render article content with inline images between h2 sections
     const renderContentWithImages = () => {
         const contentParts = post.content.split('</h2>');
 
         return contentParts.map((part, index) => {
-            const hasImage = post.contentImages && post.contentImages[index];
+            if (!part.trim() && index === contentParts.length - 1) return null;
+
             return (
                 <React.Fragment key={index}>
-                    <div dangerouslySetInnerHTML={{ __html: part + (index < contentParts.length - 1 ? '</h2>' : '') }} />
-                    {hasImage && index < contentParts.length - 1 && (
-                        <motion.figure
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.8 }}
-                            className="my-10"
-                        >
-                            <div className="rounded-lg overflow-hidden shadow-lg">
-                                <Image
-                                    src={post.contentImages[index]}
-                                    alt={`${post.title} - illustration ${index + 1}`}
-                                    width={1200}
-                                    height={675}
-                                    className="w-full h-auto object-cover"
-                                />
-                            </div>
-                        </motion.figure>
-                    )}
+                    <div
+                        dangerouslySetInnerHTML={{ __html: part + (index < contentParts.length - 1 ? '</h2>' : '') }}
+                        className={styles.blogContent}
+                    />
                 </React.Fragment>
             );
         });
     };
 
     return (
-        <>
-            {/* Hero Section with Scroll Overlay Effect */}
-            <div
-                ref={heroRef}
-                className="relative h-[80vh] min-h-[600px] flex items-end pb-20 overflow-hidden"
-            >
-                {/* Background with parallax */}
-                <motion.div
-                    className="absolute inset-0"
-                    style={{ scale: heroScale, y: heroY }}
-                >
+        <main className={styles.main}>
+            {/* Reading Progress Bar */}
+            <div className={styles.progressBar} style={{ width: `${progress}%` }} />
+
+            {/* Hero Section */}
+            <section ref={heroRef} className={styles.hero}>
+                <motion.div className={styles.heroImageWrap} style={{ y: heroY }}>
                     <Image
                         src={post.heroImage}
                         alt={post.title}
@@ -77,225 +127,236 @@ export default function BlogPostContent({ post }: BlogPostContentProps) {
                         priority
                         className="object-cover"
                     />
-                    <motion.div
-                        className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/30"
-                        style={{ opacity: heroOpacity }}
-                    />
                 </motion.div>
 
-                {/* Dark overlay that stays visible */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                {/* Overlay */}
+                <div className={styles.heroOverlay} />
 
-                {/* Content */}
-                <motion.div
-                    className="max-w-[1600px] mx-auto px-[clamp(1.5rem,4vw,4rem)] relative z-10 text-white w-full"
-                    style={{ y: contentY }}
-                >
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="mb-6"
-                    >
-                        <Link
-                            href="/blog"
-                            className="inline-flex items-center text-white/80 hover:text-white transition-colors uppercase tracking-widest text-xs font-semibold"
-                        >
-                            <ArrowLeft size={16} className="mr-2" /> Back to Insights
-                        </Link>
-                    </motion.div>
-
+                {/* Hero Content */}
+                <motion.div className={styles.heroContent} style={{ opacity: heroOpacity }}>
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.8 }}
+                        transition={{ duration: 0.8 }}
                     >
-                        <span
-                            className="inline-block px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded mb-5"
-                            style={{
-                                backgroundColor: 'var(--gold, #BFA270)',
-                                color: 'var(--dark-turquoise, #1F524B)'
-                            }}
-                        >
+                        <div className={styles.heroBadge}>
                             {post.category}
-                        </span>
-                        <h1
-                            className="text-4xl md:text-5xl lg:text-6xl font-medium leading-tight mb-6 max-w-4xl"
-                            style={{ fontFamily: 'var(--font-heading)' }}
-                        >
+                        </div>
+
+                        <h1 className={styles.heroTitle}>
                             {post.title}
                         </h1>
 
-                        <div className="flex flex-wrap items-center gap-6 text-sm text-white/80 font-medium">
-                            <div className="flex items-center gap-2">
-                                <User size={16} />
-                                <span>{post.author}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Calendar size={16} />
+                        <div className={styles.heroMeta}>
+                            <div className={styles.heroMetaItem}>
+                                <Calendar size={14} />
                                 <span>{post.date}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Clock size={16} />
+                            <div className={styles.heroMetaItem}>
+                                <Clock size={14} />
                                 <span>{post.readTime}</span>
+                            </div>
+                            <div className={styles.heroMetaItem}>
+                                <span className={styles.heroAuthorDot} />
+                                <span>{post.author}</span>
                             </div>
                         </div>
                     </motion.div>
                 </motion.div>
-            </div>
+            </section>
 
-            {/* Scroll Overlay Transition */}
-            <div className="relative z-20 -mt-20">
-                <div
-                    className="h-24"
-                    style={{
-                        background: 'linear-gradient(to bottom, transparent, white)'
-                    }}
-                />
-            </div>
+            {/* Content area with sticky share sidebar */}
+            <div className={styles.contentArea}>
+                <div className={styles.contentLayout}>
 
-            {/* Content Section */}
-            <Section className="bg-white pt-8">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                    {/* Main Content */}
-                    <div className="lg:col-span-8 lg:col-start-3">
-                        {/* Excerpt */}
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.8 }}
-                            className="text-xl leading-relaxed mb-10 pb-10 border-b border-gray-100"
-                            style={{ color: 'var(--dark-grey, #0E110F)' }}
-                        >
-                            {post.excerpt}
-                        </motion.p>
+                    {/* Sticky Share Sidebar - Left */}
+                    <aside className={styles.shareSidebar}>
+                        <div className={styles.shareSticky}>
+                            <span className={styles.shareLabel}>
+                                <Share2 size={14} />
+                                Share
+                            </span>
+                            <div className={styles.shareDivider} />
+                            <button
+                                className={styles.shareBtn}
+                                onClick={() => handleShare('twitter')}
+                                title="Share on X (Twitter)"
+                            >
+                                <TwitterIcon />
+                            </button>
+                            <button
+                                className={styles.shareBtn}
+                                onClick={() => handleShare('facebook')}
+                                title="Share on Facebook"
+                            >
+                                <FacebookIcon />
+                            </button>
+                            <button
+                                className={styles.shareBtn}
+                                onClick={() => handleShare('linkedin')}
+                                title="Share on LinkedIn"
+                            >
+                                <LinkedInIcon />
+                            </button>
+                            <button
+                                className={styles.shareBtn}
+                                onClick={() => handleShare('whatsapp')}
+                                title="Share on WhatsApp"
+                            >
+                                <WhatsAppIcon />
+                            </button>
+                            <div className={styles.shareDivider} />
+                            <button
+                                className={`${styles.shareBtn} ${copied ? styles.shareBtnCopied : ''}`}
+                                onClick={() => handleShare('copy')}
+                                title="Copy link"
+                            >
+                                {copied ? (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                ) : (
+                                    <CopyLinkIcon />
+                                )}
+                            </button>
+                        </div>
+                    </aside>
 
-                        {/* Article Content with Inline Images */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.8 }}
-                            className="prose prose-lg prose-headings:font-heading prose-headings:text-[var(--dark-turquoise)] prose-headings:font-medium prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6 prose-p:text-gray-600 prose-p:leading-relaxed prose-a:text-[var(--dark-turquoise)] prose-a:no-underline hover:prose-a:underline max-w-none"
-                        >
+                    {/* Main Article Column */}
+                    <div className={styles.articleColumn}>
+                        {/* Back Link */}
+                        <div className={styles.backLink}>
+                            <Link href="/blog" className={styles.backLinkAnchor}>
+                                <ArrowLeft size={13} />
+                                Back to Insights
+                            </Link>
+                        </div>
+
+                        {/* Article Content */}
+                        <article className={styles.article}>
+                            {/* Featured Image */}
+                            {post.contentImages && post.contentImages.length > 0 && (
+                                <figure className={styles.featuredImage}>
+                                    <div className={styles.featuredImageInner}>
+                                        <Image
+                                            src={post.contentImages[0]}
+                                            alt={`${post.title} - illustration`}
+                                            width={1200}
+                                            height={680}
+                                            className={styles.featuredImg}
+                                        />
+                                    </div>
+                                </figure>
+                            )}
+
                             {renderContentWithImages()}
-                        </motion.div>
+                        </article>
 
                         {/* Tags */}
-                        <div className="mt-12 pt-8 border-t border-gray-100">
-                            <div className="flex flex-wrap gap-2">
+                        <div className={styles.tagsSection}>
+                            <div className={styles.tagsList}>
                                 {post.tags.map((tag) => (
-                                    <span
-                                        key={tag}
-                                        className="px-4 py-2 text-xs font-medium uppercase tracking-wider rounded-full"
-                                        style={{
-                                            backgroundColor: 'rgba(191, 162, 112, 0.1)',
-                                            color: 'var(--gold, #BFA270)'
-                                        }}
-                                    >
-                                        {tag}
+                                    <span key={tag} className={styles.tag}>
+                                        #{tag}
                                     </span>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Share Section */}
-                        <div className="mt-8 pt-8 border-t border-gray-100 flex items-center justify-between">
-                            <div className="text-[var(--dark-grey)] font-medium">
-                                Share this article:
-                            </div>
-                            <div className="flex gap-4">
-                                <button className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-[var(--dark-turquoise)] hover:text-white transition-all">
-                                    <Share2 size={18} />
+                        {/* Mobile Share Row */}
+                        <div className={styles.mobileShareRow}>
+                            <span className={styles.mobileShareLabel}>
+                                <Share2 size={14} />
+                                Share this article
+                            </span>
+                            <div className={styles.mobileShareBtns}>
+                                <button className={styles.mobileShareBtn} onClick={() => handleShare('twitter')} title="X">
+                                    <TwitterIcon />
+                                </button>
+                                <button className={styles.mobileShareBtn} onClick={() => handleShare('facebook')} title="Facebook">
+                                    <FacebookIcon />
+                                </button>
+                                <button className={styles.mobileShareBtn} onClick={() => handleShare('linkedin')} title="LinkedIn">
+                                    <LinkedInIcon />
+                                </button>
+                                <button className={styles.mobileShareBtn} onClick={() => handleShare('whatsapp')} title="WhatsApp">
+                                    <WhatsAppIcon />
+                                </button>
+                                <button
+                                    className={`${styles.mobileShareBtn} ${copied ? styles.shareBtnCopied : ''}`}
+                                    onClick={() => handleShare('copy')}
+                                    title="Copy link"
+                                >
+                                    {copied ? (
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                    ) : (
+                                        <CopyLinkIcon />
+                                    )}
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </Section>
 
-            {/* Similar Blogs Section */}
-            {relatedPosts.length > 0 && (
-                <section className="similar-blogs-section">
-                    <div className="max-w-[1600px] mx-auto px-[clamp(1.5rem,4vw,4rem)]">
-                        <div className="text-center mb-12">
-                            <p
-                                className="text-xs font-normal tracking-[0.2em] uppercase mb-3"
-                                style={{ color: 'var(--gold, #BFA270)' }}
-                            >
-                                Continue Reading
-                            </p>
-                            <h2
-                                className="font-medium tracking-[-0.02em]"
-                                style={{
-                                    fontFamily: 'var(--font-heading)',
-                                    fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                                    color: 'var(--dark-turquoise, #1F524B)'
-                                }}
-                            >
-                                Similar Articles
-                            </h2>
-                        </div>
+                {/* Related Articles */}
+                {relatedPosts.length > 0 && (
+                    <section className={styles.relatedSection}>
+                        <div className={styles.relatedContainer}>
+                            <div className={styles.relatedHeader}>
+                                <div>
+                                    <p className={styles.relatedSubtitle}>Continue Reading</p>
+                                    <h2 className={styles.relatedTitle}>Similar Articles</h2>
+                                </div>
+                                <Link href="/blog" className={styles.relatedViewAll}>
+                                    View All <ArrowRight size={14} />
+                                </Link>
+                            </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {relatedPosts.map((relatedPost, index) => (
-                                <motion.article
-                                    key={relatedPost.id}
-                                    initial={{ opacity: 0, y: 30 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: index * 0.1, duration: 0.6 }}
-                                    className="similar-blog-card"
-                                >
-                                    <Link href={`/blog/${relatedPost.slug}`}>
-                                        <div className="overflow-hidden">
-                                            <Image
-                                                src={relatedPost.thumbnailImage}
-                                                alt={relatedPost.title}
-                                                width={400}
-                                                height={225}
-                                                className="similar-blog-card img"
-                                            />
-                                        </div>
-                                        <div className="similar-blog-card-content">
-                                            <p className="similar-blog-card-category">
-                                                {relatedPost.category}
-                                            </p>
-                                            <h3 className="similar-blog-card-title">
-                                                {relatedPost.title}
-                                            </h3>
-                                            <div
-                                                className="flex items-center text-sm"
-                                                style={{ color: 'var(--dark-grey, #0E110F)', opacity: 0.6 }}
-                                            >
+                            <div className={styles.relatedGrid}>
+                                {relatedPosts.map((relatedPost) => (
+                                    <article key={relatedPost.id} className={styles.relatedCard}>
+                                        <Link
+                                            href={`/blog/${relatedPost.slug}`}
+                                            className={styles.relatedCardLink}
+                                        >
+                                            <div className={styles.relatedCardImage}>
+                                                <Image
+                                                    src={relatedPost.thumbnailImage}
+                                                    alt={relatedPost.title}
+                                                    fill
+                                                    className={styles.relatedCardImg}
+                                                />
+                                                <div className={styles.relatedCardBadge}>
+                                                    {relatedPost.category}
+                                                </div>
+                                            </div>
+                                            <div className={styles.relatedCardMeta}>
                                                 <span>{relatedPost.date}</span>
-                                                <span className="mx-2">•</span>
+                                                <span className={styles.relatedCardDot} />
                                                 <span>{relatedPost.readTime}</span>
                                             </div>
-                                        </div>
-                                    </Link>
-                                </motion.article>
-                            ))}
-                        </div>
+                                            <h3 className={styles.relatedCardTitle}>
+                                                {relatedPost.title}
+                                            </h3>
+                                            <p className={styles.relatedCardExcerpt}>
+                                                {relatedPost.excerpt}
+                                            </p>
+                                        </Link>
+                                    </article>
+                                ))}
+                            </div>
 
-                        {/* View All Articles Button */}
-                        <div className="text-center mt-12">
-                            <Link
-                                href="/blog"
-                                className="inline-flex items-center justify-center py-3.5 px-7 text-sm font-semibold tracking-[0.08em] uppercase transition-all duration-300 hover:-translate-y-0.5"
-                                style={{
-                                    backgroundColor: 'var(--dark-turquoise, #1F524B)',
-                                    color: '#ffffff',
-                                }}
-                            >
-                                View All Articles
-                                <ArrowRight className="ml-2 w-4 h-4" />
-                            </Link>
+                            <div className={styles.relatedMobileViewAll}>
+                                <Link href="/blog" className={styles.relatedMobileBtn}>
+                                    View All Articles
+                                </Link>
+                            </div>
                         </div>
-                    </div>
-                </section>
-            )}
-        </>
+                    </section>
+                )}
+            </div>
+        </main>
     );
 }

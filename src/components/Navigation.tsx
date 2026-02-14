@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { services } from '@/lib/services-data';
 import { useAuth } from '@/context/AuthContext';
 import styles from './Navigation.module.css';
@@ -14,17 +15,47 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+    const lastScrollY = React.useRef(0);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [hasEntered, setHasEntered] = useState(false);
     const { showAuthModal } = useAuth();
+
+    const pathname = usePathname(); // Need this to check for home page
 
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50);
+            const currentScrollY = window.scrollY;
+            const viewportHeight = window.innerHeight;
+
+            // Threshold: Full screen height for home page (Hero), 50px for others
+            const scrollThreshold = pathname === '/' ? (viewportHeight - 100) : 50;
+
+            // Determine if scrolled styling should apply
+            setIsScrolled(currentScrollY > scrollThreshold);
+
+            // Only toggle visibility after a meaningful scroll delta (prevents stuttering)
+            const delta = currentScrollY - lastScrollY.current;
+
+            if (delta > 8 && currentScrollY > 100) {
+                // Scrolling DOWN past threshold
+                setIsVisible(false);
+                setIsMobileMenuOpen(false);
+            } else if (delta < -8) {
+                // Scrolling UP past threshold
+                setIsVisible(true);
+            }
+
+            lastScrollY.current = currentScrollY;
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [pathname]);
 
     // Links that require auth modal
     const protectedPaths = ['/properties', '/properties/search'];
@@ -33,7 +64,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
         { href: '/services', label: 'Services', target: undefined },
         { href: '/properties', label: 'Properties', target: undefined },
         { href: '/blog', label: 'Insights', target: undefined },
-        { href: '/#calculator', label: 'Mortgage Calculator', target: undefined },
+        { href: '/mortgage-calculator', label: 'Mortgage Calculator', target: undefined },
     ];
 
     const handleNavClick = (e: React.MouseEvent, href: string) => {
@@ -47,14 +78,23 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
         <motion.nav
             className={`${styles.nav} ${isScrolled || alwaysScrolled ? styles.scrolled : ''}`}
             initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            animate={{
+                y: isVisible ? 0 : '-100%',
+                opacity: isVisible ? 1 : 0,
+            }}
+            transition={hasEntered
+                ? { duration: 0.3, ease: 'easeInOut' }
+                : { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+            }
+            onAnimationComplete={() => {
+                if (!hasEntered) setHasEntered(true);
+            }}
         >
             <div className={styles.container}>
                 {/* Logo */}
                 <Link href="/" className={styles.logoLink}>
                     <Image
-                        src="/Nav_Logo_HD_v3.png"
+                        src="/Final_logo.png"
                         alt="27 Estates"
                         width={300}
                         height={90}
@@ -65,18 +105,32 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
 
                 {/* Desktop Links */}
                 <div className={styles.navLinks}>
+                    {navLinks.map((link) => {
+                        const isProtected = protectedPaths.includes(link.href);
 
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            target={link.target}
-                            className={`${styles.navLink} flex items-center gap-1 group`}
-                            onClick={(e) => handleNavClick(e, link.href)}
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
+                        if (isProtected) {
+                            return (
+                                <button
+                                    key={link.href}
+                                    className={`${styles.navLink} flex items-center gap-1 group bg-transparent border-none cursor-pointer`}
+                                    onClick={() => showAuthModal(link.href)}
+                                >
+                                    {link.label}
+                                </button>
+                            );
+                        }
+
+                        return (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                target={link.target}
+                                className={`${styles.navLink} flex items-center gap-1 group`}
+                            >
+                                {link.label}
+                            </Link>
+                        );
+                    })}
                 </div>
 
                 {/* Contact Button */}
@@ -117,21 +171,37 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                     </Link>
                 </div>
 
-                {navLinks.map((link) => (
-                    <Link
-                        key={link.href}
-                        href={link.href}
-                        className={styles.mobileLink}
-                        onClick={(e) => {
-                            handleNavClick(e, link.href);
-                            setIsMobileMenuOpen(false);
-                        }}
-                    >
-                        {link.label}
-                    </Link>
-                ))}
-                <Link href="tel:+919876543210" className={styles.mobilePhone}>
-                    +91 98765 43210
+                {navLinks.map((link) => {
+                    const isProtected = protectedPaths.includes(link.href);
+
+                    if (isProtected) {
+                        return (
+                            <button
+                                key={link.href}
+                                className={`${styles.mobileLink} w-full text-left bg-transparent border-none cursor-pointer`}
+                                onClick={() => {
+                                    showAuthModal(link.href);
+                                    setIsMobileMenuOpen(false);
+                                }}
+                            >
+                                {link.label}
+                            </button>
+                        );
+                    }
+
+                    return (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className={styles.mobileLink}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                            {link.label}
+                        </Link>
+                    );
+                })}
+                <Link href="tel:+919844653113" className={styles.mobilePhone}>
+                    +91 98446 53113
                 </Link>
             </motion.div>
         </motion.nav>
