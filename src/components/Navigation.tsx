@@ -160,17 +160,6 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                 }}
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
-                {/* Services Mobile */}
-                <div className="w-full text-center border-b border-gray-200 pb-2 mb-2">
-                    <Link
-                        href="/services"
-                        className={styles.mobileLink}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                        Services
-                    </Link>
-                </div>
-
                 {navLinks.map((link) => {
                     const isProtected = protectedPaths.includes(link.href);
 
@@ -178,7 +167,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                         return (
                             <button
                                 key={link.href}
-                                className={`${styles.mobileLink} w-full text-left bg-transparent border-none cursor-pointer`}
+                                className={`${styles.mobileLink} w-full text-center bg-transparent border-none cursor-pointer`}
                                 onClick={() => {
                                     showAuthModal(link.href);
                                     setIsMobileMenuOpen(false);
@@ -200,8 +189,12 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                         </Link>
                     );
                 })}
-                <Link href="tel:+919844653113" className={styles.mobilePhone}>
-                    +91 98446 53113
+                <Link
+                    href="/contact"
+                    className={styles.mobilePhone}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                >
+                    Contact Us
                 </Link>
             </motion.div>
         </motion.nav>

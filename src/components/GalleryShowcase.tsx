@@ -1,11 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ZoomParallax } from "@/components/ui/zoom-parallax";
 
 // Real estate focused images for 27 Estates - matching layout pattern
 const images = [
     {
-        // Index 0: CENTER (main focus) - This will zoom into the ContactCTA background
+        // Index 0: CENTER (main focus)
         src: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2000&q=80',
         alt: 'Luxury modern villa with pool',
     },
@@ -42,17 +44,26 @@ const images = [
 ];
 
 export default function GalleryShowcase() {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
     return (
         <section className="relative">
-            {/* Header Section - matching FeaturedProperties style */}
-            <div style={{ padding: '6rem 0 4rem', backgroundColor: 'var(--light-grey, #F6F6F5)' }}>
+            {/* Header Section */}
+            <div style={{ padding: isMobile ? '4rem 0 2rem' : '6rem 0 4rem', backgroundColor: 'var(--light-grey, #F6F6F5)' }}>
                 <div style={{ textAlign: 'center', maxWidth: '1600px', margin: '0 auto', padding: '0 clamp(1.5rem, 4vw, 4rem)' }}>
                     <p style={{
                         fontFamily: 'var(--font-body)',
                         fontSize: '0.75rem',
                         fontWeight: 400,
                         letterSpacing: '0.2em',
-                        textTransform: 'uppercase',
+                        textTransform: 'uppercase' as const,
                         color: 'var(--gold, #BFA270)',
                         marginBottom: '1rem'
                     }}>
@@ -78,11 +89,37 @@ export default function GalleryShowcase() {
                     }}>
                         Explore our handpicked collection of premium properties across Bangalore.
                     </p>
+
+                    {/* Mobile-only CTA - replaces the parallax animation */}
+                    {isMobile && (
+                        <div style={{ marginTop: '2rem', paddingBottom: '1rem' }}>
+                            <Link
+                                href="/contact"
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '0.875rem 2rem',
+                                    backgroundColor: 'var(--dark-turquoise, #1F524B)',
+                                    color: '#ffffff',
+                                    fontSize: '0.8125rem',
+                                    fontWeight: 600,
+                                    letterSpacing: '0.08em',
+                                    textTransform: 'uppercase' as const,
+                                    textDecoration: 'none',
+                                    border: '1px solid var(--dark-turquoise, #1F524B)',
+                                    borderRadius: '4px',
+                                }}
+                            >
+                                Get In Touch
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Parallax Gallery - ends with center image zoomed in */}
-            <ZoomParallax images={images} />
+            {/* Parallax Gallery - desktop only */}
+            {!isMobile && <ZoomParallax images={images} />}
         </section>
     );
 }

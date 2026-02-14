@@ -53,7 +53,7 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
     return (
         <div
             ref={cardRef}
-            className="h-[70vh] md:h-screen flex items-center justify-center sticky top-0"
+            className="h-[60vh] md:h-screen flex items-center justify-center sticky top-0"
         >
             <motion.div
                 style={{
@@ -61,7 +61,7 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
                     top: `calc(-5vh + ${i * 25}px)`,
                     cursor: 'pointer',
                 }}
-                className="relative -top-[25%] w-[90%] max-w-[1200px] h-[50vh] md:h-[70vh] rounded-xl overflow-hidden shadow-2xl origin-top"
+                className="relative -top-[25%] w-[92%] max-w-[1200px] h-[45vh] md:h-[70vh] rounded-xl overflow-hidden shadow-2xl origin-top"
                 onClick={() => router.push(project.linkTo)}
             >
                 {/* Full Background Image */}

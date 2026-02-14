@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { services } from "@/lib/services-data";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -9,9 +9,18 @@ import { Button } from "@/components/ui/button";
 const ExpandOnHover = () => {
     const [startIndex, setStartIndex] = useState(0);
     const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
-    const visibleCount = 3;
+    const [isMobile, setIsMobile] = useState(false);
 
-    // Get 3 visible services in a cyclic manner
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
+    const visibleCount = isMobile ? 1 : 3;
+
+    // Get visible services in a cyclic manner
     const getVisibleServices = () => {
         const visible = [];
         for (let i = 0; i < visibleCount; i++) {
@@ -33,6 +42,7 @@ const ExpandOnHover = () => {
     };
 
     const getCardWidth = (index: number) => {
+        if (isMobile) return "flex-1";
         return index === expandedIndex ? "flex-[2]" : "flex-1";
     };
 
@@ -53,15 +63,15 @@ const ExpandOnHover = () => {
                     </Button>
 
                     {/* Cards */}
-                    <div className="flex h-auto min-h-[300px] md:min-h-[400px] lg:min-h-[500px] md:h-[60vh] flex-1">
+                    <div className="flex h-auto min-h-[350px] md:min-h-[400px] lg:min-h-[500px] md:h-[60vh] flex-1 gap-0 md:gap-0">
                         {visibleServices.map((service, idx) => {
-                            const isExpanded = idx === expandedIndex;
+                            const isExpanded = isMobile ? true : idx === expandedIndex;
                             return (
                                 <Link
                                     href={`/services/${service.slug}`}
                                     key={`${service.id}-${startIndex}`}
                                     className={`relative cursor-pointer overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] h-full ${getCardWidth(idx)}`}
-                                    onMouseEnter={() => setExpandedIndex(idx)}
+                                    onMouseEnter={() => !isMobile && setExpandedIndex(idx)}
                                     style={{ position: 'relative', display: 'block', textDecoration: 'none' }}
                                 >
                                     {/* Image - Must fill entire card */}
@@ -90,21 +100,21 @@ const ExpandOnHover = () => {
                                             left: 0,
                                             right: 0,
                                             bottom: 0,
-                                            backgroundColor: isExpanded ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)',
+                                            backgroundColor: isExpanded ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.3)',
                                         }}
                                     />
 
-                                    {/* Content - Only when expanded */}
+                                    {/* Content */}
                                     {isExpanded && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-6 text-center z-10">
                                             <h3
-                                                className="text-white text-3xl font-medium mb-3"
+                                                className="text-white text-xl md:text-3xl font-medium mb-2 md:mb-3"
                                                 style={{ color: '#ffffff', textShadow: '0 2px 10px black' }}
                                             >
                                                 {service.title}
                                             </h3>
                                             <p
-                                                className="text-white text-base max-w-[280px]"
+                                                className="text-white text-sm md:text-base max-w-[280px]"
                                                 style={{ color: '#ffffff', textShadow: '0 1px 5px black' }}
                                             >
                                                 {service.description}
