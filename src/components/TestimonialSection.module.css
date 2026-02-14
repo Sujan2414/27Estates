@@ -156,6 +156,11 @@
     color: var(--gold);
 }
 
+/* Pause ticker on touch for mobile */
+.tickerTrack:active {
+    animation-play-state: paused;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .section {
@@ -166,25 +171,15 @@
         margin-bottom: 2.5rem;
     }
 
-    .tickerWrapper {
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        mask-image: none;
-        -webkit-mask-image: none;
-        padding: 0 1rem;
-    }
-
-    .tickerTrack {
-        animation: none;
-    }
-
     .card {
         min-width: 280px;
         max-width: 280px;
         padding: 1.75rem;
-        scroll-snap-align: center;
         flex-shrink: 0;
+    }
+
+    .tickerTrack {
+        animation-duration: 20s;
     }
 }
 

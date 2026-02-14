@@ -66,7 +66,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                         {/* Logo */}
                         <Link href="/" className="mb-2 block relative w-48 h-12">
                             <Image
-                                src="/Final_logo.png"
+                                src="/logo-trimmed.png"
                                 alt="27 Estates"
                                 fill
                                 className="object-contain object-left"

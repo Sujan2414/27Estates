@@ -12,6 +12,7 @@ import HowWeWork from '@/components/HowWeWork';
 import TestimonialSection from '@/components/TestimonialSection';
 import BlogCards from '@/components/ui/blogs';
 import GalleryShowcase from '@/components/GalleryShowcase';
+import ContactCTA from '@/components/ContactCTA';
 import Footer from '@/components/Footer';
 
 
@@ -35,6 +36,7 @@ export default function Home() {
                         <TestimonialSection />
                         <BlogCards />
                         <GalleryShowcase />
+                        <ContactCTA />
                         <Footer />
                     </div>
 

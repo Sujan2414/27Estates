@@ -175,8 +175,9 @@
 
     .ctaPrimary,
     .ctaSecondary {
-        width: 100%;
-        max-width: 280px;
+        width: auto;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.75rem;
     }
 
     .title {

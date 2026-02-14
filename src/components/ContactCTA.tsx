@@ -1,10 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from './ContactCTA.module.css';
 
 const ContactCTA: React.FC = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
+    // On desktop, the ZoomParallax already has a CTA — only show this on mobile
+    if (!isMobile) return null;
+
     return (
         <section id="contact" className={styles.section}>
             {/* Background Image */}

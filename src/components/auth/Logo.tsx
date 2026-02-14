@@ -8,7 +8,7 @@ const Logo = () => {
         <div style={{ marginBottom: '64px', marginTop: '-32px' }}>
             <Link href="/">
                 <Image
-                    src="/Nav_Logo_HD_v3.png"
+                    src="/logo-trimmed.png"
                     alt="27 Estates"
                     width={140}
                     height={42}

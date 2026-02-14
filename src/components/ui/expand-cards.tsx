@@ -63,7 +63,7 @@ const ExpandOnHover = () => {
                     </Button>
 
                     {/* Cards */}
-                    <div className="flex h-auto min-h-[350px] md:min-h-[400px] lg:min-h-[500px] md:h-[60vh] flex-1 gap-0 md:gap-0">
+                    <div className={`flex flex-1 ${isMobile ? 'h-[350px]' : 'h-auto min-h-[400px] lg:min-h-[500px] md:h-[60vh]'}`}>
                         {visibleServices.map((service, idx) => {
                             const isExpanded = isMobile ? true : idx === expandedIndex;
                             return (

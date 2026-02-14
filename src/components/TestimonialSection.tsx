@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import styles from './TestimonialSection.module.css';
 
@@ -43,20 +43,8 @@ const testimonials = [
 ];
 
 const TestimonialSection: React.FC = () => {
-    const [isMobile, setIsMobile] = useState(false);
-
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth <= 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
-    // On mobile: show originals only (no ticker duplicates)
-    // On desktop: triple for seamless ticker loop
-    const displayCards = isMobile
-        ? testimonials
-        : [...testimonials, ...testimonials, ...testimonials];
+    // Triple cards for seamless infinite ticker loop on all devices
+    const displayCards = [...testimonials, ...testimonials, ...testimonials];
 
     return (
         <section className={styles.section}>

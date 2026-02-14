@@ -156,7 +156,7 @@ export const AuthPromptDialog = ({
                         height: '60px'
                     }}>
                         <Image
-                            src="/Final_logo.png"
+                            src="/logo-trimmed.png"
                             alt="27 Estates"
                             fill
                             style={{ objectFit: 'contain', objectPosition: 'left' }}

@@ -76,7 +76,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
 
     return (
         <motion.nav
-            className={`${styles.nav} ${isScrolled || alwaysScrolled ? styles.scrolled : ''}`}
+            className={`${styles.nav} ${isScrolled || alwaysScrolled ? styles.scrolled : ''} ${isMobileMenuOpen ? styles.menuOpen : ''}`}
             initial={{ y: -100, opacity: 0 }}
             animate={{
                 y: isVisible ? 0 : '-100%',
@@ -94,7 +94,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                 {/* Logo */}
                 <Link href="/" className={styles.logoLink}>
                     <Image
-                        src="/Final_logo.png"
+                        src="/logo-trimmed.png"
                         alt="27 Estates"
                         width={300}
                         height={90}

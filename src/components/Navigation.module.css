@@ -17,6 +17,10 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.nav.menuOpen {
+    background: var(--dark-turquoise, #1F524B);
+}
+
 .container {
     max-width: 90vw;
     margin: 0 auto;
@@ -42,7 +46,7 @@
 
 .logo {
     width: auto;
-    height: 60px;
+    height: 80px;
     object-fit: contain;
     background: transparent;
     transition: filter 0.3s ease;
@@ -268,13 +272,13 @@
 
 @media (max-width: 768px) {
     .logo {
-        height: 42px;
+        height: 60px;
     }
 }
 
 @media (max-width: 480px) {
     .logo {
-        height: 36px;
+        height: 55px;
     }
 
     .mobileMenu {

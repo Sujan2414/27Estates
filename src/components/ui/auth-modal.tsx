@@ -160,7 +160,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                     height: '40px'
                                 }}>
                                     <Image
-                                        src="/Final_logo.png"
+                                        src="/logo-trimmed.png"
                                         alt="27 Estates"
                                         fill
                                         style={{ objectFit: 'contain', objectPosition: 'left' }}
