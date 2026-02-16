@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus } from 'lucide-react';
 import PropertyCard, { PropertyProps } from '@/components/dashboard/PropertyCard';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/lib/supabase/client';
@@ -19,9 +20,45 @@ export default function DashboardPage() {
     const [recentProperties, setRecentProperties] = useState<PropertyProps[]>([]);
     const [bookmarkIds, setBookmarkIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [profileName, setProfileName] = useState<string | null>(null);
 
-    // Get first name from metadata or fallback to email
-    const firstName = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Guest';
+    // Fetch profile name with robust fallbacks
+    useEffect(() => {
+        if (!user) { setProfileName(null); return; }
+
+        const fetchProfile = async () => {
+            // 1) Try profiles table
+            try {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('first_name, full_name')
+                    .eq('id', user.id)
+                    .single();
+                if (data?.first_name) { setProfileName(data.first_name); return; }
+                if (data?.full_name) { setProfileName(data.full_name.split(' ')[0]); return; }
+            } catch { /* continue */ }
+
+            // 2) Fresh metadata via getUser()
+            try {
+                const { data: { user: freshUser } } = await supabase.auth.getUser();
+                const meta = freshUser?.user_metadata;
+                if (meta?.first_name) { setProfileName(String(meta.first_name)); return; }
+                if (meta?.full_name) { setProfileName(String(meta.full_name).split(' ')[0]); return; }
+                if (meta?.name) { setProfileName(String(meta.name).split(' ')[0]); return; }
+            } catch { /* continue */ }
+
+            // 3) Session metadata
+            const meta = user.user_metadata;
+            if (meta?.first_name) { setProfileName(String(meta.first_name)); }
+            else if (meta?.full_name) { setProfileName(String(meta.full_name).split(' ')[0]); }
+            else if (user.email) { setProfileName(user.email.split('@')[0]); }
+            else { setProfileName(null); }
+        };
+        fetchProfile();
+    }, [user?.id]);
+
+    // Get display name
+    const firstName = profileName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Guest';
     const fullName = user?.user_metadata?.full_name || firstName;
 
     const fetchPropertiesAndBookmarks = async () => {
@@ -128,11 +165,13 @@ export default function DashboardPage() {
                     <p className="text-gray-500">Welcome back, {firstName} 👋</p>
                 </div>
 
+
+
                 <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-2 px-5 py-2.5 bg-[var(--dark-turquoise)] text-white rounded-[4px] font-medium hover:bg-[#1a4640] transition-colors">
+                    <Link href="/dashboard/post-property" className="flex items-center gap-2 px-5 py-2.5 bg-[var(--dark-turquoise)] text-white rounded-[4px] font-medium hover:bg-[#1a4640] transition-colors">
                         <Plus size={20} />
                         <span className="hidden md:inline">Add Listing</span>
-                    </button>
+                    </Link>
                     <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm cursor-pointer">
                         <img
                             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=1F524B&color=fff`}

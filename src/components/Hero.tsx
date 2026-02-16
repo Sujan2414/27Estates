@@ -20,7 +20,7 @@ const heroImages = [
 
 const Hero: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const { showAuthModal } = useAuth();
+    const { checkAuthAndNavigate } = useAuth();
     const { scrollYProgress } = useScroll({
         target: containerRef,
         offset: ["start start", "end start"]
@@ -141,7 +141,7 @@ const Hero: React.FC = () => {
                             transition={{ delay: 0.7, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                         >
                             <motion.button
-                                onClick={() => showAuthModal('/properties')}
+                                onClick={() => checkAuthAndNavigate('/properties')}
                                 className={styles.ctaPrimary}
                                 whileHover={{ y: -2 }}
                                 whileTap={{ scale: 0.98 }}
@@ -162,7 +162,20 @@ const Hero: React.FC = () => {
                         </motion.p>
                     </div>
                 </div>
-            </motion.div>
+            </div>
+        </motion.div>
+
+            {/* Post Your Property Button - Top Right */ }
+    <motion.div
+        className={styles.topRightAction}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 1, duration: 0.6 }}
+    >
+        <a href="/dashboard/post-property" className={styles.postPropertyBtn}>
+            Post Your Property <span className="arrow">↗</span>
+        </a>
+    </motion.div>
         </section >
     );
 };
