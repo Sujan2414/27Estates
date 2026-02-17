@@ -40,7 +40,7 @@ export const metadata: Metadata = {
         siteName: '27 Estates',
         images: [
             {
-                url: '/opengraph-image.png', // need to add this image to public folder or use a default one
+                url: '/Final_logo.png',
                 width: 1200,
                 height: 630,
                 alt: '27 Estates - Luxury Real Estate',
@@ -53,11 +53,11 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: "27 Estates | Own the Extraordinary",
         description: "Discover premium properties that redefine luxury living in Bangalore.",
-        images: ['/opengraph-image.png'],
+        images: ['/Final_logo.png'],
     },
     icons: {
         icon: '/favicon.png',
-        apple: '/apple-touch-icon.png',
+        apple: '/favicon.png',
     },
     robots: {
         index: true,
