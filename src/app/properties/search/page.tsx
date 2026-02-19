@@ -765,7 +765,7 @@ const SearchPage = () => {
                         </div>
                     </form>
                     <button
-                        onClick={() => user ? setShowPostForm(!showPostForm) : (window.location.href = '/auth/signin?redirect=/properties/search')}
+                        onClick={() => setShowPostForm(!showPostForm)}
                         className={`${styles.postBtnInline} ${showPostForm ? styles.postBtnInlineActive : ''}`}
                     >
                         <Plus size={16} /> {showPostForm ? 'Close Form' : 'Post Your Property'}
@@ -806,7 +806,7 @@ const SearchPage = () => {
                         </button>
                     )}
                     <button
-                        onClick={() => user ? setShowPostForm(!showPostForm) : (window.location.href = '/auth/signin?redirect=/properties/search')}
+                        onClick={() => setShowPostForm(!showPostForm)}
                         className={styles.mobilePostBtnInline}
                         style={showPostForm ? { background: '#dc2626' } : {}}
                     >
