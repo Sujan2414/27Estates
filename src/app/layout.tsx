@@ -106,6 +106,7 @@ export default function RootLayout({
                             "name": "27 Estates",
                             "url": "https://www.27estates.com",
                             "logo": "https://www.27estates.com/Final_logo.png",
+                            "image": "https://www.27estates.com/og-image.jpg",
                             "description": "Discover premium properties that redefine luxury living. 27 Estates - your trusted partner for extraordinary real estate in India's most prime locations.",
                             "address": {
                                 "@type": "PostalAddress",
