@@ -45,7 +45,15 @@ const sectionTitle: React.CSSProperties = {
     borderBottom: `1px solid ${BORDER}`,
 };
 
-export default function PostPropertyForm() {
+const projectTypeOptions = [
+    'Apartment', 'Villa', 'Plot', 'Commercial', 'Duplex', 'Penthouse', 'Farmhouse', 'Row Villa'
+];
+
+const projectStatusOptions = [
+    'Upcoming', 'Under Construction', 'Ready to Move', 'New Launch'
+];
+
+export default function PostProjectForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -57,10 +65,12 @@ export default function PostPropertyForm() {
         name: '',
         phone: '',
         email: '',
-        property_type: '',
-        deal_type: '',
+        project_name: '',
+        project_type: '',
+        project_status: '',
+        budget_range: '',
+        location: '',
         description: '',
-        expected_price: '',
     });
 
     const supabase = createClient();
@@ -131,10 +141,10 @@ export default function PostPropertyForm() {
                     name: formData.name,
                     phone: formData.phone,
                     email: formData.email,
-                    property_type: formData.deal_type === 'For Rent' ? 'Rent' : 'Sale',
-                    deal_type: formData.property_type,
-                    property_details: formData.description,
-                    expected_price: formData.expected_price ? parseFloat(formData.expected_price) : null,
+                    property_type: 'Project',
+                    deal_type: formData.project_type,
+                    property_details: `Project: ${formData.project_name}\nType: ${formData.project_type}\nStatus: ${formData.project_status}\nBudget: ${formData.budget_range}\nLocation: ${formData.location}\n\n${formData.description}`,
+                    expected_price: null,
                     images: uploadedImageUrls,
                     status: 'new'
                 }]);
@@ -142,8 +152,8 @@ export default function PostPropertyForm() {
             if (insertError) throw insertError;
             setIsSuccess(true);
         } catch (err: any) {
-            console.error('Error submitting property:', err);
-            setError(err.message || 'Failed to submit property. Please try again.');
+            console.error('Error submitting project:', err);
+            setError(err.message || 'Failed to submit project. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -169,15 +179,15 @@ export default function PostPropertyForm() {
                     <CheckCircle size={28} color="#22c55e" />
                 </div>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: TEXT, marginBottom: 8 }}>
-                    Submitted Successfully!
+                    Project Submitted Successfully!
                 </h3>
                 <p style={{ fontSize: '0.8125rem', color: '#737373', maxWidth: 400, margin: '0 auto 24px' }}>
-                    Our team will review your property and get back to you within 24 hours.
+                    Our team will review your project and get back to you within 24 hours.
                 </p>
                 <button
                     onClick={() => {
                         setIsSuccess(false);
-                        setFormData({ name: '', phone: '', email: '', property_type: '', deal_type: '', description: '', expected_price: '' });
+                        setFormData({ name: '', phone: '', email: '', project_name: '', project_type: '', project_status: '', budget_range: '', location: '', description: '' });
                         setImages([]);
                         setImagePreviews([]);
                     }}
@@ -192,7 +202,7 @@ export default function PostPropertyForm() {
                         cursor: 'pointer',
                     }}
                 >
-                    Submit Another Property
+                    Submit Another Project
                 </button>
             </div>
         );
@@ -256,49 +266,77 @@ export default function PostPropertyForm() {
                     </div>
                 </div>
 
-                {/* ── Section 2: Property Details ── */}
+                {/* ── Section 2: Project Details ── */}
                 <div style={{ padding: '20px 24px', borderBottom: `1px solid ${BORDER}` }}>
-                    <div style={sectionTitle}>Property Details</div>
+                    <div style={sectionTitle}>Project Details</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: 16 }}>
                         <div>
-                            <label style={labelStyle}>Property Type *</label>
-                            <select
-                                name="property_type"
+                            <label style={labelStyle}>Project Name *</label>
+                            <input
+                                type="text"
+                                name="project_name"
+                                placeholder="e.g. Green Valley Heights"
                                 required
-                                value={formData.property_type}
+                                value={formData.project_name}
+                                onChange={handleInputChange}
+                                style={inputStyle}
+                                onFocus={e => { e.target.style.borderColor = BRAND; e.target.style.boxShadow = `0 0 0 3px rgba(24,60,56,0.08)`; }}
+                                onBlur={e => { e.target.style.borderColor = BORDER; e.target.style.boxShadow = 'none'; }}
+                            />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Project Type *</label>
+                            <select
+                                name="project_type"
+                                required
+                                value={formData.project_type}
                                 onChange={handleInputChange}
                                 style={{ ...inputStyle, appearance: 'none' as any, cursor: 'pointer', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
                             >
                                 <option value="" disabled>Select type</option>
-                                <option value="Apartment">Apartment</option>
-                                <option value="Villa">Villa</option>
-                                <option value="Plot">Plot</option>
-                                <option value="Bungalow">Bungalow</option>
-                                <option value="Commercial">Commercial</option>
-                                <option value="Other">Other</option>
+                                {projectTypeOptions.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
                             </select>
                         </div>
                         <div>
-                            <label style={labelStyle}>Deal Type *</label>
+                            <label style={labelStyle}>Project Status *</label>
                             <select
-                                name="deal_type"
+                                name="project_status"
                                 required
-                                value={formData.deal_type}
+                                value={formData.project_status}
                                 onChange={handleInputChange}
                                 style={{ ...inputStyle, appearance: 'none' as any, cursor: 'pointer', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
                             >
-                                <option value="" disabled>Select deal type</option>
-                                <option value="For Sale">For Sale</option>
-                                <option value="For Rent">For Rent</option>
+                                <option value="" disabled>Select status</option>
+                                {projectStatusOptions.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
                             </select>
                         </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: 16 }}>
                         <div>
-                            <label style={labelStyle}>Expected Price (₹)</label>
+                            <label style={labelStyle}>Budget Range</label>
                             <input
-                                type="number"
-                                name="expected_price"
-                                placeholder="e.g. 5000000"
-                                value={formData.expected_price}
+                                type="text"
+                                name="budget_range"
+                                placeholder="e.g. 50L - 1.5Cr"
+                                value={formData.budget_range}
+                                onChange={handleInputChange}
+                                style={inputStyle}
+                                onFocus={e => { e.target.style.borderColor = BRAND; e.target.style.boxShadow = `0 0 0 3px rgba(24,60,56,0.08)`; }}
+                                onBlur={e => { e.target.style.borderColor = BORDER; e.target.style.boxShadow = 'none'; }}
+                            />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Location / City *</label>
+                            <input
+                                type="text"
+                                name="location"
+                                placeholder="e.g. Pune, Hinjewadi"
+                                required
+                                value={formData.location}
                                 onChange={handleInputChange}
                                 style={inputStyle}
                                 onFocus={e => { e.target.style.borderColor = BRAND; e.target.style.boxShadow = `0 0 0 3px rgba(24,60,56,0.08)`; }}
@@ -310,7 +348,7 @@ export default function PostPropertyForm() {
                         <label style={labelStyle}>Description</label>
                         <textarea
                             name="description"
-                            placeholder="Location, size, amenities, condition, etc."
+                            placeholder="Amenities, number of units, USPs, etc."
                             value={formData.description}
                             onChange={handleInputChange}
                             rows={3}
@@ -323,7 +361,7 @@ export default function PostPropertyForm() {
 
                 {/* ── Section 3: Images ── */}
                 <div style={{ padding: '20px 24px', borderBottom: `1px solid ${BORDER}` }}>
-                    <div style={sectionTitle}>Property Images</div>
+                    <div style={sectionTitle}>Project Images</div>
                     <div
                         onClick={() => fileInputRef.current?.click()}
                         style={{
@@ -417,7 +455,7 @@ export default function PostPropertyForm() {
                         {isLoading ? (
                             <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Submitting...</>
                         ) : (
-                            'Submit Property'
+                            'Submit Project'
                         )}
                     </button>
                 </div>

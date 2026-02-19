@@ -154,6 +154,13 @@ const Dashboard = () => {
 
     const searchParams = useSearchParams();
 
+    // Check for ?action=post to open form automatically
+    useEffect(() => {
+        if (searchParams?.get('action') === 'post') {
+            setShowPostForm(true);
+        }
+    }, [searchParams]);
+
     // Initialize state from URL params
     const [listingType, setListingType] = useState<'Buy' | 'Rent'>(
         (searchParams?.get('type') as 'Buy' | 'Rent') || 'Buy'
@@ -436,7 +443,7 @@ const Dashboard = () => {
         <div className={styles.page}>
             {/* ===== MOBILE STICKY HEADER (Airbnb-style) ===== */}
             <div className={styles.mobileSearchHeader}>
-                {/* Top row: Logo + Search Pill */}
+                {/* Top row: Logo + Search Pill + Post Property */}
                 <div className={styles.mobileTopRow}>
                     <a href="/" className={styles.mobileBackLogo}>
                         <img src="/sidebar-logo.png" alt="27 Estates" className={styles.mobileBackLogoImg} />
@@ -461,6 +468,11 @@ const Dashboard = () => {
                             </button>
                         )}
                     </div>
+                    {!user && (
+                        <a href="/auth/signin?redirect=/properties" className={styles.mobileSignInBtn}>
+                            Sign In
+                        </a>
+                    )}
                 </div>
 
                 {/* Horizontal Filter Chips */}
@@ -625,16 +637,18 @@ const Dashboard = () => {
                 )}
             </AnimatePresence>
 
-            {/* Buy / Rent Toggle — desktop only */}
-            <div className={styles.listingToggle}>
-                <button
-                    className={`${styles.listingBtn} ${listingType === 'Buy' ? styles.listingBtnActive : ''}`}
-                    onClick={() => setListingType('Buy')}
-                >Buy</button>
-                <button
-                    className={`${styles.listingBtn} ${listingType === 'Rent' ? styles.listingBtnActive : ''}`}
-                    onClick={() => setListingType('Rent')}
-                >Rent</button>
+            {/* Buy / Rent Toggle */}
+            <div className={styles.listingActionsRow}>
+                <div className={styles.listingToggle}>
+                    <button
+                        className={`${styles.listingBtn} ${listingType === 'Buy' ? styles.listingBtnActive : ''}`}
+                        onClick={() => setListingType('Buy')}
+                    >Buy</button>
+                    <button
+                        className={`${styles.listingBtn} ${listingType === 'Rent' ? styles.listingBtnActive : ''}`}
+                        onClick={() => setListingType('Rent')}
+                    >Rent</button>
+                </div>
             </div>
 
             {/* Filter Bar — desktop only */}
@@ -769,7 +783,9 @@ const Dashboard = () => {
 
             {/* Section 1: PROJECTS */}
             <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>PROJECTS</h2>
+                <div className={styles.sectionHeader}>
+                    <h2 className={styles.sectionTitle}>PROJECTS</h2>
+                </div>
                 <div className={styles.statusFilters}>
                     {statusOptions.map((opt) => (
                         <button
@@ -816,7 +832,9 @@ const Dashboard = () => {
 
             {/* Section 2: PROPERTIES */}
             <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>PROPERTIES</h2>
+                <div className={styles.sectionHeader}>
+                    <h2 className={styles.sectionTitle}>PROPERTIES</h2>
+                </div>
                 {allProperties.length > 0 ? (
                     <>
                         <div className={styles.latestGrid}>
@@ -846,7 +864,7 @@ const Dashboard = () => {
                     </div>
                 )}
             </section>
-        </div>
+        </div >
     );
 };
 

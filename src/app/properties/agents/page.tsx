@@ -60,7 +60,7 @@ const Agents = () => {
                         {/* Agent Image */}
                         <div className={styles.agentImage}>
                             <img
-                                src={agent.image || '/placeholder-agent.jpg'}
+                                src={agent.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=random&color=fff&size=200`}
                                 alt={agent.name}
                                 className={styles.image}
                             />

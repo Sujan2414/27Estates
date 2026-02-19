@@ -103,6 +103,26 @@
     width: fit-content;
 }
 
+/* Wrapper for Toggle + Post Button row */
+.listingActionsRow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.listingActionsRow .listingToggle {
+    margin-bottom: 0;
+    /* Remove margin when inside row */
+}
+
+@media (max-width: 767px) {
+    .listingActionsRow {
+        justify-content: space-between;
+    }
+}
+
 @media (min-width: 768px) {
     .listingToggle {
         display: flex;
@@ -507,8 +527,39 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
     color: #f59e0b;
+}
+
+/* Section header: title + action button in one row */
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+/* Post button inside each section header */
+.sectionPostBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4375rem 1rem;
+    border: 1.5px solid #183C38;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #183C38;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.sectionPostBtn:hover {
+    background: #183C38;
+    color: #ffffff;
 }
 
 .grid {
@@ -924,4 +975,165 @@
     .pageTitle {
         font-size: 1.5rem;
     }
+}
+
+/* ====================== */
+/* Mobile Buy/Rent Toggle */
+/* ====================== */
+.mobileListingToggle {
+    display: flex;
+    gap: 0;
+    margin: 0.5rem 0 0;
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 3px;
+    width: 100%;
+}
+
+.mobileListingBtn {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #737373;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+}
+
+.mobileListingBtn:hover {
+    color: #0a0a0a;
+}
+
+.mobileListingBtnActive {
+    background: #183C38;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(31, 82, 75, 0.25);
+}
+
+.mobileListingBtnActive:hover {
+    color: #ffffff;
+}
+
+/* Desktop Post Buttons Row — below filter bar */
+.postButtonsRow {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+}
+
+@media (min-width: 768px) {
+    .postButtonsRow {
+        display: flex;
+    }
+}
+
+.postBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5625rem 1.25rem;
+    border: 1.5px solid #183C38;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #183C38;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.postBtn:hover {
+    background: #183C38;
+    color: #ffffff;
+}
+
+/* Mobile Post Buttons Row — below filter chips */
+.mobilePostButtonsRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0 0.625rem;
+}
+
+@media (min-width: 768px) {
+    .mobilePostButtonsRow {
+        display: none;
+    }
+}
+
+.mobilePostBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex: 1;
+    padding: 0.5rem 0.625rem;
+    border: 1.5px solid #183C38;
+    border-radius: 9999px;
+    background: #ffffff;
+    color: #183C38;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.mobilePostBtn:active {
+    background: #183C38;
+    color: #ffffff;
+    transform: scale(0.97);
+}
+
+/* Mobile Post Property Button (text version) */
+.mobilePostPropertyBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: 9999px;
+    background: #183C38;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobilePostPropertyBtn:active {
+    transform: scale(0.95);
+}
+
+/* Mobile Sign In Button */
+.mobileSignInBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 9999px;
+    background: #183C38;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.mobileSignInBtn:active {
+    transform: scale(0.95);
 }

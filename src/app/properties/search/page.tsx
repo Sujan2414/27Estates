@@ -7,6 +7,8 @@ import LatestPropertyCard from "@/components/emergent/LatestPropertyCard";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import styles from "@/components/emergent/Search.module.css";
+import { motion, AnimatePresence } from "framer-motion";
+import PostPropertyForm from "@/components/dashboard/PostPropertyForm";
 
 const PropertyMap = dynamic(() => import("@/components/emergent/PropertyMap"), {
     ssr: false,
@@ -132,7 +134,9 @@ const SearchPage = () => {
     const [selectedPropertyAge, setSelectedPropertyAge] = useState<string | null>(null);
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
     const [featuredOnly, setFeaturedOnly] = useState(false);
+    const [listingType, setListingType] = useState<'Buy' | 'Rent'>('Buy');
     const [sortBy, setSortBy] = useState("newest");
+    const [showPostForm, setShowPostForm] = useState(false);
 
     // Derived Logic for Area Options
     const areaOptions = useMemo(() => {
@@ -222,6 +226,9 @@ const SearchPage = () => {
     useEffect(() => {
         let result = [...properties];
 
+        // Filter by Buy/Rent (property_type)
+        result = result.filter(p => p.property_type === (listingType === 'Buy' ? 'Sale' : 'Rent'));
+
         if (propertyIdSearch.trim()) {
             const id = propertyIdSearch.toLowerCase();
             result = result.filter(p =>
@@ -309,7 +316,7 @@ const SearchPage = () => {
     }, [
         searchQuery, propertyIdSearch, selectedCategory, selectedCity, selectedArea,
         minPrice, maxPrice, selectedBedrooms, selectedBathrooms,
-        minArea, maxArea, featuredOnly, sortBy, properties, selectedStatus, selectedFurnishing
+        minArea, maxArea, featuredOnly, listingType, sortBy, properties, selectedStatus, selectedFurnishing
     ]);
 
     const handleReset = () => {
@@ -329,6 +336,7 @@ const SearchPage = () => {
         setSelectedPropertyAge(null);
         setSelectedStatus(null);
         setFeaturedOnly(false);
+        setListingType('Buy');
         setSortBy("newest");
     };
 
@@ -360,7 +368,7 @@ const SearchPage = () => {
             <aside className={styles.filterSidebar}>
                 {/* Header - Sticky */}
                 <div className={styles.filterHeader}>
-                    <h1 className={styles.filterTitle}>Filters</h1>
+                    <h1 className={styles.filterTitle}>Property Filters</h1>
                     <div className={styles.viewToggle}>
                         {/* View Toggles */}
                         <button
@@ -380,6 +388,18 @@ const SearchPage = () => {
 
                 {/* Scrollable Content */}
                 <div className={styles.filterScrollArea} data-lenis-prevent>
+                    {/* Buy / Rent Toggle */}
+                    <div className={styles.listingTypeToggle}>
+                        <button
+                            className={`${styles.listingTypeBtn} ${listingType === 'Buy' ? styles.listingTypeBtnActive : ''}`}
+                            onClick={() => setListingType('Buy')}
+                        >Buy</button>
+                        <button
+                            className={`${styles.listingTypeBtn} ${listingType === 'Rent' ? styles.listingTypeBtnActive : ''}`}
+                            onClick={() => setListingType('Rent')}
+                        >Rent</button>
+                    </div>
+
                     {/* Featured Property Toggle */}
                     <div className={styles.toggleRow}>
                         <span className={styles.toggleLabel}>Featured Only</span>
@@ -744,7 +764,28 @@ const SearchPage = () => {
                             />
                         </div>
                     </form>
+                    <button
+                        onClick={() => user ? setShowPostForm(!showPostForm) : (window.location.href = '/auth/signin?redirect=/properties/search')}
+                        className={`${styles.postBtnInline} ${showPostForm ? styles.postBtnInlineActive : ''}`}
+                    >
+                        <Plus size={16} /> {showPostForm ? 'Close Form' : 'Post Your Property'}
+                    </button>
                 </div>
+
+                {/* Inline Post Property Form — expands below search bar */}
+                <AnimatePresence>
+                    {showPostForm && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            style={{ overflow: 'hidden', margin: '0 1.5rem 12px 1.5rem', maxHeight: '60vh', overflowY: 'auto' }}
+                        >
+                            <PostPropertyForm />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Mobile Controls Bar — Filter + List/Map toggle */}
                 <div className={styles.mobileControls}>
@@ -764,19 +805,36 @@ const SearchPage = () => {
                             Clear
                         </button>
                     )}
-                    <div className={styles.mobileViewToggle}>
+                    <button
+                        onClick={() => user ? setShowPostForm(!showPostForm) : (window.location.href = '/auth/signin?redirect=/properties/search')}
+                        className={styles.mobilePostBtnInline}
+                        style={showPostForm ? { background: '#dc2626' } : {}}
+                    >
+                        {showPostForm ? <><X size={14} /> Close</> : <><Plus size={14} /> Post Property</>}
+                    </button>
+                </div>
+
+                {/* Floating Map/List Toggle — bottom center on mobile, hidden when form is open */}
+                {!showPostForm && (
+                    <button
+                        className={styles.floatingViewToggle}
+                        onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
+                    >
+                        {viewMode === 'list' ? <><Map size={16} /> Map</> : <><List size={16} /> List</>}
+                    </button>
+                )}
+
+                {/* Buy / Rent Toggle & Post Property Button */}
+                <div className={styles.listingActionsRow}>
+                    <div className={styles.listingToggle}>
                         <button
-                            className={`${styles.mobileViewBtn} ${viewMode === 'list' ? styles.mobileViewBtnActive : ''}`}
-                            onClick={() => setViewMode('list')}
-                        >
-                            <List size={14} /> List
-                        </button>
+                            className={`${styles.listingBtn} ${listingType === 'Buy' ? styles.listingBtnActive : ''}`}
+                            onClick={() => setListingType('Buy')}
+                        >Buy</button>
                         <button
-                            className={`${styles.mobileViewBtn} ${viewMode === 'map' ? styles.mobileViewBtnActive : ''}`}
-                            onClick={() => setViewMode('map')}
-                        >
-                            <Map size={14} /> Map
-                        </button>
+                            className={`${styles.listingBtn} ${listingType === 'Rent' ? styles.listingBtnActive : ''}`}
+                            onClick={() => setListingType('Rent')}
+                        >Rent</button>
                     </div>
                 </div>
 

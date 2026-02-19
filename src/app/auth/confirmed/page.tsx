@@ -19,7 +19,7 @@ export default function EmailConfirmedPage() {
 
                 <div className="pt-4">
                     <Link
-                        href="/"
+                        href="/properties"
                         className="inline-flex items-center justify-center w-full px-6 py-3 text-base font-medium text-white bg-[var(--dark-turquoise)] hover:bg-[#0d4e4e] rounded-md transition-colors duration-200"
                     >
                         Go to Dashboard

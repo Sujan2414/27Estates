@@ -173,7 +173,7 @@ const Bookmarks = () => {
                         Add properties or projects to bookmarks to have them appear here
                     </p>
                     <div className={styles.emptyActions}>
-                        <Link href="/properties" className={styles.browseLink}>
+                        <Link href="/properties/search" className={styles.browseLink}>
                             See Properties
                         </Link>
                         <Link href="/properties/projects" className={styles.browseLinkSecondary}>

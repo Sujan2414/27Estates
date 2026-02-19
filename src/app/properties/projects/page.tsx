@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Search as SearchIcon, Map, List, Building2, Calendar, ChevronDown, Search, Home, Building, Factory, Briefcase, TreePine, Rows3, X, SlidersHorizontal } from "lucide-react";
+import { Search as SearchIcon, Map, List, Building2, Calendar, ChevronDown, Search, Home, Building, Factory, Briefcase, TreePine, Rows3, X, SlidersHorizontal, Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import ProjectCard from "@/components/emergent/ProjectCard";
+import PostProjectForm from "@/components/dashboard/PostProjectForm";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/components/emergent/Search.module.css";
 
@@ -135,6 +137,7 @@ const ProjectsSearchPage = () => {
     const [featuredOnly, setFeaturedOnly] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState("newest");
+    const [showPostForm, setShowPostForm] = useState(false);
 
     // Area options based on selected city
     const areaOptions = useMemo(() => {
@@ -347,6 +350,7 @@ const ProjectsSearchPage = () => {
                         </button>
                     </div>
                 </div>
+
 
                 <div className={styles.filterScrollArea} data-lenis-prevent>
                     {/* Featured Toggle */}
@@ -601,7 +605,28 @@ const ProjectsSearchPage = () => {
                             />
                         </div>
                     </form>
+                    <button
+                        onClick={() => setShowPostForm(!showPostForm)}
+                        className={`${styles.postBtnInline} ${showPostForm ? styles.postBtnInlineActive : ''}`}
+                    >
+                        <Plus size={16} /> {showPostForm ? 'Close Form' : 'Post Your Project'}
+                    </button>
                 </div>
+
+                {/* Inline Post Project Form */}
+                <AnimatePresence>
+                    {showPostForm && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            style={{ overflow: 'hidden', margin: '0 1.5rem 12px 1.5rem', maxHeight: '60vh', overflowY: 'auto' }}
+                        >
+                            <PostProjectForm />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Mobile Controls Bar — Filter + List/Map toggle */}
                 <div className={styles.mobileControls}>
@@ -621,21 +646,24 @@ const ProjectsSearchPage = () => {
                             Clear
                         </button>
                     )}
-                    <div className={styles.mobileViewToggle}>
-                        <button
-                            className={`${styles.mobileViewBtn} ${viewMode === 'list' ? styles.mobileViewBtnActive : ''}`}
-                            onClick={() => setViewMode('list')}
-                        >
-                            <List size={14} /> List
-                        </button>
-                        <button
-                            className={`${styles.mobileViewBtn} ${viewMode === 'map' ? styles.mobileViewBtnActive : ''}`}
-                            onClick={() => setViewMode('map')}
-                        >
-                            <Map size={14} /> Map
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setShowPostForm(!showPostForm)}
+                        className={styles.mobilePostBtnInline}
+                        style={showPostForm ? { background: '#dc2626' } : {}}
+                    >
+                        {showPostForm ? <><X size={14} /> Close</> : <><Plus size={14} /> Post Project</>}
+                    </button>
                 </div>
+
+                {/* Floating Map/List Toggle — bottom center on mobile, hidden when form is open */}
+                {!showPostForm && (
+                    <button
+                        className={styles.floatingViewToggle}
+                        onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
+                    >
+                        {viewMode === 'list' ? <><Map size={16} /> Map</> : <><List size={16} /> List</>}
+                    </button>
+                )}
 
                 <div className={styles.listingsScrollArea} data-lenis-prevent>
                     {viewMode === 'map' ? (
