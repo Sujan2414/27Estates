@@ -11,7 +11,7 @@ const Sidebar = () => {
     const navItems = [
         { icon: LayoutDashboard, label: "Overview", path: "/dashboard" },
         { icon: Building2, label: "My Listings", path: "/dashboard/listings" },
-        { icon: PlusCircle, label: "Add Listing", path: "/dashboard/add-listing" },
+        { icon: PlusCircle, label: "Post Property", path: "/dashboard/post-property" },
         { icon: Heart, label: "Saved", path: "/dashboard/saved" },
         { icon: Users, label: "Profile", path: "/dashboard/profile" },
     ];
@@ -41,8 +41,8 @@ const Sidebar = () => {
                             key={item.path}
                             href={item.path}
                             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
-                                    ? "bg-[var(--dark-turquoise)] text-white shadow-md shadow-[var(--dark-turquoise)]/20"
-                                    : "text-gray-500 hover:text-[var(--dark-turquoise)] hover:bg-[var(--dark-turquoise)]/5"
+                                ? "bg-[var(--dark-turquoise)] text-white shadow-md shadow-[var(--dark-turquoise)]/20"
+                                : "text-gray-500 hover:text-[var(--dark-turquoise)] hover:bg-[var(--dark-turquoise)]/5"
                                 }`}
                         >
                             <item.icon size={20} strokeWidth={1.5} />

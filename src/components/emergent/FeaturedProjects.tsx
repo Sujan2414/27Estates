@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { Database } from '@/lib/supabase/database.types';
+import { Database } from '@/lib/supabase/types';
 import styles from '../FeaturedProperties.module.css';
 import { useAuth } from '@/context/AuthContext';
 import FeaturedAdCard from '@/components/FeaturedAdCard';

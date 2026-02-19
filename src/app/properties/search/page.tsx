@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Search as SearchIcon, Map, List, Building2, Home, Building, Factory, Briefcase, TreePine, ChevronDown, Search, Plus } from "lucide-react";
+import { Search as SearchIcon, Map, List, Building2, Home, Building, Factory, Briefcase, TreePine, ChevronDown, Search, Plus, X, SlidersHorizontal } from "lucide-react";
 import LatestPropertyCard from "@/components/emergent/LatestPropertyCard";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -113,6 +113,7 @@ const SearchPage = () => {
 
     // View toggle
     const [viewMode, setViewMode] = useState<"list" | "map">("list");
+    const [showFilterModal, setShowFilterModal] = useState(false);
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState("");
@@ -745,6 +746,40 @@ const SearchPage = () => {
                     </form>
                 </div>
 
+                {/* Mobile Controls Bar — Filter + List/Map toggle */}
+                <div className={styles.mobileControls}>
+                    <button
+                        className={`${styles.mobileFilterBtn} ${showFilterModal ? styles.mobileFilterBtnActive : ''}`}
+                        onClick={() => setShowFilterModal(true)}
+                    >
+                        <SlidersHorizontal size={14} />
+                        Filters
+                    </button>
+                    {(selectedCategory || selectedCity || selectedArea || minPrice || maxPrice || selectedBedrooms !== 'Any' || selectedBathrooms !== 'Any' || selectedFurnishing || selectedStatus || featuredOnly) && (
+                        <button
+                            className={styles.mobileFilterBtn}
+                            onClick={handleReset}
+                        >
+                            <X size={14} />
+                            Clear
+                        </button>
+                    )}
+                    <div className={styles.mobileViewToggle}>
+                        <button
+                            className={`${styles.mobileViewBtn} ${viewMode === 'list' ? styles.mobileViewBtnActive : ''}`}
+                            onClick={() => setViewMode('list')}
+                        >
+                            <List size={14} /> List
+                        </button>
+                        <button
+                            className={`${styles.mobileViewBtn} ${viewMode === 'map' ? styles.mobileViewBtnActive : ''}`}
+                            onClick={() => setViewMode('map')}
+                        >
+                            <Map size={14} /> Map
+                        </button>
+                    </div>
+                </div>
+
                 {/* Scrollable Listings Area */}
                 <div className={styles.listingsScrollArea} data-lenis-prevent>
 
@@ -782,6 +817,194 @@ const SearchPage = () => {
                     )}
                 </div>
             </main>
+
+            {/* ===== MOBILE FULL-SCREEN FILTER MODAL ===== */}
+            <div className={showFilterModal ? styles.filterModalOpen : styles.filterModal}>
+                <div className={styles.filterModalHeader}>
+                    <h2 className={styles.filterModalTitle}>Filters</h2>
+                    <button className={styles.filterModalClose} onClick={() => setShowFilterModal(false)}>
+                        <X size={18} />
+                    </button>
+                </div>
+                <div className={styles.filterModalBody}>
+                    {/* Featured Toggle */}
+                    <div className={styles.toggleRow}>
+                        <span className={styles.toggleLabel}>Featured Only</span>
+                        <div className={styles.toggle}>
+                            <button
+                                className={`${styles.toggleButton} ${featuredOnly ? styles.toggleButtonActive : ''}`}
+                                onClick={() => setFeaturedOnly(!featuredOnly)}
+                            >
+                                <span className={`${styles.toggleIndicator} ${featuredOnly ? styles.toggleIndicatorActive : ''}`} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Location - City */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('location')}>
+                            <label className={styles.filterLabel}>Location</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.location ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.location ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <div className={styles.locationGrid}>
+                                {cities.map((city) => (
+                                    <button
+                                        key={city}
+                                        className={`${styles.locationButton} ${selectedCity === city ? styles.locationButtonActive : ''}`}
+                                        onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+                                    >
+                                        {city}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Area */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('area_filter')}>
+                            <label className={styles.filterLabel}>Area / Neighborhood</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.area_filter ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.area_filter ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <select
+                                value={selectedArea || ""}
+                                onChange={(e) => setSelectedArea(e.target.value || null)}
+                                className={styles.selectInput}
+                            >
+                                <option value="">Select Area</option>
+                                {areaOptions.map(area => (
+                                    <option key={area} value={area}>{area}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Property Type */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('category')}>
+                            <label className={styles.filterLabel}>Property Type</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.category ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.category ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <div className={styles.categoryGrid}>
+                                {propertyCategories.map((cat) => {
+                                    const Icon = cat.icon;
+                                    return (
+                                        <button
+                                            key={cat.id}
+                                            className={`${styles.categoryButton} ${selectedCategory === cat.id ? styles.categoryButtonActive : ''}`}
+                                            onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
+                                        >
+                                            <Icon size={18} strokeWidth={1.5} />
+                                            <span>{cat.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Budget */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('budget')}>
+                            <label className={styles.filterLabel}>Budget</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.budget ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.budget ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <div className={styles.rangeInputs}>
+                                <select value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className={styles.rangeInput} style={{ width: '45%', cursor: 'pointer' }}>
+                                    <option value="">Min Price</option>
+                                    {priceOptions.map(opt => (<option key={`min-${opt.value}`} value={opt.value}>{opt.label}</option>))}
+                                </select>
+                                <span className={styles.rangeSeparator}>to</span>
+                                <select value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className={styles.rangeInput} style={{ width: '45%', cursor: 'pointer' }}>
+                                    <option value="">Max Price</option>
+                                    {priceOptions.map(opt => (<option key={`max-${opt.value}`} value={opt.value}>{opt.label}</option>))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bedrooms */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('bedrooms')}>
+                            <label className={styles.filterLabel}>Bedrooms</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.bedrooms ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.bedrooms ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <div className={styles.numberGrid}>
+                                {bedroomOptions.map((opt) => (
+                                    <button key={opt} className={`${styles.numberBtn} ${selectedBedrooms === opt ? styles.numberBtnActive : ''}`} onClick={() => setSelectedBedrooms(opt)}>{opt}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bathrooms */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('bathrooms')}>
+                            <label className={styles.filterLabel}>Bathrooms</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.bathrooms ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.bathrooms ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <div className={styles.numberGrid}>
+                                {bathroomOptions.map((opt) => (
+                                    <button key={opt} className={`${styles.numberBtn} ${selectedBathrooms === opt ? styles.numberBtnActive : ''}`} onClick={() => setSelectedBathrooms(opt)}>{opt}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Furnishing */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('furnishing')}>
+                            <label className={styles.filterLabel}>Furnishing</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.furnishing ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.furnishing ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <div className={styles.pillGrid}>
+                                {furnishingOptions.map((opt) => (
+                                    <button key={opt} className={`${styles.pillBtn} ${selectedFurnishing === opt ? styles.pillBtnActive : ''}`} onClick={() => setSelectedFurnishing(selectedFurnishing === opt ? null : opt)}>{opt}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('status')}>
+                            <label className={styles.filterLabel}>Property Status</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.status ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.status ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <div className={styles.pillGrid}>
+                                {propertyStatus.map((status) => (
+                                    <button key={status} className={`${styles.pillBtn} ${selectedStatus === status ? styles.pillBtnActive : ''}`} onClick={() => setSelectedStatus(selectedStatus === status ? null : status)}>{status}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sort */}
+                    <div className={styles.filterSection}>
+                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('sort')}>
+                            <label className={styles.filterLabel}>Sort By</label>
+                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.sort ? styles.collapseIconOpen : ''}`} />
+                        </div>
+                        <div className={`${styles.collapsibleContent} ${openSections.sort ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={styles.selectInput}>
+                                {sortOptions.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div className={styles.filterModalFooter}>
+                    <button className={styles.filterModalReset} onClick={() => { handleReset(); }}>Reset</button>
+                    <button className={styles.filterModalApply} onClick={() => setShowFilterModal(false)}>Show Results</button>
+                </div>
+            </div>
         </div>
     );
 };

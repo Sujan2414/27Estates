@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import styles from '../../PropertyWizard/property-wizard.module.css'
+import dynamic from 'next/dynamic'
+
+// Dynamic import for Map
+const PropertyMap = dynamic(() => import('@/components/emergent/PropertyMap'), {
+    ssr: false,
+    loading: () => <div style={{ height: '300px', background: '#f5f5f5', borderRadius: '1rem' }} />
+})
 
 interface StepProps {
     initialData: any
@@ -33,9 +40,32 @@ export default function ProjectStep3Location({ initialData, onNext, onBack }: St
         onNext(address)
     }
 
+    // Helper to safely parse coordinates
+    const parseCoord = (val: string) => {
+        const num = parseFloat(val)
+        return isNaN(num) ? null : num
+    }
+
+    // Construct preview item for map
+    const mapPreviewItem = {
+        id: 'preview',
+        title: 'New Project',
+        location: address.location || address.city || 'Bangalore',
+        latitude: parseCoord(address.latitude),
+        longitude: parseCoord(address.longitude),
+        type: 'project' as const,
+        images: [],
+        min_price: 'Price on Request',
+    }
+
     return (
         <form onSubmit={handleSubmit}>
             <h2 className={styles.stepTitle}>Location</h2>
+
+            {/* Map Preview */}
+            <div style={{ height: '350px', marginBottom: '2rem', borderRadius: '1rem', overflow: 'hidden' }}>
+                <PropertyMap properties={[]} projects={[mapPreviewItem]} />
+            </div>
 
             <div className={styles.grid2}>
                 <div className={styles.field}>

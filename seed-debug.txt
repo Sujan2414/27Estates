@@ -1,0 +1,1455 @@
+Using service role key
+🚀 Starting seed script...
+
+🔍 Discovering table schemas...
+   ✓ projects table: 45 columns
+   ✓ properties table: 82 columns
+
+🗑️  Deleting existing properties...
+   ✓ Properties deleted
+🗑️  Deleting existing projects...
+   ✓ Projects deleted
+
+📦 Inserting 12 projects...
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-001",
+  "project_name": "Sobha Athena",
+  "title": "Sobha Athena - Premium Living",
+  "description": "Sobha Athena is a premium residential development in Whitefield, Bangalore, offering world-class amenities and modern architecture. Designed for discerning homebuyers who value quality craftsmanship and elegant living spaces.",
+  "rera_number": "PRM/KA/RERA/1251/2025/A12345",
+  "developer_name": "Sobha Limited",
+  "status": "Under Construction",
+  "min_price": "₹1.2 Cr",
+  "max_price": "₹2.8 Cr",
+  "min_price_numeric": 12000000,
+  "max_price_numeric": 28000000,
+  "min_area": 1250,
+  "max_area": 2800,
+  "property_type": "Residential",
+  "bhk_options": [
+    "2 BHK",
+    "3 BHK",
+    "4 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "January 2025",
+  "possession_date": "December 2027",
+  "address": "ITPL Main Road",
+  "location": "Whitefield",
+  "city": "Bangalore",
+  "state": "Karnataka",
+  "pincode": "560066",
+  "country": "India",
+  "latitude": 12.9716,
+  "longitude": 77.7501,
+  "images": [
+    "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": true,
+  "is_rera_approved": true,
+  "employee_name": "Rajesh Kumar",
+  "employee_phone": "+91 98765 43210",
+  "employee_email": "rajesh@21estates.com",
+  "amenities": [
+    "Gymnasium",
+    "Swimming Pool",
+    "Clubhouse",
+    "Jogging Track",
+    "24/7 Security",
+    "Power Backup",
+    "Car Parking",
+    "Landscaped Garden",
+    "Yoga Deck",
+    "Children's Play Area",
+    "Indoor Games",
+    "Party Hall",
+    "Amphitheatre",
+    "Cycling Track"
+  ],
+  "towers_data": [
+    {
+      "name": "Tower A - Zenith",
+      "total_floors": 28,
+      "total_units": 150,
+      "completion_date": "June 2027",
+      "status": "Under Construction"
+    },
+    {
+      "name": "Tower B - Apex",
+      "total_floors": 32,
+      "total_units": 160,
+      "completion_date": "December 2027",
+      "status": "Under Construction"
+    },
+    {
+      "name": "Tower C - Summit",
+      "total_floors": 25,
+      "total_units": 140,
+      "completion_date": "March 2028",
+      "status": "Under Construction"
+    }
+  ],
+  "project_plan": [
+    {
+      "type": "Apartment",
+      "bhk": "2 BHK",
+      "area": "1,250 sq.ft",
+      "price_rate": "₹9,500/sq.ft",
+      "basic_price": "₹1.19 Cr",
+      "completion_date": "June 2027"
+    },
+    {
+      "type": "Apartment",
+      "bhk": "3 BHK",
+      "area": "1,850 sq.ft",
+      "price_rate": "₹9,500/sq.ft",
+      "basic_price": "₹1.76 Cr",
+      "completion_date": "December 2027"
+    },
+    {
+      "type": "Penthouse",
+      "bhk": "4 BHK",
+      "area": "2,800 sq.ft",
+      "price_rate": "₹10,000/sq.ft",
+      "basic_price": "₹2.80 Cr",
+      "completion_date": "March 2028"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "RCC Framed",
+      "walls": "AAC Blocks",
+      "ceiling_height": "10 ft"
+    },
+    "flooring": {
+      "living": "Italian Marble",
+      "bedrooms": "Vitrified Tiles",
+      "bathrooms": "Anti-skid Tiles"
+    },
+    "electrical": {
+      "wiring": "Concealed Copper",
+      "switches": "Modular",
+      "power_points": "Adequate"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: Sobha Athena: invalid input syntax for type date: "January 2025"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"January 2025\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-002",
+  "project_name": "Assetz Zen and Sato",
+  "title": "Assetz Zen and Sato - Serene Living",
+  "description": "A tranquil residential enclave on Sarjapur Road, Assetz Zen and Sato blends Japanese-inspired design with modern Indian living. Spread across 12 acres of lush greenery.",
+  "rera_number": "PRM/KA/RERA/1252/2024/B67890",
+  "developer_name": "Assetz Property Group",
+  "status": "Ready to Move",
+  "min_price": "₹85 L",
+  "max_price": "₹1.5 Cr",
+  "min_price_numeric": 8500000,
+  "max_price_numeric": 15000000,
+  "min_area": 1100,
+  "max_area": 2100,
+  "property_type": "Residential",
+  "bhk_options": [
+    "1 BHK",
+    "2 BHK",
+    "3 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "March 2023",
+  "possession_date": "June 2025",
+  "address": "Survey No. 45, Sarjapur Road",
+  "location": "Sarjapur Road",
+  "city": "Bangalore",
+  "state": "Karnataka",
+  "pincode": "560035",
+  "country": "India",
+  "latitude": 12.9081,
+  "longitude": 77.746,
+  "images": [
+    "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": true,
+  "is_rera_approved": true,
+  "employee_name": "Priya Sharma",
+  "employee_phone": "+91 98765 43211",
+  "employee_email": "priya@21estates.com",
+  "amenities": [
+    "Gymnasium",
+    "Infinity Pool",
+    "Zen Garden",
+    "Meditation Zone",
+    "Clubhouse",
+    "Library",
+    "Co-working Space",
+    "Jogging Track",
+    "Badminton Court",
+    "Power Backup",
+    "Rainwater Harvesting",
+    "EV Charging"
+  ],
+  "towers_data": [
+    {
+      "name": "Zen Block",
+      "total_floors": 18,
+      "total_units": 190,
+      "completion_date": "March 2025",
+      "status": "Ready"
+    },
+    {
+      "name": "Sato Block",
+      "total_floors": 20,
+      "total_units": 190,
+      "completion_date": "June 2025",
+      "status": "Ready"
+    }
+  ],
+  "project_plan": [
+    {
+      "type": "Studio",
+      "bhk": "1 BHK",
+      "area": "650 sq.ft",
+      "price_rate": "₹7,200/sq.ft",
+      "basic_price": "₹46.8 L",
+      "completion_date": "March 2025"
+    },
+    {
+      "type": "Apartment",
+      "bhk": "2 BHK",
+      "area": "1,100 sq.ft",
+      "price_rate": "₹7,200/sq.ft",
+      "basic_price": "₹79.2 L",
+      "completion_date": "March 2025"
+    },
+    {
+      "type": "Apartment",
+      "bhk": "3 BHK",
+      "area": "1,650 sq.ft",
+      "price_rate": "₹7,500/sq.ft",
+      "basic_price": "₹1.24 Cr",
+      "completion_date": "June 2025"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "RCC Framed",
+      "walls": "Clay Bricks",
+      "ceiling_height": "9.5 ft"
+    },
+    "flooring": {
+      "living": "Vitrified Tiles",
+      "bedrooms": "Wooden Flooring",
+      "bathrooms": "Ceramic Tiles"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: Assetz Zen and Sato: invalid input syntax for type date: "March 2023"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"March 2023\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-003",
+  "project_name": "Amigo Amparo",
+  "title": "Amigo Amparo - Ultra Luxury",
+  "description": "An ultra-luxury residential tower in the heart of Bandra, Mumbai. Amigo Amparo offers panoramic sea views, designer interiors, and an unmatched lifestyle experience.",
+  "rera_number": "P51800028765",
+  "developer_name": "Amigo Group",
+  "status": "Pre-Launch",
+  "min_price": "₹3.5 Cr",
+  "max_price": "₹8 Cr",
+  "min_price_numeric": 35000000,
+  "max_price_numeric": 80000000,
+  "min_area": 1800,
+  "max_area": 4500,
+  "property_type": "Residential",
+  "bhk_options": [
+    "3 BHK",
+    "4 BHK",
+    "5 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "June 2026",
+  "possession_date": "March 2030",
+  "address": "Hill Road, Bandra West",
+  "location": "Bandra West",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pincode": "400050",
+  "country": "India",
+  "latitude": 19.0596,
+  "longitude": 72.8295,
+  "images": [
+    "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600573472556-e636c2acda9e?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600210492493-0946911123ea?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": true,
+  "is_rera_approved": true,
+  "employee_name": "Ankit Verma",
+  "employee_phone": "+91 98765 43212",
+  "employee_email": "ankit@21estates.com",
+  "amenities": [
+    "Private Pool",
+    "Sky Lounge",
+    "Concierge Service",
+    "Helipad",
+    "Home Theatre",
+    "Wine Cellar",
+    "Spa & Sauna",
+    "Gymnasium",
+    "Squash Court",
+    "Business Centre",
+    "Valet Parking",
+    "Smart Home Automation"
+  ],
+  "towers_data": [
+    {
+      "name": "Amparo Tower",
+      "total_floors": 45,
+      "total_units": 120,
+      "completion_date": "March 2030",
+      "status": "Pre-Launch"
+    }
+  ],
+  "project_plan": [
+    {
+      "type": "Apartment",
+      "bhk": "3 BHK",
+      "area": "1,800 sq.ft",
+      "price_rate": "₹32,000/sq.ft",
+      "basic_price": "₹5.76 Cr",
+      "completion_date": "March 2030"
+    },
+    {
+      "type": "Penthouse",
+      "bhk": "4 BHK",
+      "area": "3,200 sq.ft",
+      "price_rate": "₹35,000/sq.ft",
+      "basic_price": "₹11.2 Cr",
+      "completion_date": "March 2030"
+    },
+    {
+      "type": "Sky Villa",
+      "bhk": "5 BHK",
+      "area": "4,500 sq.ft",
+      "price_rate": "₹38,000/sq.ft",
+      "basic_price": "₹17.1 Cr",
+      "completion_date": "March 2030"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "Steel-RCC Composite",
+      "walls": "Dry Wall Partition",
+      "ceiling_height": "12 ft"
+    },
+    "flooring": {
+      "living": "Italian Marble",
+      "bedrooms": "Engineered Wood",
+      "bathrooms": "Imported Marble"
+    },
+    "fittings": {
+      "kitchen": "Modular European",
+      "bathroom": "Grohe/Duravit",
+      "doors": "Veneer Finish"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: Amigo Amparo: invalid input syntax for type date: "June 2026"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"June 2026\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-004",
+  "project_name": "Brigade Eternia",
+  "title": "Brigade Eternia - Tech City Living",
+  "description": "Located in the bustling HITEC City corridor, Brigade Eternia offers smart homes with cutting-edge technology integration. Perfect for IT professionals seeking contemporary living.",
+  "rera_number": "P02400005432",
+  "developer_name": "Brigade Group",
+  "status": "Under Construction",
+  "min_price": "₹95 L",
+  "max_price": "₹2.2 Cr",
+  "min_price_numeric": 9500000,
+  "max_price_numeric": 22000000,
+  "min_area": 1150,
+  "max_area": 2650,
+  "property_type": "Residential",
+  "bhk_options": [
+    "2 BHK",
+    "3 BHK",
+    "3.5 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "August 2024",
+  "possession_date": "September 2028",
+  "address": "Nanakramguda",
+  "location": "HITEC City",
+  "city": "Hyderabad",
+  "state": "Telangana",
+  "pincode": "500032",
+  "country": "India",
+  "latitude": 17.4435,
+  "longitude": 78.3772,
+  "images": [
+    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": true,
+  "is_rera_approved": true,
+  "employee_name": "Sanjay Reddy",
+  "employee_phone": "+91 98765 43213",
+  "employee_email": "sanjay@21estates.com",
+  "amenities": [
+    "Smart Home System",
+    "Gymnasium",
+    "Swimming Pool",
+    "Tennis Court",
+    "Basketball Court",
+    "Jogging Track",
+    "Clubhouse",
+    "Mini Theatre",
+    "Library",
+    "Co-working Space",
+    "EV Charging",
+    "Rainwater Harvesting",
+    "Solar Panels",
+    "Waste Management"
+  ],
+  "towers_data": [
+    {
+      "name": "Alpha",
+      "total_floors": 30,
+      "total_units": 200,
+      "completion_date": "March 2028",
+      "status": "Under Construction"
+    },
+    {
+      "name": "Beta",
+      "total_floors": 30,
+      "total_units": 200,
+      "completion_date": "June 2028",
+      "status": "Under Construction"
+    },
+    {
+      "name": "Gamma",
+      "total_floors": 28,
+      "total_units": 200,
+      "completion_date": "September 2028",
+      "status": "Under Construction"
+    }
+  ],
+  "project_plan": [
+    {
+      "type": "Apartment",
+      "bhk": "2 BHK",
+      "area": "1,150 sq.ft",
+      "price_rate": "₹8,200/sq.ft",
+      "basic_price": "₹94.3 L",
+      "completion_date": "March 2028"
+    },
+    {
+      "type": "Apartment",
+      "bhk": "3 BHK",
+      "area": "1,750 sq.ft",
+      "price_rate": "₹8,200/sq.ft",
+      "basic_price": "₹1.44 Cr",
+      "completion_date": "June 2028"
+    },
+    {
+      "type": "Apartment",
+      "bhk": "3.5 BHK",
+      "area": "2,200 sq.ft",
+      "price_rate": "₹8,500/sq.ft",
+      "basic_price": "₹1.87 Cr",
+      "completion_date": "September 2028"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "RCC Framed",
+      "walls": "AAC Blocks",
+      "ceiling_height": "10 ft"
+    },
+    "flooring": {
+      "living": "Vitrified Tiles",
+      "bedrooms": "Laminate Wood",
+      "bathrooms": "Anti-skid Tiles"
+    },
+    "smart": {
+      "automation": "Alexa/Google Compatible",
+      "security": "Video Doorbell",
+      "lighting": "App Controlled"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: Brigade Eternia: invalid input syntax for type date: "August 2024"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"August 2024\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-005",
+  "project_name": "L&T Elara Celestia",
+  "title": "L&T Elara Celestia - Coastal Living",
+  "description": "Set along the scenic OMR corridor, L&T Elara Celestia brings coastal-inspired architecture with open layouts and cross-ventilated apartments. A new standard in Chennai living.",
+  "rera_number": "TN/29/Building/0345/2025",
+  "developer_name": "L&T Realty",
+  "status": "Upcoming",
+  "min_price": "₹65 L",
+  "max_price": "₹1.8 Cr",
+  "min_price_numeric": 6500000,
+  "max_price_numeric": 18000000,
+  "min_area": 950,
+  "max_area": 2400,
+  "property_type": "Residential",
+  "bhk_options": [
+    "1 BHK",
+    "2 BHK",
+    "3 BHK",
+    "4 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "December 2026",
+  "possession_date": "June 2030",
+  "address": "Sholinganallur Junction",
+  "location": "OMR",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pincode": "600119",
+  "country": "India",
+  "latitude": 12.8996,
+  "longitude": 80.2209,
+  "images": [
+    "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": true,
+  "is_rera_approved": true,
+  "employee_name": "Meera Nair",
+  "employee_phone": "+91 98765 43214",
+  "employee_email": "meera@21estates.com",
+  "amenities": [
+    "Olympic Pool",
+    "Gymnasium",
+    "Beach Volleyball",
+    "Squash Court",
+    "Amphitheatre",
+    "Organic Garden",
+    "Pet Park",
+    "Senior Citizen Corner",
+    "Multipurpose Hall",
+    "Badminton Court",
+    "Cricket Pitch",
+    "Skating Rink"
+  ],
+  "towers_data": [
+    {
+      "name": "Celestia North",
+      "total_floors": 22,
+      "total_units": 260,
+      "completion_date": "March 2030",
+      "status": "Upcoming"
+    },
+    {
+      "name": "Celestia South",
+      "total_floors": 22,
+      "total_units": 260,
+      "completion_date": "June 2030",
+      "status": "Upcoming"
+    }
+  ],
+  "project_plan": [
+    {
+      "type": "Apartment",
+      "bhk": "1 BHK",
+      "area": "550 sq.ft",
+      "price_rate": "₹6,800/sq.ft",
+      "basic_price": "₹37.4 L",
+      "completion_date": "March 2030"
+    },
+    {
+      "type": "Apartment",
+      "bhk": "2 BHK",
+      "area": "1,100 sq.ft",
+      "price_rate": "₹6,800/sq.ft",
+      "basic_price": "₹74.8 L",
+      "completion_date": "March 2030"
+    },
+    {
+      "type": "Apartment",
+      "bhk": "3 BHK",
+      "area": "1,700 sq.ft",
+      "price_rate": "₹7,000/sq.ft",
+      "basic_price": "₹1.19 Cr",
+      "completion_date": "June 2030"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "RCC Framed",
+      "walls": "Red Bricks",
+      "ceiling_height": "10 ft"
+    },
+    "flooring": {
+      "living": "Double-charged Vitrified",
+      "bedrooms": "Vitrified Tiles",
+      "bathrooms": "Anti-skid Ceramic"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: L&T Elara Celestia: invalid input syntax for type date: "December 2026"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"December 2026\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-006",
+  "project_name": "Signature One Villas",
+  "title": "Signature One Villas - Exclusive Living",
+  "description": "Ultra-luxury independent villas near Kempegowda International Airport. Each villa sits on a generous plot with private garden, pool provision, and smart home features.",
+  "rera_number": "PRM/KA/RERA/1253/2024/V11111",
+  "developer_name": "Signature Developers",
+  "status": "Ready to Move",
+  "min_price": "₹3.5 Cr",
+  "max_price": "₹6.5 Cr",
+  "min_price_numeric": 35000000,
+  "max_price_numeric": 65000000,
+  "min_area": 3200,
+  "max_area": 5500,
+  "property_type": "Villa",
+  "bhk_options": [
+    "3 BHK",
+    "4 BHK",
+    "5 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "January 2023",
+  "possession_date": "March 2025",
+  "address": "NH-44, Devanahalli",
+  "location": "Devanahalli",
+  "city": "Bangalore",
+  "state": "Karnataka",
+  "pincode": "562110",
+  "country": "India",
+  "latitude": 13.2473,
+  "longitude": 77.712,
+  "images": [
+    "https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": false,
+  "is_rera_approved": true,
+  "employee_name": "Vikram Singh",
+  "employee_phone": "+91 98765 43215",
+  "employee_email": "vikram@21estates.com",
+  "amenities": [
+    "Private Garden",
+    "Swimming Pool Provision",
+    "Clubhouse",
+    "Tennis Court",
+    "Jogging Track",
+    "Children's Play Area",
+    "Community Hall",
+    "Gymnasium",
+    "24/7 Security",
+    "CCTV Surveillance",
+    "Gated Community",
+    "Landscaped Avenue"
+  ],
+  "towers_data": [
+    {
+      "cluster_name": "Emerald Cluster",
+      "total_villas": 30,
+      "villa_types": [
+        "3 BHK",
+        "4 BHK"
+      ],
+      "completion_date": "December 2024",
+      "status": "Ready"
+    },
+    {
+      "cluster_name": "Sapphire Cluster",
+      "total_villas": 35,
+      "villa_types": [
+        "4 BHK",
+        "5 BHK"
+      ],
+      "completion_date": "March 2025",
+      "status": "Ready"
+    },
+    {
+      "cluster_name": "Diamond Cluster",
+      "total_villas": 20,
+      "villa_types": [
+        "5 BHK"
+      ],
+      "completion_date": "June 2025",
+      "status": "Under Construction"
+    }
+  ],
+  "project_plan": [
+    {
+      "villa_type": "Classic",
+      "bhk": 3,
+      "plot_area": "2,400 sq.ft",
+      "built_up_area": "3,200 sq.ft",
+      "floors": 2,
+      "price_range": "₹3.5 - 4.2 Cr",
+      "status": "Available"
+    },
+    {
+      "villa_type": "Premium",
+      "bhk": 4,
+      "plot_area": "3,000 sq.ft",
+      "built_up_area": "4,200 sq.ft",
+      "floors": 2,
+      "price_range": "₹4.5 - 5.5 Cr",
+      "status": "Available"
+    },
+    {
+      "villa_type": "Grandeur",
+      "bhk": 5,
+      "plot_area": "4,000 sq.ft",
+      "built_up_area": "5,500 sq.ft",
+      "floors": 3,
+      "price_range": "₹5.8 - 6.5 Cr",
+      "status": "Sold Out"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "Load Bearing + RCC",
+      "walls": "Red Bricks",
+      "ceiling_height": "11 ft"
+    },
+    "flooring": {
+      "living": "Italian Marble",
+      "bedrooms": "Wooden Flooring",
+      "terrace": "Rustic Tiles"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: Signature One Villas: invalid input syntax for type date: "January 2023"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"January 2023\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-007",
+  "project_name": "Prestige Sanctuary",
+  "title": "Prestige Sanctuary - Coastal Retreat",
+  "description": "A breathtaking villa community in Candolim, Goa. Prestige Sanctuary offers resort-style living with Portuguese-inspired architecture, private pools, and lush tropical landscaping.",
+  "rera_number": "PRGO-RER-5678-2025",
+  "developer_name": "Prestige Group",
+  "status": "Under Construction",
+  "min_price": "₹4.5 Cr",
+  "max_price": "₹12 Cr",
+  "min_price_numeric": 45000000,
+  "max_price_numeric": 120000000,
+  "min_area": 3500,
+  "max_area": 8000,
+  "property_type": "Villa",
+  "bhk_options": [
+    "3 BHK",
+    "4 BHK",
+    "5 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "September 2025",
+  "possession_date": "December 2028",
+  "address": "Fort Aguada Road",
+  "location": "Candolim",
+  "city": "Goa",
+  "state": "Goa",
+  "pincode": "403515",
+  "country": "India",
+  "latitude": 15.5179,
+  "longitude": 73.7626,
+  "images": [
+    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": false,
+  "is_rera_approved": true,
+  "employee_name": "Deepak Patel",
+  "employee_phone": "+91 98765 43216",
+  "employee_email": "deepak@21estates.com",
+  "amenities": [
+    "Private Pool",
+    "Beach Access",
+    "Spa & Wellness",
+    "Wine Bar",
+    "Infinity Pool",
+    "Concierge",
+    "Water Sports",
+    "Cycling Track",
+    "Yoga Pavilion",
+    "Open-air Theatre",
+    "Clubhouse",
+    "Guest Suites"
+  ],
+  "towers_data": [
+    {
+      "cluster_name": "Beach Cove",
+      "total_villas": 15,
+      "villa_types": [
+        "3 BHK",
+        "4 BHK"
+      ],
+      "completion_date": "June 2028",
+      "status": "Under Construction"
+    },
+    {
+      "cluster_name": "Hilltop Estate",
+      "total_villas": 15,
+      "villa_types": [
+        "4 BHK",
+        "5 BHK"
+      ],
+      "completion_date": "December 2028",
+      "status": "Under Construction"
+    },
+    {
+      "cluster_name": "The Peninsula",
+      "total_villas": 15,
+      "villa_types": [
+        "5 BHK"
+      ],
+      "completion_date": "December 2028",
+      "status": "Under Construction"
+    }
+  ],
+  "project_plan": [
+    {
+      "villa_type": "Coastal",
+      "bhk": 3,
+      "plot_area": "3,000 sq.ft",
+      "built_up_area": "3,500 sq.ft",
+      "floors": 2,
+      "price_range": "₹4.5 - 6 Cr",
+      "status": "Available"
+    },
+    {
+      "villa_type": "Heritage",
+      "bhk": 4,
+      "plot_area": "4,500 sq.ft",
+      "built_up_area": "5,500 sq.ft",
+      "floors": 2,
+      "price_range": "₹7 - 9 Cr",
+      "status": "Available"
+    },
+    {
+      "villa_type": "Royal",
+      "bhk": 5,
+      "plot_area": "6,000 sq.ft",
+      "built_up_area": "8,000 sq.ft",
+      "floors": 3,
+      "price_range": "₹10 - 12 Cr",
+      "status": "Available"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "Laterite + RCC",
+      "walls": "Laterite Stone",
+      "ceiling_height": "12 ft"
+    },
+    "flooring": {
+      "living": "Kotah Stone",
+      "bedrooms": "Teak Wood",
+      "outdoor": "Natural Stone"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: Prestige Sanctuary: invalid input syntax for type date: "September 2025"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"September 2025\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-008",
+  "project_name": "Provident Deansgate",
+  "title": "Provident Deansgate - Heritage Villas",
+  "description": "Elegant row houses in Mysore blending heritage architecture with modern amenities. Provident Deansgate offers a peaceful lifestyle surrounded by royal heritage.",
+  "rera_number": "PRM/KA/RERA/1254/2023/V22222",
+  "developer_name": "Provident Housing",
+  "status": "Completed",
+  "min_price": "₹1.8 Cr",
+  "max_price": "₹3.2 Cr",
+  "min_price_numeric": 18000000,
+  "max_price_numeric": 32000000,
+  "min_area": 2200,
+  "max_area": 4000,
+  "property_type": "Villa",
+  "bhk_options": [
+    "3 BHK",
+    "4 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "March 2022",
+  "possession_date": "December 2024",
+  "address": "Outer Ring Road",
+  "location": "Ring Road",
+  "city": "Mysore",
+  "state": "Karnataka",
+  "pincode": "570017",
+  "country": "India",
+  "latitude": 12.3051,
+  "longitude": 76.6551,
+  "images": [
+    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": false,
+  "is_rera_approved": true,
+  "employee_name": "Lakshmi Rao",
+  "employee_phone": "+91 98765 43217",
+  "employee_email": "lakshmi@21estates.com",
+  "amenities": [
+    "Clubhouse",
+    "Swimming Pool",
+    "Gymnasium",
+    "Children's Play Area",
+    "Jogging Track",
+    "Landscaped Garden",
+    "Power Backup",
+    "24/7 Security",
+    "Community Hall",
+    "Indoor Games"
+  ],
+  "towers_data": [
+    {
+      "cluster_name": "Heritage Row",
+      "total_villas": 60,
+      "villa_types": [
+        "3 BHK",
+        "4 BHK"
+      ],
+      "completion_date": "September 2024",
+      "status": "Completed"
+    },
+    {
+      "cluster_name": "Royal Row",
+      "total_villas": 60,
+      "villa_types": [
+        "3 BHK",
+        "4 BHK"
+      ],
+      "completion_date": "December 2024",
+      "status": "Completed"
+    }
+  ],
+  "project_plan": [
+    {
+      "villa_type": "Heritage 3BHK",
+      "bhk": 3,
+      "plot_area": "1,500 sq.ft",
+      "built_up_area": "2,200 sq.ft",
+      "floors": 2,
+      "price_range": "₹1.8 - 2.2 Cr",
+      "status": "Available"
+    },
+    {
+      "villa_type": "Royal 4BHK",
+      "bhk": 4,
+      "plot_area": "2,200 sq.ft",
+      "built_up_area": "3,500 sq.ft",
+      "floors": 3,
+      "price_range": "₹2.8 - 3.2 Cr",
+      "status": "Available"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "Load Bearing",
+      "walls": "Clay Bricks",
+      "ceiling_height": "10.5 ft"
+    },
+    "flooring": {
+      "living": "Kota Stone",
+      "bedrooms": "Vitrified Tiles",
+      "courtyard": "Natural Stone"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: Provident Deansgate: invalid input syntax for type date: "March 2022"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"March 2022\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-009",
+  "project_name": "Goyal & Co Riveria",
+  "title": "Goyal & Co Riveria - Riverside Luxury",
+  "description": "Premium twin villas along the Noyyal River in Coimbatore. Goyal & Co Riveria offers expansive living spaces with river views and world-class amenities.",
+  "rera_number": "TN/29/Building/0678/2025",
+  "developer_name": "Goyal & Co",
+  "status": "Pre-Launch",
+  "min_price": "₹2.5 Cr",
+  "max_price": "₹5 Cr",
+  "min_price_numeric": 25000000,
+  "max_price_numeric": 50000000,
+  "min_area": 2800,
+  "max_area": 5200,
+  "property_type": "Villa",
+  "bhk_options": [
+    "3 BHK",
+    "4 BHK"
+  ],
+  "transaction_type": "New",
+  "launch_date": "August 2026",
+  "possession_date": "December 2029",
+  "address": "RS Puram Extension",
+  "location": "RS Puram",
+  "city": "Coimbatore",
+  "state": "Tamil Nadu",
+  "pincode": "641002",
+  "country": "India",
+  "latitude": 11.0168,
+  "longitude": 76.9558,
+  "images": [
+    "https://images.unsplash.com/photo-1600047509358-9dc75507daeb?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": false,
+  "is_rera_approved": true,
+  "employee_name": "Arjun Menon",
+  "employee_phone": "+91 98765 43218",
+  "employee_email": "arjun@21estates.com",
+  "amenities": [
+    "River Deck",
+    "Infinity Pool",
+    "Gymnasium",
+    "Clubhouse",
+    "Jogging Track",
+    "Yoga Hall",
+    "BBQ Area",
+    "Tennis Court",
+    "Children's Play Area",
+    "24/7 Security",
+    "Landscaped Garden",
+    "Meditation Zone"
+  ],
+  "towers_data": [
+    {
+      "cluster_name": "River View",
+      "total_villas": 30,
+      "villa_types": [
+        "3 BHK",
+        "4 BHK"
+      ],
+      "completion_date": "June 2029",
+      "status": "Pre-Launch"
+    },
+    {
+      "cluster_name": "Garden View",
+      "total_villas": 30,
+      "villa_types": [
+        "3 BHK",
+        "4 BHK"
+      ],
+      "completion_date": "December 2029",
+      "status": "Pre-Launch"
+    }
+  ],
+  "project_plan": [
+    {
+      "villa_type": "Riverside",
+      "bhk": 3,
+      "plot_area": "2,000 sq.ft",
+      "built_up_area": "2,800 sq.ft",
+      "floors": 2,
+      "price_range": "₹2.5 - 3.5 Cr",
+      "status": "Available"
+    },
+    {
+      "villa_type": "Grand Riverside",
+      "bhk": 4,
+      "plot_area": "3,000 sq.ft",
+      "built_up_area": "4,500 sq.ft",
+      "floors": 3,
+      "price_range": "₹4 - 5 Cr",
+      "status": "Available"
+    }
+  ],
+  "specifications_complex": {
+    "structure": {
+      "type": "RCC Framed",
+      "walls": "AAC Blocks",
+      "ceiling_height": "11 ft"
+    },
+    "flooring": {
+      "living": "Italian Marble",
+      "bedrooms": "Wooden Flooring",
+      "deck": "Composite Wood"
+    }
+  }
+}
+-------------------------------
+   ERROR: Failed: Goyal & Co Riveria: invalid input syntax for type date: "August 2026"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"August 2026\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-010",
+  "project_name": "Rewild Doddaballapur",
+  "title": "Rewild Doddaballapur - Nature Plots",
+  "description": "Premium NA plots near Doddaballapur with excellent connectivity to Bangalore International Airport. Surrounded by nature with planned infrastructure and gated security.",
+  "rera_number": "PRM/KA/RERA/1255/2025/L33333",
+  "developer_name": "Rewild Estates",
+  "status": "Under Construction",
+  "min_price": "₹35 L",
+  "max_price": "₹85 L",
+  "min_price_numeric": 3500000,
+  "max_price_numeric": 8500000,
+  "min_area": 1200,
+  "max_area": 3000,
+  "property_type": "Plot",
+  "bhk_options": null,
+  "transaction_type": "New",
+  "launch_date": "April 2025",
+  "possession_date": "March 2027",
+  "address": "Doddaballapur-Bangalore Road",
+  "location": "Doddaballapur",
+  "city": "Bangalore",
+  "state": "Karnataka",
+  "pincode": "561203",
+  "country": "India",
+  "latitude": 13.2948,
+  "longitude": 77.5393,
+  "images": [
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": false,
+  "is_rera_approved": true,
+  "employee_name": "Suresh Babu",
+  "employee_phone": "+91 98765 43219",
+  "employee_email": "suresh@21estates.com",
+  "amenities": [
+    "Gated Community",
+    "Underground Drainage",
+    "Wide Roads",
+    "Avenue Plantation",
+    "Children's Park",
+    "Jogging Track",
+    "Community Hall",
+    "Overhead Tank",
+    "Street Lighting",
+    "24/7 Security"
+  ],
+  "towers_data": [
+    {
+      "phase_name": "Phase 1 - Wildflower",
+      "total_plots": 80,
+      "launch_date": "April 2025",
+      "status": "Under Construction",
+      "completion_date": "September 2026"
+    },
+    {
+      "phase_name": "Phase 2 - Meadow",
+      "total_plots": 70,
+      "launch_date": "October 2025",
+      "status": "Upcoming",
+      "completion_date": "December 2026"
+    },
+    {
+      "phase_name": "Phase 3 - Forest Edge",
+      "total_plots": 50,
+      "launch_date": "April 2026",
+      "status": "Upcoming",
+      "completion_date": "March 2027"
+    }
+  ],
+  "project_plan": [
+    {
+      "plot_type": "Standard",
+      "dimensions": "30x40",
+      "area_sqft": 1200,
+      "facing": "East",
+      "price_per_sqft": 2800,
+      "total_price": "₹33.6 L",
+      "status": "Available"
+    },
+    {
+      "plot_type": "Premium",
+      "dimensions": "40x60",
+      "area_sqft": 2400,
+      "facing": "North",
+      "price_per_sqft": 3000,
+      "total_price": "₹72 L",
+      "status": "Available"
+    },
+    {
+      "plot_type": "Corner",
+      "dimensions": "50x60",
+      "area_sqft": 3000,
+      "facing": "North-East",
+      "price_per_sqft": 3200,
+      "total_price": "₹96 L",
+      "status": "Booked"
+    }
+  ],
+  "specifications_complex": {
+    "road_width": "30 ft & 40 ft",
+    "drainage": "Underground SWD",
+    "water_supply": "Borewell + OHT",
+    "electricity": "BESCOM Connection",
+    "compound_wall": "Around Periphery",
+    "landscaping": "Avenue Trees & Parks"
+  }
+}
+-------------------------------
+   ERROR: Failed: Rewild Doddaballapur: invalid input syntax for type date: "April 2025"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"April 2025\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-011",
+  "project_name": "Tangled Up in Green",
+  "title": "Tangled Up in Green - Farm Plots",
+  "description": "Exclusive farm plots in the serene outskirts of Hyderabad near Shamirpet. Perfect for weekend homes, organic farming, or long-term investment in rapidly developing area.",
+  "rera_number": "P02400006789",
+  "developer_name": "Green Living Estates",
+  "status": "Ready to Move",
+  "min_price": "₹25 L",
+  "max_price": "₹65 L",
+  "min_price_numeric": 2500000,
+  "max_price_numeric": 6500000,
+  "min_area": 2400,
+  "max_area": 10000,
+  "property_type": "Plot",
+  "bhk_options": null,
+  "transaction_type": "New",
+  "launch_date": "January 2024",
+  "possession_date": "Immediate",
+  "address": "Shamirpet Road",
+  "location": "Shamirpet",
+  "city": "Hyderabad",
+  "state": "Telangana",
+  "pincode": "500078",
+  "country": "India",
+  "latitude": 17.5768,
+  "longitude": 78.5704,
+  "images": [
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": false,
+  "is_rera_approved": true,
+  "employee_name": "Kavitha Reddy",
+  "employee_phone": "+91 98765 43220",
+  "employee_email": "kavitha@21estates.com",
+  "amenities": [
+    "Organic Farm Zone",
+    "Walking Trails",
+    "Lake View",
+    "Gated Entry",
+    "Compound Wall",
+    "Bore Well",
+    "Electricity Connection",
+    "Tar Roads",
+    "Community Farming",
+    "Caretaker Service"
+  ],
+  "towers_data": [
+    {
+      "phase_name": "Phase 1 - Lakeside",
+      "total_plots": 75,
+      "launch_date": "January 2024",
+      "status": "Ready",
+      "completion_date": "June 2024"
+    },
+    {
+      "phase_name": "Phase 2 - Hillock",
+      "total_plots": 75,
+      "launch_date": "July 2024",
+      "status": "Ready",
+      "completion_date": "December 2024"
+    }
+  ],
+  "project_plan": [
+    {
+      "plot_type": "Garden Plot",
+      "dimensions": "40x60",
+      "area_sqft": 2400,
+      "facing": "East",
+      "price_per_sqft": 800,
+      "total_price": "₹19.2 L",
+      "status": "Available"
+    },
+    {
+      "plot_type": "Farm Plot",
+      "dimensions": "60x80",
+      "area_sqft": 4800,
+      "facing": "North",
+      "price_per_sqft": 750,
+      "total_price": "₹36 L",
+      "status": "Available"
+    },
+    {
+      "plot_type": "Premium Farm",
+      "dimensions": "100x100",
+      "area_sqft": 10000,
+      "facing": "Lake View",
+      "price_per_sqft": 650,
+      "total_price": "₹65 L",
+      "status": "Available"
+    }
+  ],
+  "specifications_complex": {
+    "road_width": "30 ft Internal",
+    "drainage": "Natural Slope",
+    "water_supply": "Borewell",
+    "electricity": "TSSPDCL",
+    "fencing": "Barbed Wire + Stone",
+    "soil_type": "Red Laterite - Fertile"
+  }
+}
+-------------------------------
+   ERROR: Failed: Tangled Up in Green: invalid input syntax for type date: "January 2024"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"January 2024\""}
+--- DEBUG FIRST PROJECT ROW ---
+{
+  "project_id": "PRJ-012",
+  "project_name": "Prestige Greenbrook",
+  "title": "Prestige Greenbrook - ECR Premium Plots",
+  "description": "Premium residential plots along East Coast Road in Chennai. Prestige Greenbrook offers DTCP-approved plots with beach proximity and world-class infrastructure.",
+  "rera_number": "TN/29/Layout/0123/2026",
+  "developer_name": "Prestige Group",
+  "status": "Upcoming",
+  "min_price": "₹45 L",
+  "max_price": "₹1.2 Cr",
+  "min_price_numeric": 4500000,
+  "max_price_numeric": 12000000,
+  "min_area": 1200,
+  "max_area": 3500,
+  "property_type": "Plot",
+  "bhk_options": null,
+  "transaction_type": "New",
+  "launch_date": "March 2027",
+  "possession_date": "December 2028",
+  "address": "ECR Junction, Thiruvidandhai",
+  "location": "ECR",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pincode": "603104",
+  "country": "India",
+  "latitude": 12.8352,
+  "longitude": 80.2077,
+  "images": [
+    "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&auto=format&fit=crop&q=80"
+  ],
+  "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "is_featured": false,
+  "is_rera_approved": true,
+  "employee_name": "Ramesh Iyer",
+  "employee_phone": "+91 98765 43221",
+  "employee_email": "ramesh@21estates.com",
+  "amenities": [
+    "Clubhouse",
+    "Swimming Pool",
+    "Tennis Court",
+    "Gated Entry",
+    "Underground Cabling",
+    "Wide Roads",
+    "Storm Water Drain",
+    "Park",
+    "Jogging Track",
+    "Children's Play Area",
+    "EV Charging Points"
+  ],
+  "towers_data": [
+    {
+      "phase_name": "Phase 1 - Coastal",
+      "total_plots": 90,
+      "launch_date": "March 2027",
+      "status": "Upcoming",
+      "completion_date": "September 2028"
+    },
+    {
+      "phase_name": "Phase 2 - Garden",
+      "total_plots": 90,
+      "launch_date": "September 2027",
+      "status": "Upcoming",
+      "completion_date": "December 2028"
+    }
+  ],
+  "project_plan": [
+    {
+      "plot_type": "Standard",
+      "dimensions": "30x40",
+      "area_sqft": 1200,
+      "facing": "East",
+      "price_per_sqft": 3500,
+      "total_price": "₹42 L",
+      "status": "Available"
+    },
+    {
+      "plot_type": "Premium",
+      "dimensions": "40x60",
+      "area_sqft": 2400,
+      "facing": "North",
+      "price_per_sqft": 3800,
+      "total_price": "₹91.2 L",
+      "status": "Available"
+    },
+    {
+      "plot_type": "Corner Premium",
+      "dimensions": "50x70",
+      "area_sqft": 3500,
+      "facing": "North-East",
+      "price_per_sqft": 4000,
+      "total_price": "₹1.4 Cr",
+      "status": "Available"
+    }
+  ],
+  "specifications_complex": {
+    "road_width": "40 ft Main, 30 ft Internal",
+    "drainage": "Underground SWD",
+    "water_supply": "CMWSSB + Borewell",
+    "electricity": "TANGEDCO Underground",
+    "compound_wall": "RCC Compound Wall",
+    "landscaping": "Premium Avenue + Parks"
+  }
+}
+-------------------------------
+   ERROR: Failed: Prestige Greenbrook: invalid input syntax for type date: "March 2027"
+   Details: {"code":"22007","details":null,"hint":null,"message":"invalid input syntax for type date: \"March 2027\""}
+
+🏠 Inserting 12 properties...
+   ✓ 3 BHK Premium Apartment in Indiranagar (Apartment - Sale)
+   ✓ 2 BHK Sea-View Apartment in Worli (Apartment - Sale)
+   ✓ 2 BHK Furnished Apartment for Rent in Gachibowli (Apartment - Rent)
+   ✓ 3 BHK Apartment for Rent in Anna Nagar (Apartment - Rent)
+   ✓ 4 BHK Independent Villa in Sarjapur (Villa - Sale)
+   ✓ 3 BHK Row House in Baner, Pune (Villa - Sale)
+   ✓ Residential Plot in Devanahalli (Plot - Sale)
+   ✓ DTCP Approved Plot in ECR, Chennai (Plot - Sale)
+   ✓ Commercial Office Space in MG Road (Commercial - Sale)
+   ✓ Retail Shop for Rent in Koramangala (Commercial - Rent)
+   ✓ Industrial Warehouse in Bhiwandi, Mumbai (Commercial - Sale)
+   ✓ Warehouse for Rent in Shamshabad, Hyderabad (Commercial - Rent)
+
+✅ Seed script completed!
+   Projects: 0/12
+   Properties: 12/12
+
+📌 Note: Brochure URLs are set to null. Upload PDFs to Supabase storage
+   and update brochure_url for each project manually or via a separate script.

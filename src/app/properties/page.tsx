@@ -4,11 +4,13 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import PropertyCard from "@/components/emergent/PropertyCard";
 import LatestPropertyCard from "@/components/emergent/LatestPropertyCard";
-import { Search as SearchIcon, ChevronDown, X, Loader2 } from "lucide-react";
+import { Search as SearchIcon, ChevronDown, X, Loader2, Plus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import styles from "@/components/emergent/Dashboard.module.css";
+import { motion, AnimatePresence } from "framer-motion";
+import PostPropertyForm from "@/components/dashboard/PostPropertyForm";
 
 // Property type matching Supabase V2 schema
 interface Property {
@@ -148,6 +150,7 @@ const Dashboard = () => {
     const [projectStatusFilter, setProjectStatusFilter] = useState<string | null>(null);
     const [projectsVisible, setProjectsVisible] = useState(6);
     const [propertiesVisible, setPropertiesVisible] = useState(6);
+    const [showPostForm, setShowPostForm] = useState(false);
 
     const searchParams = useSearchParams();
 
@@ -577,12 +580,50 @@ const Dashboard = () => {
                 <h1 className={styles.pageTitle}>
                     Hi, {profileName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Guest'} 👋
                 </h1>
-                {!user && (
-                    <Link href="/auth/signin" className={styles.signInButton}>
-                        Sign In
-                    </Link>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                        onClick={() => setShowPostForm(!showPostForm)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 20px',
+                            backgroundColor: showPostForm ? '#dc2626' : 'var(--dark-turquoise)',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            boxShadow: '0 2px 8px rgba(31,82,75,0.2)',
+                        }}
+                    >
+                        {showPostForm ? <X size={18} /> : <Plus size={18} />}
+                        {showPostForm ? 'Close' : 'Post Your Property'}
+                    </button>
+                    {!user && (
+                        <Link href="/auth/signin" className={styles.signInButton}>
+                            Sign In
+                        </Link>
+                    )}
+                </div>
             </div>
+
+            {/* Post Property Form - Inline */}
+            <AnimatePresence>
+                {showPostForm && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        style={{ overflow: 'hidden', marginBottom: '24px' }}
+                    >
+                        <PostPropertyForm />
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Buy / Rent Toggle — desktop only */}
             <div className={styles.listingToggle}>

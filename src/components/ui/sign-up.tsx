@@ -64,7 +64,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                 <div className="w-full max-w-md py-8">
                     <div className="flex flex-col gap-5">
                         {/* Logo */}
-                        <Link href="/" className="mb-2 block relative w-48 h-12">
+                        <Link href="/" className="mb-2 block relative w-36 h-10">
                             <Image
                                 src="/logo-trimmed.png"
                                 alt="27 Estates"
@@ -243,17 +243,17 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                     type="checkbox"
                                     name="terms"
                                     className="w-4 h-4 rounded mt-1"
-                                    style={{ accentColor: 'var(--dark-turquoise, #1F524B)' }}
+                                    style={{ accentColor: 'var(--dark-turquoise, #183C38)' }}
                                     required
                                     data-testid="signup-terms-checkbox"
                                 />
                                 <span className="text-sm" style={{ color: '#666666' }}>
                                     I agree to the{' '}
-                                    <Link href="/terms" className="underline" style={{ color: 'var(--dark-turquoise, #1F524B)' }}>
+                                    <Link href="/terms" className="underline" style={{ color: 'var(--dark-turquoise, #183C38)' }}>
                                         Terms of Service
                                     </Link>
                                     {' '}and{' '}
-                                    <Link href="/privacy" className="underline" style={{ color: 'var(--dark-turquoise, #1F524B)' }}>
+                                    <Link href="/privacy" className="underline" style={{ color: 'var(--dark-turquoise, #183C38)' }}>
                                         Privacy Policy
                                     </Link>
                                 </span>
@@ -263,7 +263,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                                 type="submit"
                                 className="w-full rounded-lg py-4 font-semibold uppercase tracking-wider text-sm transition-all hover:-translate-y-0.5"
                                 style={{
-                                    backgroundColor: 'var(--dark-turquoise, #1F524B)',
+                                    backgroundColor: 'var(--dark-turquoise, #183C38)',
                                     color: '#ffffff',
                                 }}
                                 data-testid="signup-submit-button"
@@ -300,7 +300,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                             <Link
                                 href="/auth/signin"
                                 className="hover:underline transition-colors font-medium"
-                                style={{ color: 'var(--dark-turquoise, #1F524B)' }}
+                                style={{ color: 'var(--dark-turquoise, #183C38)' }}
                                 data-testid="signup-signin-link"
                             >
                                 Sign In

@@ -124,7 +124,7 @@
 .select:focus,
 .textarea:focus {
     outline: none;
-    border-color: #1F524B;
+    border-color: #183C38;
     box-shadow: 0 0 0 3px rgba(31, 82, 75, 0.1);
     background-color: #ffffff;
 }
@@ -148,7 +148,7 @@
 .checkbox {
     width: 20px;
     height: 20px;
-    accent-color: #1F524B;
+    accent-color: #183C38;
     cursor: pointer;
 }
 
@@ -232,7 +232,7 @@
 
 .submitBtn {
     padding: 0.75rem 1.5rem;
-    background-color: #1F524B;
+    background-color: #183C38;
     border: none;
     border-radius: 0.75rem;
     color: #ffffff;
@@ -256,7 +256,7 @@
     background-color: #BFA270;
     border: none;
     border-radius: 0.75rem;
-    color: #1F524B;
+    color: #183C38;
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
@@ -290,7 +290,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #1F524B;
+    background-color: #183C38;
     border: none;
     border-radius: 0.75rem;
     color: #ffffff;
@@ -347,7 +347,7 @@
     display: block;
     margin-bottom: 0.75rem;
     font-weight: 600;
-    color: #1F524B;
+    color: #183C38;
     text-transform: capitalize;
 }
 

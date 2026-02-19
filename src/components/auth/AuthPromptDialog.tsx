@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { X } from 'lucide-react';
 import {
     Dialog,
@@ -27,37 +26,25 @@ export const AuthPromptDialog = ({
     // STRONGER scroll lock - prevents ALL scrolling when modal is open
     useEffect(() => {
         if (open) {
-            // Save current scroll position
             scrollPositionRef.current = window.scrollY;
-
-            // Lock body scroll completely
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.top = `-${scrollPositionRef.current}px`;
             document.body.style.left = '0';
             document.body.style.right = '0';
             document.body.style.width = '100%';
-
-            // Stop Lenis smooth scroll if present
             document.documentElement.classList.add('lenis-stopped');
-
-            // Access Lenis instance directly via window (now exposed by SmoothScroll)
             if (typeof window !== 'undefined' && (window as any).lenis) {
                 (window as any).lenis.stop();
             }
-        } else {
-            // Restore scroll
+        } else if (!open) {
             document.body.style.overflow = '';
             document.body.style.position = '';
             document.body.style.top = '';
             document.body.style.left = '';
             document.body.style.right = '';
             document.body.style.width = '';
-
-            // Restore scroll position
             window.scrollTo(0, scrollPositionRef.current);
-
-            // Resume Lenis
             document.documentElement.classList.remove('lenis-stopped');
             if (typeof window !== 'undefined' && (window as any).lenis) {
                 (window as any).lenis.start();
@@ -144,23 +131,19 @@ export const AuthPromptDialog = ({
                     padding: '96px 80px 64px 80px',
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'flex-start',
+                    alignItems: 'center',
                     width: '100%',
                 }}>
 
                     {/* Logo Area - BIG */}
                     <div style={{
                         marginBottom: '48px',
-                        position: 'relative',
-                        width: '200px',
-                        height: '60px'
                     }}>
-                        <Image
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                             src="/logo-trimmed.png"
                             alt="27 Estates"
-                            fill
-                            style={{ objectFit: 'contain', objectPosition: 'left' }}
-                            priority
+                            style={{ width: '250px', height: 'auto' }}
                         />
                     </div>
 

@@ -188,7 +188,7 @@ export default function UserModal({ onClose, onComplete }: UserModalProps) {
                                     required
                                     style={inputStyle}
                                     onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = '#1F524B';
+                                        e.currentTarget.style.borderColor = '#183C38';
                                         e.currentTarget.style.boxShadow = '0 0 0 3px rgba(31, 82, 75, 0.1)';
                                     }}
                                     onBlur={(e) => {
@@ -210,7 +210,7 @@ export default function UserModal({ onClose, onComplete }: UserModalProps) {
                                     required
                                     style={inputStyle}
                                     onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = '#1F524B';
+                                        e.currentTarget.style.borderColor = '#183C38';
                                         e.currentTarget.style.boxShadow = '0 0 0 3px rgba(31, 82, 75, 0.1)';
                                     }}
                                     onBlur={(e) => {
@@ -233,7 +233,7 @@ export default function UserModal({ onClose, onComplete }: UserModalProps) {
                                     minLength={6}
                                     style={inputStyle}
                                     onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = '#1F524B';
+                                        e.currentTarget.style.borderColor = '#183C38';
                                         e.currentTarget.style.boxShadow = '0 0 0 3px rgba(31, 82, 75, 0.1)';
                                     }}
                                     onBlur={(e) => {
@@ -258,7 +258,7 @@ export default function UserModal({ onClose, onComplete }: UserModalProps) {
                                             cursor: 'pointer',
                                         }}
                                         onFocus={(e) => {
-                                            e.currentTarget.style.borderColor = '#1F524B';
+                                            e.currentTarget.style.borderColor = '#183C38';
                                             e.currentTarget.style.boxShadow = '0 0 0 3px rgba(31, 82, 75, 0.1)';
                                         }}
                                         onBlur={(e) => {
@@ -328,7 +328,7 @@ export default function UserModal({ onClose, onComplete }: UserModalProps) {
                                     padding: '0 28px',
                                     borderRadius: '10px',
                                     border: 'none',
-                                    backgroundColor: '#1F524B',
+                                    backgroundColor: '#183C38',
                                     color: '#ffffff',
                                     fontSize: '0.875rem',
                                     fontWeight: 600,
@@ -346,7 +346,7 @@ export default function UserModal({ onClose, onComplete }: UserModalProps) {
                                     if (!loading) e.currentTarget.style.backgroundColor = '#163c37';
                                 }}
                                 onMouseLeave={(e) => {
-                                    if (!loading) e.currentTarget.style.backgroundColor = '#1F524B';
+                                    if (!loading) e.currentTarget.style.backgroundColor = '#183C38';
                                 }}
                             >
                                 {loading && <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />}

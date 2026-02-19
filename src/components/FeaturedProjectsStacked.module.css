@@ -34,7 +34,7 @@
     font-size: clamp(2rem, 4vw, 3.5rem);
     font-weight: 500;
     letter-spacing: -0.02em;
-    color: #1F524B;
+    color: #183C38;
     margin-bottom: 1.25rem;
     line-height: 1.2;
 }
@@ -168,7 +168,7 @@
     font-size: clamp(1.5rem, 2.5vw, 2rem);
     font-weight: 500;
     letter-spacing: -0.01em;
-    color: #1F524B;
+    color: #183C38;
     margin-bottom: 0.5rem;
     line-height: 1.2;
     transition: color 0.3s ease;
@@ -209,7 +209,7 @@
     font-family: var(--font-heading);
     font-size: 1.25rem;
     font-weight: 600;
-    color: #1F524B;
+    color: #183C38;
 }
 
 .viewBtn {
@@ -225,7 +225,7 @@
 }
 
 .card:hover .viewBtn {
-    color: #1F524B;
+    color: #183C38;
     transform: translateX(4px);
 }
 
@@ -240,7 +240,7 @@
     align-items: center;
     justify-content: center;
     padding: 1rem 2.25rem;
-    background: #1F524B;
+    background: #183C38;
     color: white;
     font-family: var(--font-body);
     font-size: 0.875rem;

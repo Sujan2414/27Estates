@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Building2, FolderKanban, FileText, MessageSquare, Users, Plus } from 'lucide-react'
+import { Building2, FolderKanban, FileText, MessageSquare, Upload, Users, Plus } from 'lucide-react'
 import styles from './admin.module.css'
 
 interface DashboardStats {
@@ -11,6 +11,7 @@ interface DashboardStats {
     projects: number
     blogs: number
     inquiries: number
+    submissions: number
     agents: number
 }
 
@@ -29,6 +30,7 @@ export default function AdminDashboard() {
         projects: 0,
         blogs: 0,
         inquiries: 0,
+        submissions: 0,
         agents: 0
     })
     const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([])
@@ -38,11 +40,12 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             // Fetch counts
-            const [propertiesCount, projectsCount, blogsCount, inquiriesCount, agentsCount] = await Promise.all([
+            const [propertiesCount, projectsCount, blogsCount, inquiriesCount, submissionsCount, agentsCount] = await Promise.all([
                 supabase.from('properties').select('id', { count: 'exact', head: true }),
                 supabase.from('projects').select('id', { count: 'exact', head: true }),
                 supabase.from('blogs').select('id', { count: 'exact', head: true }),
                 supabase.from('inquiries').select('id', { count: 'exact', head: true }),
+                supabase.from('property_submissions').select('id', { count: 'exact', head: true }),
                 supabase.from('agents').select('id', { count: 'exact', head: true })
             ])
 
@@ -51,6 +54,7 @@ export default function AdminDashboard() {
                 projects: projectsCount.count || 0,
                 blogs: blogsCount.count || 0,
                 inquiries: inquiriesCount.count || 0,
+                submissions: submissionsCount.count || 0,
                 agents: agentsCount.count || 0
             })
 
@@ -125,6 +129,16 @@ export default function AdminDashboard() {
 
                 <div className={styles.statCard}>
                     <div className={styles.statHeader}>
+                        <span className={styles.statLabel}>Submissions</span>
+                        <div className={`${styles.statIcon} ${styles.statIconGold}`}>
+                            <Upload size={20} />
+                        </div>
+                    </div>
+                    <div className={styles.statValue}>{loading ? '-' : stats.submissions}</div>
+                </div>
+
+                <div className={styles.statCard}>
+                    <div className={styles.statHeader}>
                         <span className={styles.statLabel}>Agents</span>
                         <div className={`${styles.statIcon} ${styles.statIconPurple}`}>
                             <Users size={20} />
@@ -187,8 +201,8 @@ export default function AdminDashboard() {
                                     <td>{inquiry.email}</td>
                                     <td>
                                         <span className={`${styles.statusBadge} ${inquiry.status === 'new' ? styles.statusNew :
-                                                inquiry.status === 'read' ? styles.statusRead :
-                                                    styles.statusReplied
+                                            inquiry.status === 'read' ? styles.statusRead :
+                                                styles.statusReplied
                                             }`}>
                                             {inquiry.status}
                                         </span>

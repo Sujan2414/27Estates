@@ -33,7 +33,7 @@
 
 .searchInput:focus {
     outline: none;
-    border-color: #1F524B;
+    border-color: #183C38;
     box-shadow: 0 0 0 3px rgba(31, 82, 75, 0.1);
 }
 
@@ -173,7 +173,7 @@
 .price {
     font-size: 1rem;
     font-weight: 700;
-    color: #1F524B;
+    color: #183C38;
 }
 
 .actions {
@@ -198,7 +198,7 @@
 
 .actionBtn:hover {
     background-color: #e5e7eb;
-    color: #1F524B;
+    color: #183C38;
 }
 
 .deleteBtn:hover {

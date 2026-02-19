@@ -94,7 +94,7 @@ export const Contact2 = ({
                             fontSize: 'clamp(2rem, 4vw, 3.5rem)',
                             fontWeight: 500,
                             letterSpacing: '-0.02em',
-                            color: '#1F524B',
+                            color: '#183C38',
                             marginBottom: '1.25rem',
                             lineHeight: 1.2,
                         }}
@@ -164,7 +164,7 @@ export const Contact2 = ({
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     marginBottom: '1.25rem',
-                                    color: '#1F524B',
+                                    color: '#183C38',
                                 }}>
                                     <item.icon size={20} />
                                 </div>
@@ -183,7 +183,7 @@ export const Contact2 = ({
                                     fontFamily: 'var(--font-heading)',
                                     fontSize: '1.125rem',
                                     fontWeight: 500,
-                                    color: '#1F524B',
+                                    color: '#183C38',
                                     marginBottom: '0.25rem',
                                 }}>
                                     {item.value}
@@ -216,7 +216,7 @@ export const Contact2 = ({
                             fontFamily: 'var(--font-heading)',
                             fontSize: '1.75rem',
                             fontWeight: 500,
-                            color: '#1F524B',
+                            color: '#183C38',
                             marginBottom: '0.5rem',
                         }}>
                             Send a Message
@@ -240,7 +240,7 @@ export const Contact2 = ({
                                 marginBottom: '1.5rem',
                                 fontFamily: 'var(--font-body)',
                                 fontSize: '0.9375rem',
-                                color: '#1F524B',
+                                color: '#183C38',
                             }}>
                                 Thank you! Your message has been sent. We&apos;ll get back to you within 24 hours.
                             </div>
@@ -292,7 +292,7 @@ export const Contact2 = ({
                                             color: '#0E110F',
                                             transition: 'border-color 0.3s ease',
                                         }}
-                                        onFocus={e => (e.target.style.borderBottomColor = '#1F524B')}
+                                        onFocus={e => (e.target.style.borderBottomColor = '#183C38')}
                                         onBlur={e => (e.target.style.borderBottomColor = 'rgba(43, 54, 66, 0.2)')}
                                     />
                                 </div>
@@ -324,7 +324,7 @@ export const Contact2 = ({
                                             color: '#0E110F',
                                             transition: 'border-color 0.3s ease',
                                         }}
-                                        onFocus={e => (e.target.style.borderBottomColor = '#1F524B')}
+                                        onFocus={e => (e.target.style.borderBottomColor = '#183C38')}
                                         onBlur={e => (e.target.style.borderBottomColor = 'rgba(43, 54, 66, 0.2)')}
                                     />
                                 </div>
@@ -359,7 +359,7 @@ export const Contact2 = ({
                                         color: '#0E110F',
                                         transition: 'border-color 0.3s ease',
                                     }}
-                                    onFocus={e => (e.target.style.borderBottomColor = '#1F524B')}
+                                    onFocus={e => (e.target.style.borderBottomColor = '#183C38')}
                                     onBlur={e => (e.target.style.borderBottomColor = 'rgba(43, 54, 66, 0.2)')}
                                 />
                             </div>
@@ -392,7 +392,7 @@ export const Contact2 = ({
                                         color: '#0E110F',
                                         transition: 'border-color 0.3s ease',
                                     }}
-                                    onFocus={e => (e.target.style.borderBottomColor = '#1F524B')}
+                                    onFocus={e => (e.target.style.borderBottomColor = '#183C38')}
                                     onBlur={e => (e.target.style.borderBottomColor = 'rgba(43, 54, 66, 0.2)')}
                                 />
                             </div>
@@ -428,7 +428,7 @@ export const Contact2 = ({
                                         minHeight: '120px',
                                         transition: 'border-color 0.3s ease',
                                     }}
-                                    onFocus={e => (e.target.style.borderBottomColor = '#1F524B')}
+                                    onFocus={e => (e.target.style.borderBottomColor = '#183C38')}
                                     onBlur={e => (e.target.style.borderBottomColor = 'rgba(43, 54, 66, 0.2)')}
                                 />
                             </div>
@@ -439,7 +439,7 @@ export const Contact2 = ({
                                 style={{
                                     width: '100%',
                                     padding: '1rem',
-                                    backgroundColor: submitting ? '#8aafa9' : '#1F524B',
+                                    backgroundColor: submitting ? '#8aafa9' : '#183C38',
                                     color: '#ffffff',
                                     border: 'none',
                                     borderRadius: '4px',
@@ -453,7 +453,7 @@ export const Contact2 = ({
                                     marginTop: '0.5rem',
                                 }}
                                 onMouseEnter={e => { if (!submitting) e.currentTarget.style.backgroundColor = '#2d7a6e'; }}
-                                onMouseLeave={e => { if (!submitting) e.currentTarget.style.backgroundColor = '#1F524B'; }}
+                                onMouseLeave={e => { if (!submitting) e.currentTarget.style.backgroundColor = '#183C38'; }}
                             >
                                 {submitting ? 'Sending...' : 'Send Message'}
                             </button>

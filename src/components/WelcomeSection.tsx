@@ -49,8 +49,8 @@ const WelcomeSection: React.FC = () => {
                     </p>
 
                     <p className={styles.text}>
-                        Our curated collection spans premium apartments in Hebbal, Mediterranean villas
-                        near the airport, and serene plots at Nandi Hills — each handpicked to meet
+                        Our curated collection spans premium apartments, Mediterranean villas,
+                        and serene plots — each handpicked to meet
                         the highest standards of luxury and value.
                     </p>
 

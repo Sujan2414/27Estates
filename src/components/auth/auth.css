@@ -42,12 +42,23 @@
     font-size: 1.5rem !important;
     line-height: 2rem !important;
     font-weight: 600 !important;
+    text-align: center !important;
 }
 
 /* Force Vertical Centering via Absolute Positioning */
 .auth-page-root .auth-form-container {
     /* Removed absolute positioning to allow scrolling */
     width: 100% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* On mobile, ensure the card can scroll when content overflows */
+@media (max-width: 1023px) {
+    .auth-page-root .auth-form-card {
+        margin-top: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+    }
 }
 
 
@@ -203,4 +214,69 @@
     /* Increased to 28px */
     height: 1.75rem !important;
     color: hsl(215, 16%, 47%) !important;
+}
+
+/* ============================================= */
+/* Mobile Auth Card Layout                       */
+/* ============================================= */
+
+/* Right panel: gradient bg on mobile, white on desktop */
+.auth-page-root .auth-right-panel {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+@media (min-width: 1024px) {
+    .auth-page-root .auth-right-panel {
+        background: #ffffff;
+    }
+}
+
+/* Form card: white card with shadow on mobile, transparent on desktop */
+.auth-page-root .auth-form-card {
+    background-color: #ffffff;
+    border-radius: 1.5rem;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    max-width: 420px;
+}
+
+@media (min-width: 1024px) {
+    .auth-page-root .auth-form-card {
+        background-color: transparent;
+        border-radius: 0;
+        padding: 0 1rem;
+        box-shadow: none;
+        max-width: 540px;
+    }
+}
+
+/* Center headings on mobile */
+@media (max-width: 1023px) {
+    .auth-page-root h2 {
+        text-align: center !important;
+    }
+
+    /* Slightly smaller submit button border-radius */
+    .auth-page-root .auth-button,
+    .auth-page-root button[type="submit"] {
+        border-radius: 0.75rem !important;
+        background-color: #183C38 !important;
+    }
+
+    .auth-page-root button[type="submit"]:hover {
+        background-color: #2d7a6e !important;
+    }
+
+    /* Input styling for mobile card look */
+    .auth-page-root .auth-input,
+    .auth-page-root input {
+        background-color: #fafafa !important;
+        border-radius: 0.75rem !important;
+    }
+
+    .auth-page-root input:focus {
+        border-color: #183C38 !important;
+        box-shadow: 0 0 0 3px rgba(31, 82, 75, 0.1) !important;
+        background-color: #ffffff !important;
+    }
 }

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "WebFetch(domain:unsplash.com)",
+      "Bash(where:*)",
+      "Bash(node:*)"
+    ]
+  }
+}

@@ -46,7 +46,7 @@ const DonutChart = ({ principal, interest, size = 180 }: DonutProps) => {
             {/* Principal arc (top layer) */}
             <circle
                 cx="100" cy="100" r={radius}
-                fill="none" stroke="#1F524B" strokeWidth="24"
+                fill="none" stroke="#183C38" strokeWidth="24"
                 strokeDasharray={`${principalArc} ${circumference}`}
                 strokeLinecap="round"
                 transform="rotate(-90 100 100)"
@@ -315,7 +315,7 @@ export default function MortgageCalculator() {
                             </div>
                             <div className={styles.legend}>
                                 <div className={styles.legendItem}>
-                                    <div className={styles.legendDot} style={{ backgroundColor: '#1F524B' }} />
+                                    <div className={styles.legendDot} style={{ backgroundColor: '#183C38' }} />
                                     <div className={styles.legendInfo}>
                                         <p className={styles.legendLabel}>Principal Amount</p>
                                         <p className={styles.legendValue}>{formatINR(calc.principal)}</p>

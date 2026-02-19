@@ -96,7 +96,7 @@ const Blog8 = ({
                                         <Link
                                             href={post.url}
                                             className="inline-flex items-center font-semibold hover:underline md:text-base transition-all"
-                                            style={{ color: 'var(--dark-turquoise, #1F524B)' }}
+                                            style={{ color: 'var(--dark-turquoise, #183C38)' }}
                                         >
                                             <span>Read more</span>
                                             <ArrowRight className="ml-2 size-4 transition-transform" />

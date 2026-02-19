@@ -35,7 +35,7 @@
     width: 48px;
     height: 48px;
     margin: 0 auto 1rem;
-    color: #1F524B;
+    color: #183C38;
     opacity: 0.7;
 }
 
@@ -57,7 +57,7 @@
     align-items: center;
     gap: 8px;
     padding: 0.75rem 1.5rem;
-    background-color: #1F524B;
+    background-color: #183C38;
     color: #ffffff;
     font-size: 0.8125rem;
     font-weight: 600;
@@ -173,15 +173,31 @@
 }
 
 @keyframes flipLeft {
-    0% { transform: rotateY(0deg); }
-    50% { transform: rotateY(-15deg); }
-    100% { transform: rotateY(0deg); }
+    0% {
+        transform: rotateY(0deg);
+    }
+
+    50% {
+        transform: rotateY(-15deg);
+    }
+
+    100% {
+        transform: rotateY(0deg);
+    }
 }
 
 @keyframes flipRight {
-    0% { transform: rotateY(0deg); }
-    50% { transform: rotateY(15deg); }
-    100% { transform: rotateY(0deg); }
+    0% {
+        transform: rotateY(0deg);
+    }
+
+    50% {
+        transform: rotateY(15deg);
+    }
+
+    100% {
+        transform: rotateY(0deg);
+    }
 }
 
 /* Navigation arrows */
@@ -265,9 +281,9 @@
 }
 
 .brochureBtnPrimary {
-    background: #1F524B;
+    background: #183C38;
     color: #fff;
-    border-color: #1F524B;
+    border-color: #183C38;
 }
 
 .brochureBtnPrimary:hover {
@@ -277,7 +293,7 @@
 
 .brochureBtnSecondary {
     background: #fff;
-    color: #1F524B;
+    color: #183C38;
 }
 
 .brochureBtnSecondary:hover {
@@ -286,14 +302,31 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .viewerContainer {
+        border-radius: 8px;
+    }
+
     .bookContainer {
-        padding: 12px;
-        min-height: 350px;
+        padding: 8px;
+        min-height: auto;
     }
 
     .bookSpread {
         flex-direction: column;
         gap: 0;
+    }
+
+    .navArrow {
+        width: 36px;
+        height: 36px;
+    }
+
+    .navArrowLeft {
+        left: 4px;
+    }
+
+    .navArrowRight {
+        right: 4px;
     }
 
     .brochureActions {
@@ -302,5 +335,9 @@
 
     .brochureBtn {
         justify-content: center;
+    }
+
+    .blurredOverlay {
+        min-height: 200px;
     }
 }

@@ -1,0 +1,31 @@
+Using service role key
+🚀 Starting seed script...
+
+🔍 Discovering table schemas...
+   ✓ projects table: 45 columns
+
+🗑️  Deleting existing properties...
+   ✓ Properties deleted
+🗑️  Deleting existing projects...
+   ✓ Projects deleted
+
+📦 Inserting 12 projects...
+
+🏠 Inserting 12 properties...
+   ✓ 3 BHK Premium Apartment in Indiranagar (Apartment - Sale)
+   ✓ 2 BHK Sea-View Apartment in Worli (Apartment - Sale)
+   ✓ 2 BHK Furnished Apartment for Rent in Gachibowli (Apartment - Rent)
+   ✓ 3 BHK Apartment for Rent in Anna Nagar (Apartment - Rent)
+   ✓ 4 BHK Independent Villa in Sarjapur (Villa - Sale)
+   ✓ 3 BHK Row House in Baner, Pune (Villa - Sale)
+   ✓ Residential Plot in Devanahalli (Plot - Sale)
+   ✓ DTCP Approved Plot in ECR, Chennai (Plot - Sale)
+   ✓ Commercial Office Space in MG Road (Commercial - Sale)
+   ✓ Retail Shop for Rent in Koramangala (Commercial - Rent)
+
+✅ Seed script completed!
+   Projects: 0/12
+   Properties: 10/12
+
+📌 Note: Brochure URLs are set to null. Upload PDFs to Supabase storage
+   and update brochure_url for each project manually or via a separate script.

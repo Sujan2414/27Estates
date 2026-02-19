@@ -111,7 +111,7 @@
 }
 
 .toggle.toggleActive {
-    background-color: #1F524B;
+    background-color: #183C38;
 }
 
 .toggleHandle {
@@ -160,9 +160,9 @@
 }
 
 .categoryButtonActive {
-    border-color: #1F524B;
+    border-color: #183C38;
     background-color: rgba(31, 82, 75, 0.05);
-    color: #1F524B;
+    color: #183C38;
 }
 
 /* Reset Button */

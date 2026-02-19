@@ -21,6 +21,12 @@ const BrochureSection = dynamic(
     { ssr: false }
 );
 
+// Dynamic import for Map
+const PropertyMap = dynamic(() => import("@/components/emergent/PropertyMap"), {
+    ssr: false,
+    loading: () => <div style={{ height: '400px', background: '#f5f5f5', borderRadius: '1rem' }} />
+});
+
 // Types
 interface Project {
     id: string;
@@ -209,6 +215,10 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     .eq('project_id', projectId)
                     .single();
                 setIsBookmarked(!!bookmark);
+            } else {
+                // Check guest bookmarks
+                const guestBookmarks = JSON.parse(sessionStorage.getItem('guest_bookmarks') || '[]');
+                setIsBookmarked(guestBookmarks.includes(projectId));
             }
 
             // Get developer
@@ -244,8 +254,21 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
         if (!project) return;
 
         const { data: { user } } = await supabase.auth.getUser();
+
         if (!user) {
-            router.push('/login');
+            // Guest bookmark logic
+            const key = 'guest_bookmarks';
+            const stored = JSON.parse(sessionStorage.getItem(key) || '[]') as string[];
+
+            if (isBookmarked) {
+                const updated = stored.filter((id: string) => id !== project.id);
+                sessionStorage.setItem(key, JSON.stringify(updated));
+                setIsBookmarked(false);
+            } else {
+                stored.push(project.id);
+                sessionStorage.setItem(key, JSON.stringify(stored));
+                setIsBookmarked(true);
+            }
             return;
         }
 
@@ -646,7 +669,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                                             return (
                                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: '10px' }}>
                                                     <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                        <IconComp size={18} color="#1F524B" />
+                                                        <IconComp size={18} color="#183C38" />
                                                     </div>
                                                     <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a0a' }}>{label}</span>
                                                 </div>
@@ -666,7 +689,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                         <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e5e5e5' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                                 <thead>
-                                    <tr style={{ background: '#1F524B', color: '#fafafa' }}>
+                                    <tr style={{ background: '#183C38', color: '#fafafa' }}>
                                         <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tower</th>
                                         <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Floors</th>
                                         <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Units</th>
@@ -793,6 +816,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     </div>
                 )}
 
+
                 {/* Brochure */}
                 {project.brochure_url && (
                     <div className={styles.sectionContainer}>
@@ -865,24 +889,35 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                         </div>
                     </div>
                 )}
-            </div>
 
-            {/* Map Section */}
-            <div className={styles.mapSection}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle} style={{ margin: 0 }}>LOCATION</h2>
-                </div>
-                <div className={styles.mapPlaceholder}>
-                    <div style={{ textAlign: 'center' }}>
-                        <MapIcon size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                        <p>Map Integration Coming Soon</p>
-                        <p style={{ fontSize: '0.875rem', opacity: 0.7 }}>
-                            {project.location || project.address}
-                            {project.city && `, ${project.city}`}
-                        </p>
+                {/* Map Section */}
+                <div className={styles.sectionContainer}>
+                    <h2 className={styles.sectionTitle}>LOCATION</h2>
+                    <div style={{ height: '400px', width: '100%', marginTop: '1rem' }}>
+                        <PropertyMap
+                            properties={[]}
+                            projects={[{
+                                id: project.id,
+                                title: project.project_name,
+                                project_name: project.project_name,
+                                display_name: project.project_name,
+                                price: project.min_price_numeric || undefined,
+                                price_text: project.min_price || undefined,
+                                min_price: project.min_price,
+                                max_price: project.max_price,
+                                images: project.images || [],
+                                location: project.location || project.address || '',
+                                latitude: project.latitude,
+                                longitude: project.longitude,
+                                type: 'project',
+                                category: project.category || undefined
+                            }]}
+                        />
                     </div>
                 </div>
             </div>
+
+
 
             {/* Group Buy Section */}
             <GroupBuySection projectName={project.project_name} />

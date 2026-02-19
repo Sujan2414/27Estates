@@ -19,7 +19,7 @@ const ctaButtonStyles: React.CSSProperties = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '0.875rem 1.75rem',
-    backgroundColor: 'var(--dark-turquoise, #1F524B)',
+    backgroundColor: 'var(--dark-turquoise, #183C38)',
     color: '#ffffff',
     fontSize: '0.8125rem',
     fontWeight: 600,
@@ -27,7 +27,7 @@ const ctaButtonStyles: React.CSSProperties = {
     textTransform: 'uppercase',
     textDecoration: 'none',
     transition: 'all 0.3s ease',
-    border: '1px solid var(--dark-turquoise, #1F524B)',
+    border: '1px solid var(--dark-turquoise, #183C38)',
 };
 
 interface CardProps {
@@ -40,7 +40,7 @@ interface CardProps {
 
 const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) => {
     const cardRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
+    const { checkAuthAndNavigate } = useAuth();
 
     const { scrollYProgress } = useScroll({
         target: cardRef,
@@ -62,7 +62,7 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
                     cursor: 'pointer',
                 }}
                 className="relative -top-[25%] w-[92%] max-w-[1200px] h-[45vh] md:h-[70vh] rounded-xl overflow-hidden shadow-2xl origin-top"
-                onClick={() => router.push(project.linkTo)}
+                onClick={() => checkAuthAndNavigate(project.linkTo)}
             >
                 {/* Full Background Image */}
                 <motion.div
@@ -88,7 +88,7 @@ function StackingCardsContent({
     projects: ProjectCardData[];
     showHeader: boolean;
 }) {
-    const { showAuthModal } = useAuth();
+    const { checkAuthAndNavigate } = useAuth();
     const containerRef = useRef<HTMLDivElement>(null);
 
     const { scrollYProgress } = useScroll({
@@ -114,7 +114,7 @@ function StackingCardsContent({
                         className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-4"
                         style={{
                             fontFamily: 'var(--font-heading)',
-                            color: '#1F524B'
+                            color: '#183C38'
                         }}
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -157,7 +157,7 @@ function StackingCardsContent({
             <div className="h-40 flex items-center justify-center">
                 <motion.div whileHover={{ y: -2 }}>
                     <button
-                        onClick={() => showAuthModal('/properties')}
+                        onClick={() => checkAuthAndNavigate('/properties/projects')}
                         style={ctaButtonStyles}
                         className="hover:bg-[#2d7a6e] hover:border-[#2d7a6e] cursor-pointer"
                     >

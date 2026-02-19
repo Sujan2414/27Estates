@@ -115,12 +115,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [supabase.auth, router]);
 
     return (
-        <AuthContext.Provider value={{ 
-            user, 
-            isLoggedIn: !!user, 
+        <AuthContext.Provider value={{
+            user,
+            isLoggedIn: !!user,
             loading,
-            showAuthModal, 
-            hideAuthModal, 
+            showAuthModal,
+            hideAuthModal,
             checkAuthAndNavigate,
             signOut
         }}>

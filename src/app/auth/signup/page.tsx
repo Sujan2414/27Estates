@@ -27,6 +27,7 @@ function SignUpContent() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [emailSent, setEmailSent] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const supabase = createClient();
@@ -65,31 +66,23 @@ function SignUpContent() {
                         full_name: `${firstName} ${lastName}`.trim(),
                         phone: phone,
                     },
+                    emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${searchParams?.get('redirect') || '/properties'}`,
                 },
             });
 
             if (signUpError) throw signUpError;
 
             if (data.user) {
-                // Upsert profile to ensure it exists with the correct data
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: data.user.id,
-                        email: email,
-                        first_name: firstName,
-                        last_name: lastName,
-                        full_name: `${firstName} ${lastName}`.trim(),
-                        phone: phone || null,
-                        updated_at: new Date().toISOString(),
-                    }, { onConflict: 'id' });
-
-                if (profileError) {
-                    console.error("Error upserting profile:", profileError);
+                // Check if email confirmation is required
+                if (data.session) {
+                    // No email confirmation needed — redirect immediately
+                    const redirectTo = searchParams?.get('redirect') || '/properties';
+                    sessionStorage.setItem('session_active', 'true');
+                    router.push(redirectTo);
+                } else {
+                    // Email confirmation required — show "check your email" message
+                    setEmailSent(true);
                 }
-
-                const redirectTo = searchParams?.get('redirect') || '/properties';
-                router.push(redirectTo);
             }
         } catch (err: any) {
             console.error('Sign up error:', err);
@@ -103,88 +96,113 @@ function SignUpContent() {
         <AuthLayout>
             <Logo />
 
-            <h2 className="text-2xl font-semibold mb-6 text-foreground">Sign Up</h2>
-
-            {error && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
-                    {error}
+            {emailSent ? (
+                <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>✉️</div>
+                    <h2 className="text-2xl font-semibold mb-4 text-foreground">Check your email</h2>
+                    <p style={{ color: '#666', marginBottom: '8px', fontSize: '0.95rem' }}>
+                        We&apos;ve sent a confirmation link to
+                    </p>
+                    <p style={{ fontWeight: 600, color: '#183C38', marginBottom: '24px', fontSize: '1rem' }}>
+                        {email}
+                    </p>
+                    <p style={{ color: '#888', fontSize: '0.85rem', marginBottom: '32px' }}>
+                        Please click the link in your email to verify your account, then sign in.
+                    </p>
+                    <Link
+                        href="/auth/signin"
+                        className="auth-button block text-center no-underline hover:opacity-90 transition-opacity"
+                        style={{ display: 'block', textDecoration: 'none' }}
+                    >
+                        Go to Sign In
+                    </Link>
                 </div>
+            ) : (
+                <>
+                    <h2 className="text-2xl font-semibold mb-6 text-foreground">Sign Up</h2>
+
+                    {error && (
+                        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="flex gap-4 w-full" style={{ marginBottom: '12px' }}>
+                            <div className="w-1/2">
+                                <input
+                                    type="text"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    placeholder="First name"
+                                    className="auth-input"
+                                    required
+                                />
+                            </div>
+                            <div className="w-1/2">
+                                <input
+                                    type="text"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    placeholder="Last name"
+                                    className="auth-input"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Email"
+                            className="auth-input"
+                            required
+                        />
+
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="Phone Number"
+                            className="auth-input"
+                        />
+
+                        <PasswordInput
+                            value={password}
+                            onChange={setPassword}
+                            placeholder="Password"
+                        />
+
+                        <PasswordInput
+                            value={confirmPassword}
+                            onChange={setConfirmPassword}
+                            placeholder="Confirm Password"
+                        />
+
+                        <button
+                            type="submit"
+                            className="auth-button"
+                            disabled={loading}
+                        >
+                            {loading ? 'Signing Up...' : 'Sign Up'}
+                        </button>
+                    </form>
+
+                    <div style={{ marginTop: '20px' }}>
+                        <PasswordRequirements password={password} />
+                    </div>
+
+                    <p className="mt-5 text-foreground">
+                        Already have an account?{" "}
+                        <Link href="/auth/signin" className="font-medium hover:underline text-foreground">
+                            Log in
+                        </Link>
+                    </p>
+
+                    <AuthFooter />
+                </>
             )}
-
-            <form onSubmit={handleSubmit}>
-                <div className="flex gap-4 w-full" style={{ marginBottom: '12px' }}>
-                    <div className="w-1/2">
-                        <input
-                            type="text"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="First name"
-                            className="auth-input"
-                            required
-                        />
-                    </div>
-                    <div className="w-1/2">
-                        <input
-                            type="text"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Last name"
-                            className="auth-input"
-                            required
-                        />
-                    </div>
-                </div>
-
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email"
-                    className="auth-input"
-                    required
-                />
-
-                <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Phone Number"
-                    className="auth-input"
-                />
-
-                <PasswordInput
-                    value={password}
-                    onChange={setPassword}
-                    placeholder="Password"
-                />
-
-                <PasswordInput
-                    value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    placeholder="Confirm Password"
-                />
-
-                <button
-                    type="submit"
-                    className="auth-button"
-                    disabled={loading}
-                >
-                    {loading ? 'Signing Up...' : 'Sign Up'}
-                </button>
-            </form>
-
-            <div style={{ marginTop: '20px' }}>
-                <PasswordRequirements password={password} />
-            </div>
-
-            <p className="mt-5 text-foreground">
-                Already have an account?{" "}
-                <Link href="/auth/signin" className="font-medium hover:underline text-foreground">
-                    Log in
-                </Link>
-            </p>
-
-            <AuthFooter />
         </AuthLayout>
     );
 }

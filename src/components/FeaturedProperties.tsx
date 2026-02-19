@@ -146,7 +146,7 @@ const FeaturedProperties: React.FC = () => {
                     >
                         <button
                             className={styles.viewAllBtn}
-                            onClick={() => showAuthModal('/properties')}
+                            onClick={() => checkAuthAndNavigate('/properties')}
                         >
                             View All Properties
                         </button>

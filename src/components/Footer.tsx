@@ -4,10 +4,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 import styles from './Footer.module.css';
 
 const Footer: React.FC = () => {
     const currentYear = new Date().getFullYear();
+    const { checkAuthAndNavigate } = useAuth();
+
+    const handlePropertyClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        checkAuthAndNavigate('/properties');
+    };
 
     return (
         <footer className={styles.footer}>
@@ -21,17 +28,23 @@ const Footer: React.FC = () => {
                         <ul className={styles.linkList}>
                             <li><Link href="/">Home</Link></li>
                             <li><Link href="#about">About</Link></li>
-                            <li><a href="/properties">Properties</a></li>
-                            <li><Link href="#contact">Contact</Link></li>
+                            <li><Link href="/contact">Contact</Link></li>
                         </ul>
                     </div>
 
                     <div className={styles.linkColumn}>
-                        <h4 className={styles.columnTitle}>Properties</h4>
+                        <h4 className={styles.columnTitle}>Discover</h4>
                         <ul className={styles.linkList}>
-                            <li><a href="/properties">Apartments</a></li>
-                            <li><a href="/properties">Villas</a></li>
-                            <li><a href="/properties">Plots</a></li>
+                            <li>
+                                <button
+                                    onClick={handlePropertyClick}
+                                    className={styles.footerLinkBtn}
+                                    type="button"
+                                >
+                                    Properties
+                                </button>
+                            </li>
+                            <li><Link href="/blog">Insights</Link></li>
                             <li><Link href="#calculator">EMI Calculator</Link></li>
                         </ul>
                     </div>
@@ -39,7 +52,7 @@ const Footer: React.FC = () => {
                     <div className={styles.linkColumn}>
                         <h4 className={styles.columnTitle}>Contact</h4>
                         <ul className={styles.linkList}>
-                            <li><Link href="tel:+919844653113">+91 98446 53113</Link></li>
+                            <li><Link href="tel:+918095799929">+91 80957 99929</Link></li>
                             <li><Link href="mailto:connect@27estates.com">connect@27estates.com</Link></li>
                             <li>83, Prestige Copper Arch, Infantry Road, Bangalore, Karnataka 560001</li>
                         </ul>
@@ -55,7 +68,7 @@ const Footer: React.FC = () => {
                                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                                 </svg>
                             </a>
-                            <a href="https://in.linkedin.com/company/27-estates" target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="LinkedIn">
+                            <a href="https://www.linkedin.com/company/27estates/" target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label="LinkedIn">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                     <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z" />
                                     <rect x="2" y="9" width="4" height="12" />

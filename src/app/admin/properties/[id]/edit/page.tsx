@@ -9,6 +9,8 @@ import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import styles from '../../../admin.module.css'
 import formStyles from '../../form.module.css'
+import { AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from '@/lib/amenities-data'
+import { Check, Search } from 'lucide-react'
 
 interface Agent {
     id: string
@@ -72,12 +74,9 @@ export default function EditPropertyPage() {
     })
 
     // Amenities
-    const [amenities, setAmenities] = useState({
-        interior: [''],
-        outdoor: [''],
-        utilities: [''],
-        other: [''],
-    })
+    const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
+    const [amenitySearch, setAmenitySearch] = useState('')
+    const [amenityDropdownOpen, setAmenityDropdownOpen] = useState(false)
 
     // Images & Floor Plans
     const [images, setImages] = useState<string[]>([''])
@@ -87,6 +86,17 @@ export default function EditPropertyPage() {
         fetchProperty()
         fetchAgents()
         fetchOwners()
+    }, [])
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            const dropdown = document.getElementById('amenity-dropdown')
+            if (dropdown && !dropdown.contains(e.target as Node)) {
+                setAmenityDropdownOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
     }, [])
 
     const fetchProperty = async () => {
@@ -136,14 +146,8 @@ export default function EditPropertyPage() {
             lng: addr.coordinates?.lng?.toString() || '',
         })
 
-        // Parse amenities
-        const am = data.amenities || {}
-        setAmenities({
-            interior: am.interior?.length > 0 ? am.interior : [''],
-            outdoor: am.outdoor?.length > 0 ? am.outdoor : [''],
-            utilities: am.utilities?.length > 0 ? am.utilities : [''],
-            other: am.other?.length > 0 ? am.other : [''],
-        })
+        // Parse amenities using helper
+        setSelectedAmenities(flattenAmenities(data.amenities))
 
         // Parse images - filter out null/undefined entries
         const rawImages = data.images || []
@@ -182,26 +186,22 @@ export default function EditPropertyPage() {
     }
 
     // Amenity handlers
-    const handleAmenityChange = (category: keyof typeof amenities, index: number, value: string) => {
-        setAmenities(prev => ({
-            ...prev,
-            [category]: prev[category].map((item, i) => i === index ? value : item)
-        }))
+    const toggleAmenity = (label: string) => {
+        setSelectedAmenities(prev =>
+            prev.includes(label) ? prev.filter(a => a !== label) : [...prev, label]
+        )
+    }
+    const removeSelectedAmenity = (label: string) => {
+        setSelectedAmenities(prev => prev.filter(a => a !== label))
     }
 
-    const addAmenity = (category: keyof typeof amenities) => {
-        setAmenities(prev => ({
-            ...prev,
-            [category]: [...prev[category], '']
-        }))
-    }
-
-    const removeAmenity = (category: keyof typeof amenities, index: number) => {
-        setAmenities(prev => ({
-            ...prev,
-            [category]: prev[category].filter((_, i) => i !== index)
-        }))
-    }
+    // Filter amenities for dropdown
+    const filteredAmenityCategories = AMENITY_CATEGORIES.map(cat => ({
+        category: cat,
+        items: AMENITIES_BY_CATEGORY[cat].filter(a =>
+            a.label.toLowerCase().includes(amenitySearch.toLowerCase())
+        ),
+    })).filter(g => g.items.length > 0)
 
     // Image handlers
     const handleImageChange = (index: number, value: string) => {
@@ -236,12 +236,12 @@ export default function EditPropertyPage() {
                 }
             }
 
-            const amenitiesData = {
-                interior: (amenities.interior || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-                outdoor: (amenities.outdoor || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-                utilities: (amenities.utilities || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-                other: (amenities.other || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-            }
+            // Amenities are now sent as a flat array. Our backend stores jsonb, so flat array is fine for now,
+            // or we might need to send it as step5 does if we want strict compatibility with the wizard structure.
+            // But the wizard ultimately just sends the data, and if the DB column is jsonb, it accepts anything.
+            // The Property Details page (display) uses a flat list logic or handles whatever is there.
+            // Let's use the flat array as per the plan.
+            const amenitiesData = selectedAmenities
 
             const floorPlansData = (floorPlans || []).filter(fp => {
                 const name = fp?.name || ''
@@ -490,31 +490,69 @@ export default function EditPropertyPage() {
                 {/* Amenities */}
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Amenities</h2>
+                    <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '12px' }}>
+                        Select amenities available in this property.
+                    </p>
 
-                    {(['interior', 'outdoor', 'utilities', 'other'] as const).map(category => (
-                        <div key={category} className={formStyles.amenityGroup}>
-                            <label className={formStyles.label}>{category.charAt(0).toUpperCase() + category.slice(1)}</label>
-                            {amenities[category].map((item, index) => (
-                                <div key={index} className={formStyles.imageInput}>
-                                    <input
-                                        type="text"
-                                        value={item}
-                                        onChange={(e) => handleAmenityChange(category, index, e.target.value)}
-                                        className={formStyles.input}
-                                        placeholder={`Add ${category} amenity...`}
-                                    />
-                                    {amenities[category].length > 1 && (
-                                        <button type="button" onClick={() => removeAmenity(category, index)} className={formStyles.removeBtn}>
-                                            <X size={18} />
-                                        </button>
-                                    )}
-                                </div>
+                    {selectedAmenities.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                            {selectedAmenities.map(label => (
+                                <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '9999px', fontSize: '0.8125rem', fontWeight: 500, color: '#166534' }}>
+                                    {label}
+                                    <button type="button" onClick={() => removeSelectedAmenity(label)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#166534' }}>
+                                        <X size={14} />
+                                    </button>
+                                </span>
                             ))}
-                            <button type="button" onClick={() => addAmenity(category)} className={formStyles.addImageBtn}>
-                                <Plus size={16} /> Add {category}
-                            </button>
                         </div>
-                    ))}
+                    )}
+
+                    <div id="amenity-dropdown" style={{ position: 'relative', marginBottom: '16px' }}>
+                        <div
+                            onClick={() => setAmenityDropdownOpen(!amenityDropdownOpen)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: '#ffffff' }}
+                        >
+                            <Search size={16} color="#94a3b8" />
+                            <input
+                                type="text"
+                                value={amenitySearch}
+                                onChange={(e) => { setAmenitySearch(e.target.value); setAmenityDropdownOpen(true) }}
+                                onFocus={() => setAmenityDropdownOpen(true)}
+                                placeholder="Search amenities..."
+                                style={{ border: 'none', outline: 'none', flex: 1, fontSize: '0.875rem', background: 'transparent' }}
+                            />
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{selectedAmenities.length} selected</span>
+                        </div>
+
+                        {amenityDropdownOpen && (
+                            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, maxHeight: '360px', overflowY: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 50, padding: '8px' }}>
+                                {filteredAmenityCategories.map(({ category, items }) => (
+                                    <div key={category}>
+                                        <div style={{ padding: '8px 10px 4px', fontSize: '0.6875rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{category}</div>
+                                        {items.map(amenity => {
+                                            const isSelected = selectedAmenities.includes(amenity.label)
+                                            return (
+                                                <button
+                                                    key={amenity.label}
+                                                    type="button"
+                                                    onClick={() => toggleAmenity(amenity.label)}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '8px 10px', border: 'none', borderRadius: '6px', background: isSelected ? '#f0fdf4' : 'transparent', cursor: 'pointer', fontSize: '0.8125rem', color: isSelected ? '#166534' : '#334155', fontWeight: isSelected ? 600 : 400, transition: 'background 0.15s' }}
+                                                >
+                                                    <span style={{ width: '18px', height: '18px', borderRadius: '4px', border: isSelected ? '2px solid #22c55e' : '2px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: isSelected ? '#22c55e' : 'transparent' }}>
+                                                        {isSelected && <Check size={12} color="#fff" />}
+                                                    </span>
+                                                    {amenity.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                ))}
+                                {filteredAmenityCategories.length === 0 && (
+                                    <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.8125rem' }}>No amenities match your search</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Media */}

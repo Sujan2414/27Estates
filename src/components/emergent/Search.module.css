@@ -256,7 +256,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 25rem;
+    width: 100%;
+    flex: 1;
+    min-height: 100vh;
 }
 
 .loadingText {
@@ -674,4 +676,234 @@
     border-radius: 1rem;
     overflow: hidden;
     position: relative;
+}
+
+/* ============================================= */
+/* MOBILE FILTER MODAL & CONTROLS                */
+/* ============================================= */
+
+/* Mobile controls bar — visible only on mobile */
+.mobileControls {
+    display: none;
+}
+
+@media (max-width: 1023px) {
+    .mobileControls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1rem;
+        background: #ffffff;
+        border-bottom: 1px solid #ebebeb;
+    }
+}
+
+.mobileFilterBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #dddddd;
+    border-radius: 9999px;
+    background: #ffffff;
+    color: #222222;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.mobileFilterBtn:active {
+    background: #f7f7f7;
+}
+
+.mobileFilterBtnActive {
+    background: #183C38;
+    color: #ffffff;
+    border-color: #183C38;
+}
+
+.mobileViewToggle {
+    display: flex;
+    gap: 0;
+    margin-left: auto;
+    border: 1px solid #dddddd;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.mobileViewBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: #ffffff;
+    color: #717171;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.mobileViewBtnActive {
+    background: #222222;
+    color: #ffffff;
+}
+
+/* Full-screen filter modal */
+.filterModal {
+    display: none;
+}
+
+.filterModalOpen {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: #ffffff;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* Filter modal header */
+.filterModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #ebebeb;
+    flex-shrink: 0;
+}
+
+.filterModalTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #222222;
+    margin: 0;
+}
+
+.filterModalClose {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid #dddddd;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #222222;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.filterModalClose:active {
+    background: #f7f7f7;
+}
+
+/* Filter modal body — scrollable */
+.filterModalBody {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
+}
+
+/* Reuse filter sections inside modal */
+.filterModalBody .filterSection {
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.filterModalBody .filterSection:last-child {
+    border-bottom: none;
+}
+
+/* Filter modal footer — sticky */
+.filterModalFooter {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #ebebeb;
+    flex-shrink: 0;
+    background: #ffffff;
+}
+
+.filterModalApply {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: #183C38;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.filterModalApply:active {
+    background: #2d7a6e;
+}
+
+.filterModalReset {
+    padding: 0.75rem 1.25rem;
+    border: 1px solid #dddddd;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    color: #222222;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filterModalReset:active {
+    background: #f7f7f7;
+}
+
+/* Mobile search header override */
+@media (max-width: 1023px) {
+    .searchHeader {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: #ffffff;
+    }
+
+    .mainContent {
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+    }
+
+    .listingsScrollArea {
+        padding: 0.75rem;
+    }
+
+    .mapContainer {
+        height: calc(100vh - 14rem);
+        border-radius: 0;
+    }
+
+    /* Filter section padding inside modal */
+    .filterModalBody .filterSection,
+    .filterModalBody .toggleRow {
+        padding: 0.75rem 1.25rem;
+    }
+
+    .filterModalBody .filterLabel {
+        font-size: 0.9375rem;
+    }
 }

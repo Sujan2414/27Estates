@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Search, Filter, Plus, X } from 'lucide-react';
 import PropertyCard, { PropertyProps } from '@/components/dashboard/PropertyCard';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import PostPropertyForm from '@/components/dashboard/PostPropertyForm';
 
 
 
 export default function DashboardPage() {
     const [searchQuery, setSearchQuery] = useState("");
+    const [showPostForm, setShowPostForm] = useState(false);
     const { user } = useAuth();
     const supabase = createClient();
 
@@ -168,10 +170,13 @@ export default function DashboardPage() {
 
 
                 <div className="flex items-center gap-4">
-                    <Link href="/dashboard/post-property" className="flex items-center gap-2 px-5 py-2.5 bg-[var(--dark-turquoise)] text-white rounded-[4px] font-medium hover:bg-[#1a4640] transition-colors">
-                        <Plus size={20} />
-                        <span className="hidden md:inline">Add Listing</span>
-                    </Link>
+                    <button
+                        onClick={() => setShowPostForm(!showPostForm)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[var(--dark-turquoise)] text-white rounded-lg font-medium hover:bg-[#1a4640] transition-colors shadow-md shadow-[var(--dark-turquoise)]/20"
+                    >
+                        {showPostForm ? <X size={20} /> : <Plus size={20} />}
+                        <span className="hidden md:inline">{showPostForm ? 'Close' : 'Post Your Property'}</span>
+                    </button>
                     <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm cursor-pointer">
                         <img
                             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=1F524B&color=fff`}
@@ -180,6 +185,21 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </header>
+
+            {/* Post Property Form - Inline */}
+            <AnimatePresence>
+                {showPostForm && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="mb-10 overflow-hidden"
+                    >
+                        <PostPropertyForm />
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Search & Stats */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">

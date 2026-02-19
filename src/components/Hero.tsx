@@ -162,20 +162,8 @@ const Hero: React.FC = () => {
                         </motion.p>
                     </div>
                 </div>
-            </div>
-        </motion.div>
 
-            {/* Post Your Property Button - Top Right */ }
-    <motion.div
-        className={styles.topRightAction}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 1, duration: 0.6 }}
-    >
-        <a href="/dashboard/post-property" className={styles.postPropertyBtn}>
-            Post Your Property <span className="arrow">↗</span>
-        </a>
-    </motion.div>
+            </motion.div>
         </section >
     );
 };

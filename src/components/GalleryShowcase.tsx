@@ -69,7 +69,7 @@ export default function GalleryShowcase() {
                         fontSize: 'clamp(2rem, 4vw, 2.75rem)',
                         fontWeight: 500,
                         letterSpacing: '-0.02em',
-                        color: 'var(--dark-turquoise, #1F524B)',
+                        color: 'var(--dark-turquoise, #183C38)',
                         marginBottom: '1rem'
                     }}>
                         Curated Excellence

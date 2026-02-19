@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { services } from "@/lib/services-data";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,10 @@ const ExpandOnHover = () => {
     const [startIndex, setStartIndex] = useState(0);
     const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
     const [isMobile, setIsMobile] = useState(false);
+    const [tappedIndex, setTappedIndex] = useState<number | null>(null);
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
+    const [touchStartY, setTouchStartY] = useState<number | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
@@ -17,6 +22,11 @@ const ExpandOnHover = () => {
         window.addEventListener('resize', check);
         return () => window.removeEventListener('resize', check);
     }, []);
+
+    // Reset tapped state when swiping to a new card
+    useEffect(() => {
+        setTappedIndex(null);
+    }, [startIndex]);
 
     const visibleCount = isMobile ? 1 : 3;
 
@@ -41,6 +51,28 @@ const ExpandOnHover = () => {
         setExpandedIndex(0);
     };
 
+    // Touch/swipe handlers for mobile
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchStartX(e.touches[0].clientX);
+        setTouchStartY(e.touches[0].clientY);
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchStartX === null || touchStartY === null) return;
+        const deltaX = e.changedTouches[0].clientX - touchStartX;
+        const deltaY = e.changedTouches[0].clientY - touchStartY;
+        // Only trigger swipe if horizontal movement is dominant and > 50px
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            if (deltaX < 0) {
+                handleNext();
+            } else {
+                handlePrev();
+            }
+        }
+        setTouchStartX(null);
+        setTouchStartY(null);
+    };
+
     const getCardWidth = (index: number) => {
         if (isMobile) return "flex-1";
         return index === expandedIndex ? "flex-[2]" : "flex-1";
@@ -63,7 +95,11 @@ const ExpandOnHover = () => {
                     </Button>
 
                     {/* Cards */}
-                    <div className={`flex flex-1 ${isMobile ? 'h-[350px]' : 'h-auto min-h-[400px] lg:min-h-[500px] md:h-[60vh]'}`}>
+                    <div
+                        className={`flex flex-1 ${isMobile ? 'h-[350px]' : 'h-auto min-h-[400px] lg:min-h-[500px] md:h-[60vh]'}`}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                    >
                         {visibleServices.map((service, idx) => {
                             const isExpanded = isMobile ? true : idx === expandedIndex;
                             return (
@@ -86,6 +122,7 @@ const ExpandOnHover = () => {
                                             objectFit: 'cover',
                                             objectPosition: 'center',
                                             transform: isExpanded ? 'scale(1.05)' : 'scale(1)',
+                                            filter: isMobile ? 'grayscale(0%)' : 'none',
                                         }}
                                         src={service.image}
                                         alt={service.title}
@@ -104,9 +141,9 @@ const ExpandOnHover = () => {
                                         }}
                                     />
 
-                                    {/* Content */}
+                                    {/* Content - visible on hover (desktop) */}
                                     {isExpanded && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-6 text-center z-10">
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-6 text-center z-10 transition-opacity duration-300">
                                             <h3
                                                 className="text-white text-xl md:text-3xl font-medium mb-2 md:mb-3"
                                                 style={{ color: '#ffffff', textShadow: '0 2px 10px black' }}

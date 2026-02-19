@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, Mail, Phone, MapPin, Home, DollarSign, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Mail, Phone, DollarSign, Home, Calendar, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import styles from '../admin.module.css';
 
 interface Submission {
     id: string;
@@ -12,6 +13,7 @@ interface Submission {
     phone: string;
     property_type: string;
     deal_type: string;
+    property_category: string;
     description: string;
     expected_price: number;
     city: string;
@@ -23,11 +25,29 @@ interface Submission {
 export default function AdminSubmissionsPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState<string>('all');
+    const [userRole, setUserRole] = useState<string>('');
+    const [lightboxImg, setLightboxImg] = useState<string | null>(null);
     const supabase = createClient();
 
     useEffect(() => {
         fetchSubmissions();
+        fetchUserRole();
     }, []);
+
+    const fetchUserRole = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+            if (profile) setUserRole(profile.role || '');
+        }
+    };
+
+    const canDelete = userRole === 'admin' || userRole === 'super_admin';
 
     const fetchSubmissions = async () => {
         setIsLoading(true);
@@ -57,115 +77,176 @@ export default function AdminSubmissionsPage() {
 
     const deleteSubmission = async (id: string) => {
         if (!confirm('Are you sure you want to delete this submission?')) return;
-
         const { error } = await supabase
             .from('property_submissions')
             .delete()
             .eq('id', id);
-
         if (!error) {
             setSubmissions(prev => prev.filter(sub => sub.id !== id));
         }
     };
 
-    if (isLoading) {
-        return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin w-8 h-8 text-gray-500" /></div>;
-    }
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const statusColors: Record<string, string> = {
+        new: '#ef4444',
+        contacted: '#f59e0b',
+        converted: '#22c55e',
+        rejected: '#6b7280'
+    };
+
+    const filteredSubmissions = filter === 'all'
+        ? submissions
+        : submissions.filter(s => s.status === filter);
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6 text-gray-800">Property Submissions</h1>
+        <div className={styles.dashboard}>
+            <div className={styles.header}>
+                <div>
+                    <h1 className={styles.pageTitle}>Property Submissions</h1>
+                    <p className={styles.pageSubtitle}>Manage property submissions from users</p>
+                </div>
+            </div>
 
-            <div className="grid gap-6">
-                {submissions.map((sub) => (
-                    <div key={sub.id} className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden flex flex-col md:flex-row">
-                        {/* Image Preview */}
-                        <div className="w-full md:w-64 h-48 md:h-auto relative bg-gray-100 flex-shrink-0">
-                            {sub.images && sub.images.length > 0 ? (
-                                <Image
-                                    src={sub.images[0]}
-                                    alt="Property"
-                                    fill
-                                    className="object-cover"
-                                />
-                            ) : (
-                                <div className="flex items-center justify-center h-full text-gray-400">
-                                    <Home size={32} />
+            <div className={styles.filterTabs}>
+                {['all', 'new', 'contacted', 'converted', 'rejected'].map(status => (
+                    <button
+                        key={status}
+                        className={`${styles.filterTab} ${filter === status ? styles.filterTabActive : ''}`}
+                        onClick={() => setFilter(status)}
+                    >
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                        {status !== 'all' && (
+                            <span className={styles.filterCount}>
+                                {submissions.filter(s => s.status === status).length}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {isLoading ? (
+                <div className={styles.emptyState}>Loading submissions...</div>
+            ) : filteredSubmissions.length > 0 ? (
+                <div className={styles.inquiriesList}>
+                    {filteredSubmissions.map((sub) => (
+                        <div key={sub.id} className={styles.inquiryCard}>
+                            <div className={styles.inquiryHeader}>
+                                <div className={styles.inquiryInfo}>
+                                    <h3>{sub.property_category || sub.deal_type} &mdash; {sub.property_type === 'Sale' ? 'For Sale' : 'For Rent'}</h3>
+                                    <div className={styles.inquiryContact}>
+                                        <span style={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem' }}>
+                                            {sub.name}
+                                        </span>
+                                        <a href={`mailto:${sub.email}`}>
+                                            <Mail size={14} />
+                                            {sub.email}
+                                        </a>
+                                        {sub.phone && (
+                                            <a href={`tel:${sub.phone}`}>
+                                                <Phone size={14} />
+                                                {sub.phone}
+                                            </a>
+                                        )}
+                                        {sub.expected_price && (
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: '#047857', fontWeight: 600 }}>
+                                                &#8377;{sub.expected_price.toLocaleString('en-IN')}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
-                            <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                                {sub.status.toUpperCase()}
+                                <div className={styles.inquiryMeta}>
+                                    <span
+                                        className={styles.statusDot}
+                                        style={{ backgroundColor: statusColors[sub.status] || '#6b7280' }}
+                                    />
+                                    <select
+                                        value={sub.status}
+                                        onChange={(e) => updateStatus(sub.id, e.target.value)}
+                                        className={styles.statusSelect}
+                                    >
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="converted">Converted</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Content */}
-                        <div className="p-6 flex-grow flex flex-col justify-between">
-                            <div>
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="text-xl font-semibold text-gray-900">{sub.deal_type} - {sub.property_type}</h3>
-                                    <span className="text-sm text-gray-500">{new Date(sub.created_at).toLocaleDateString()}</span>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
-                                    <div className="flex items-center gap-2">
-                                        <div className="font-medium text-gray-900">{sub.name}</div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <DollarSign size={16} />
-                                        {sub.expected_price ? `₹${sub.expected_price.toLocaleString()}` : 'Price not set'}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Mail size={16} />
-                                        <a href={`mailto:${sub.email}`} className="hover:underline">{sub.email}</a>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Phone size={16} />
-                                        <a href={`tel:${sub.phone}`} className="hover:underline">{sub.phone}</a>
-                                    </div>
-                                </div>
-
-                                <p className="text-gray-700 text-sm mb-4 line-clamp-3 md:line-clamp-none">
+                            {sub.description && (
+                                <p className={styles.inquiryMessage}>
+                                    <Home size={14} style={{ flexShrink: 0, marginTop: 3 }} />
                                     {sub.description}
                                 </p>
+                            )}
 
-                                {sub.images && sub.images.length > 1 && (
-                                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                                        {sub.images.slice(1).map((img, idx) => (
-                                            <div key={idx} className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden">
-                                                <Image src={img} alt={`Extra ${idx}`} fill className="object-cover" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {sub.images && sub.images.length > 0 && (
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+                                    {sub.images.map((img, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setLightboxImg(img)}
+                                            style={{ position: 'relative', width: 64, height: 64, flexShrink: 0, borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e5e7eb', cursor: 'pointer' }}
+                                        >
+                                            <Image src={img} alt={`Property ${idx + 1}`} fill style={{ objectFit: 'cover' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
-                            {/* Actions */}
-                            <div className="flex gap-3 pt-4 border-t border-gray-100">
-                                {sub.status === 'new' && (
+                            <div className={styles.inquiryFooter} style={{ justifyContent: 'space-between' }}>
+                                {canDelete ? (
                                     <button
-                                        onClick={() => updateStatus(sub.id, 'contacted')}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 text-sm font-medium"
+                                        onClick={() => deleteSubmission(sub.id)}
+                                        className={styles.deleteBtn}
+                                        style={{ flex: 'none', paddingLeft: '0.75rem', paddingRight: '0.75rem' }}
                                     >
-                                        <CheckCircle size={14} /> Mark Contacted
+                                        <Trash2 size={14} /> Delete
                                     </button>
-                                )}
-                                <button
-                                    onClick={() => deleteSubmission(sub.id)}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm font-medium ml-auto"
-                                >
-                                    <Trash2 size={14} /> Delete
-                                </button>
+                                ) : <div />}
+                                <span className={styles.inquiryDate}>
+                                    <Calendar size={14} />
+                                    {formatDate(sub.created_at)}
+                                </span>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
+            ) : (
+                <div className={styles.emptyState}>
+                    {filter === 'all' ? 'No submissions yet.' : `No ${filter} submissions.`}
+                </div>
+            )}
 
-                {submissions.length === 0 && (
-                    <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                        No submissions yet.
-                    </div>
-                )}
-            </div>
+            {/* Lightbox Modal */}
+            {lightboxImg && (
+                <div
+                    onClick={() => setLightboxImg(null)}
+                    style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, cursor: 'zoom-out', padding: '2rem' }}
+                >
+                    <button
+                        onClick={() => setLightboxImg(null)}
+                        style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', fontSize: '1.5rem', width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        &times;
+                    </button>
+                    <img
+                        src={lightboxImg}
+                        alt="Full view"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: '0.5rem', cursor: 'default' }}
+                    />
+                </div>
+            )}
         </div>
     );
 }

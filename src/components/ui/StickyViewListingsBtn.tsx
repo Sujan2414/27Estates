@@ -43,12 +43,14 @@ const StickyViewListingsBtn: React.FC = () => {
         };
     }, []);
 
-    const { showAuthModal } = useAuth();
-    // Don't show on properties or admin pages
+    const { checkAuthAndNavigate } = useAuth();
+    // Don't show on properties, projects, or admin pages
     const isPropertiesPage = pathname?.startsWith('/properties');
+    const isProjectsPage = pathname?.startsWith('/projects');
     const isAdminPage = pathname?.startsWith('/admin');
+    const isAuthPage = pathname?.startsWith('/auth') || pathname?.startsWith('/login') || pathname?.startsWith('/signup');
 
-    if (isPropertiesPage || isAdminPage) return null;
+    if (isPropertiesPage || isProjectsPage || isAdminPage || isAuthPage) return null;
 
     return (
         <div className="fixed bottom-8 right-8 z-50">
@@ -61,12 +63,12 @@ const StickyViewListingsBtn: React.FC = () => {
                 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => showAuthModal('/properties')}
+                onClick={() => checkAuthAndNavigate('/properties')}
             >
                 <Button
                     variant="mono"
                     size="lg"
-                    className="shadow-xl min-w-[180px] transition-colors duration-300 !bg-[#1F524B] hover:!bg-[#163E38] !text-white"
+                    className="shadow-xl min-w-[180px] transition-colors duration-300 !bg-[#183C38] hover:!bg-[#163E38] !text-white"
                 >
                     View Listings
                 </Button>

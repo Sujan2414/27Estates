@@ -2,97 +2,142 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Database } from '@/lib/supabase/database.types';
+import { Database } from '@/lib/supabase/types';
 import ProjectCard from '@/components/emergent/ProjectCard';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
+import { Search, SlidersHorizontal, Building2 } from 'lucide-react';
 
 type Project = Database['public']['Tables']['projects']['Row'];
 
 export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
+    const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [activeFilter, setActiveFilter] = useState("All");
     const [loading, setLoading] = useState(true);
+    const [bookmarks, setBookmarks] = useState<string[]>([]);
+    const [user, setUser] = useState<any>(null);
     const supabase = createClient();
 
-    useEffect(() => {
-        const fetchProjects = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('projects')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+    const fetchBookmarks = async () => {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        setUser(authUser);
 
-                if (error) throw error;
-                setProjects(data || []);
-            } catch (error) {
-                console.error('Error fetching projects:', error);
-            } finally {
-                setLoading(false);
+        if (authUser) {
+            const { data: bookmarkData } = await supabase
+                .from('user_bookmarks')
+                .select('project_id')
+                .eq('user_id', authUser.id)
+                .not('project_id', 'is', null);
+
+            if (bookmarkData) {
+                setBookmarks(bookmarkData.map(b => b.project_id as string));
             }
-        };
+        } else {
+            // Load guest bookmarks
+            const guestBookmarks = JSON.parse(sessionStorage.getItem('guest_bookmarks') || '[]');
+            setBookmarks(guestBookmarks);
+        }
+    };
 
+    const fetchProjects = async () => {
+        try {
+            const { data: allProjects, error } = await supabase
+                .from('projects')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setProjects(allProjects || []);
+            setFilteredProjects(allProjects || []);
+        } catch (error) {
+            console.error("Error fetching projects:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchProjects();
-    }, [supabase]);
+        fetchBookmarks();
+    }, []);
+
+    // Filter effect...
+    useEffect(() => {
+        let result = projects;
+
+        if (searchQuery.toLowerCase().trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(p =>
+                p.project_name.toLowerCase().includes(query) ||
+                (p.location && p.location.toLowerCase().includes(query)) // Added null check for location
+            );
+        }
+
+        if (activeFilter !== 'All') {
+            if (activeFilter === 'Residential') {
+                result = result.filter(p => p.category === 'Residential');
+            } else if (activeFilter === 'Commercial') {
+                result = result.filter(p => p.category === 'Commercial');
+            } else if (activeFilter === 'Plots') {
+                result = result.filter(p => p.category === 'Plots');
+            }
+        }
+
+        setFilteredProjects(result);
+    }, [searchQuery, activeFilter, projects]);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-600"></div>
+            </div>
+        );
+    }
 
     return (
-        <main className="min-h-screen bg-gray-50">
+        <div className="min-h-screen flex flex-col bg-gray-50">
             <Navigation />
 
-            {/* Search Header */}
-            <div className="bg-white border-b pt-32 pb-8 px-4">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">New Projects</h1>
-                            <p className="text-gray-500 mt-1">Discover premium developments across Bangalore</p>
+            <main className="flex-grow container mx-auto px-4 py-8 mt-20">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <h1 className="text-3xl font-bold text-gray-900">Our Projects</h1>
+
+                    {/* Search and Filter */}
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search projects..."
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none w-full sm:w-64"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
 
-                        <div className="flex gap-3">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search projects..."
-                                    className="pl-10 pr-4 py-2 border rounded-full text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                />
-                            </div>
-                            <button
-                                className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold uppercase tracking-wider transition-all duration-300 hover:-translate-y-0.5"
-                                style={{
-                                    backgroundColor: '#1F524B',
-                                    color: '#ffffff',
-                                    border: '1px solid #1F524B',
-                                    letterSpacing: '0.08em'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#2d7a6e';
-                                    e.currentTarget.style.borderColor = '#2d7a6e';
-                                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(31, 82, 75, 0.4)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#1F524B';
-                                    e.currentTarget.style.borderColor = '#1F524B';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            >
-                                <SlidersHorizontal className="w-4 h-4" />
-                                Filters
-                            </button>
+                        <div className="flex gap-2 bg-white p-1 rounded-lg border border-gray-200">
+                            {['All', 'Residential', 'Commercial'].map((filter) => (
+                                <button
+                                    key={filter}
+                                    onClick={() => setActiveFilter(filter)}
+                                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeFilter === filter
+                                        ? 'bg-emerald-600 text-white shadow-sm'
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    {filter}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Projects Grid */}
-            <div className="max-w-7xl mx-auto px-4 py-12">
-                {loading ? (
-                    <div className="flex justify-center py-20">
-                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                ) : projects.length > 0 ? (
+                {filteredProjects.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {projects.map((project) => (
+                        {filteredProjects.map((project) => (
                             <ProjectCard
                                 key={project.id}
                                 id={project.id}
@@ -101,20 +146,30 @@ export default function ProjectsPage() {
                                 min_price={project.min_price}
                                 max_price={project.max_price}
                                 bhk_options={project.bhk_options}
-                                image={project.images?.[0] || ''}
+                                image={project.images?.[0] || '/placeholder-project.jpg'}
                                 status={project.status || 'Upcoming'}
+                                developer_name={project.developer_name}
+                                is_rera_approved={project.is_rera_approved}
+                                isBookmarked={bookmarks.includes(project.id)}
+                                onBookmarkChange={fetchBookmarks}
                             />
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-20">
-                        <h3 className="text-xl font-medium text-gray-900">No projects found</h3>
-                        <p className="text-gray-500 mt-2">Try adjusting your filters or check back later.</p>
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                        <Building2 size={48} className="mb-4 opacity-20" />
+                        <p className="text-xl font-medium">No projects found matching your criteria</p>
+                        <button
+                            onClick={() => { setSearchQuery(''); setActiveFilter('All'); }}
+                            className="mt-4 text-emerald-600 hover:underline"
+                        >
+                            Clear all filters
+                        </button>
                     </div>
                 )}
-            </div>
+            </main>
 
             <Footer />
-        </main>
+        </div>
     );
 }

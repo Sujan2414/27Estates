@@ -11,6 +11,7 @@ import {
     FolderKanban,
     FileText,
     MessageSquare,
+    Upload,
     Users,
     Contact,
     LogOut,
@@ -24,7 +25,7 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-    const [user, setUser] = useState<{ email: string; full_name: string } | null>(null)
+    const [user, setUser] = useState<{ email: string; full_name: string; role?: string } | null>(null)
     const [loading, setLoading] = useState(true)
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const router = useRouter()
@@ -54,12 +55,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 .eq('id', authUser.id)
                 .single()
 
-            if (!profile || profile.role !== 'admin') {
+            if (!profile || !['admin', 'super_admin', 'agent'].includes(profile.role)) {
                 router.push('/admin/login')
                 return
             }
 
-            setUser({ email: profile.email || authUser.email || '', full_name: profile.full_name || 'Admin' })
+            setUser({ email: profile.email || authUser.email || '', full_name: profile.full_name || 'Admin', role: profile.role })
             setLoading(false)
         }
 
@@ -71,16 +72,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         router.push('/admin/login')
     }
 
-    const navItems = [
-        { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-        { name: 'Properties', href: '/admin/properties', icon: Building2 },
-        { name: 'Projects', href: '/admin/projects', icon: FolderKanban },
-        { name: 'Blog Posts', href: '/admin/blogs', icon: FileText },
-        { name: 'Inquiries', href: '/admin/inquiries', icon: MessageSquare },
-        { name: 'Agents', href: '/admin/agents', icon: Users },
-        { name: 'Users', href: '/admin/users', icon: Users },
-        { name: 'Owners', href: '/admin/owners', icon: Contact },
+    const allNavItems = [
+        { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, roles: ['admin', 'super_admin', 'agent'] },
+        { name: 'Properties', href: '/admin/properties', icon: Building2, roles: ['admin', 'super_admin', 'agent'] },
+        { name: 'Projects', href: '/admin/projects', icon: FolderKanban, roles: ['admin', 'super_admin', 'agent'] },
+        { name: 'Blog Posts', href: '/admin/blogs', icon: FileText, roles: ['admin', 'super_admin', 'agent'] },
+        { name: 'Inquiries', href: '/admin/inquiries', icon: MessageSquare, roles: ['admin', 'super_admin', 'agent'] },
+        { name: 'Submissions', href: '/admin/submissions', icon: Upload, roles: ['admin', 'super_admin', 'agent'] },
+        { name: 'Agents', href: '/admin/agents', icon: Users, roles: ['admin', 'super_admin'] },
+        { name: 'Users', href: '/admin/users', icon: Users, roles: ['admin', 'super_admin'] },
+        { name: 'Owners', href: '/admin/owners', icon: Contact, roles: ['admin', 'super_admin'] },
     ]
+
+    const userRole = (user as any)?.role || 'agent'
+
+    const navItems = allNavItems.filter(item => item.roles.includes(userRole))
 
     // Skip layout for login page - AFTER hooks
     if (isLoginPage) {

@@ -24,7 +24,7 @@ const steps = [
         content: (
             <div className="h-full w-full flex items-center justify-center text-white">
                 <img
-                    src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1973&q=80"
+                    src="/images/Buy.jpg"
                     className="h-full w-full object-cover"
                     alt="Buy a Property"
                 />
@@ -49,7 +49,7 @@ const steps = [
         content: (
             <div className="h-full w-full flex items-center justify-center text-white">
                 <img
-                    src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    src="/images/Rent.jpg"
                     className="h-full w-full object-cover"
                     alt="Rent a Property"
                 />
@@ -74,7 +74,7 @@ const steps = [
         content: (
             <div className="h-full w-full flex items-center justify-center text-white">
                 <img
-                    src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    src="/images/sell.jpg"
                     className="h-full w-full object-cover"
                     alt="Sell a Property"
                 />
@@ -99,7 +99,7 @@ const steps = [
         content: (
             <div className="h-full w-full flex items-center justify-center text-white">
                 <img
-                    src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    src="/images/Propertymanagement.jpg"
                     className="h-full w-full object-cover"
                     alt="Property Management"
                 />
@@ -124,7 +124,7 @@ const steps = [
         content: (
             <div className="h-full w-full flex items-center justify-center text-white">
                 <img
-                    src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                    src="/images/Consulting.jpg"
                     className="h-full w-full object-cover"
                     alt="Real Estate Consultation"
                 />

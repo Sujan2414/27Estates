@@ -1,0 +1,645 @@
+/* ─── Main ─── */
+.main {
+    background-color: #f9f6f3;
+    min-height: 100vh;
+}
+
+/* ─── Progress Bar ─── */
+.progressBar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold, #BFA270), var(--dark-turquoise, #183C38));
+    z-index: 10000;
+    transition: width 0.1s linear;
+}
+
+/* ─── Hero ─── */
+.hero {
+    position: sticky;
+    top: 0;
+    z-index: 0;
+    height: 70vh;
+    min-height: 500px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--dark-grey, #0E110F);
+}
+
+.heroImageWrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 120%;
+}
+
+.heroOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.4) 100%);
+    z-index: 1;
+}
+
+.heroContent {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.heroBadge {
+    display: inline-block;
+    padding: 6px 16px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #fff;
+    background-color: rgba(191, 162, 112, 0.85);
+    border-radius: 2px;
+    margin-bottom: 1.5rem;
+}
+
+.heroTitle {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    font-weight: 500;
+    line-height: 1.15;
+    color: #fff;
+    margin-bottom: 2rem;
+    letter-spacing: -0.02em;
+}
+
+.heroMeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.heroMetaItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+}
+
+.heroMetaItem svg {
+    color: var(--gold, #BFA270);
+}
+
+.heroAuthorDot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold, #BFA270);
+}
+
+/* ─── Content Area ─── */
+.contentArea {
+    position: relative;
+    z-index: 1;
+    background-color: #f9f6f3;
+}
+
+.contentLayout {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 4rem 2rem 2rem;
+    display: flex;
+    gap: 3rem;
+}
+
+/* ─── Sticky Share Sidebar ─── */
+.shareSidebar {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .shareSidebar {
+        display: block;
+        width: 60px;
+        flex-shrink: 0;
+    }
+}
+
+.shareSticky {
+    position: sticky;
+    top: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0;
+}
+
+.shareLabel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-body);
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #999;
+}
+
+.shareDivider {
+    width: 24px;
+    height: 1px;
+    background: #e0dbd5;
+    margin: 4px 0;
+}
+
+.shareBtn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e5e1dc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #888;
+}
+
+.shareBtn:hover {
+    background: var(--dark-turquoise, #183C38);
+    color: #fff;
+    border-color: var(--dark-turquoise, #183C38);
+    transform: scale(1.08);
+}
+
+.shareBtnCopied {
+    background: var(--dark-turquoise, #183C38) !important;
+    color: #fff !important;
+    border-color: var(--dark-turquoise, #183C38) !important;
+}
+
+/* ─── Article Column ─── */
+.articleColumn {
+    flex: 1;
+    min-width: 0;
+    max-width: 900px;
+}
+
+/* ─── Back Link ─── */
+.backLink {
+    margin-bottom: 2.5rem;
+}
+
+.backLinkAnchor {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--dark-grey, #0E110F);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    opacity: 0.6;
+    transition: all 0.3s;
+}
+
+.backLinkAnchor:hover {
+    opacity: 1;
+    color: var(--gold, #BFA270);
+}
+
+/* ─── Article ─── */
+.article {
+    font-family: var(--font-body);
+}
+
+/* ─── Featured Image ─── */
+.featuredImage {
+    margin: 0 -2rem 3rem;
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .featuredImage {
+        margin: 0 -1rem 2.5rem;
+    }
+}
+
+.featuredImageInner {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+.featuredImg {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    display: block;
+}
+
+/* ─── Blog Content (article HTML) ─── */
+.blogContent h2 {
+    font-family: var(--font-heading);
+    font-size: 1.85rem;
+    font-weight: 500;
+    color: var(--dark-turquoise, #183C38);
+    margin-top: 3.5rem;
+    margin-bottom: 1.25rem;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+}
+
+.blogContent p {
+    font-size: 1.125rem;
+    line-height: 1.9;
+    color: #3d3d3d;
+    margin-bottom: 1.75rem;
+    font-weight: 350;
+}
+
+.blogContent blockquote {
+    border-left: 3px solid var(--gold, #BFA270);
+    padding-left: 1.75rem;
+    margin: 3rem 0;
+    font-style: italic;
+    font-size: 1.25rem;
+    color: var(--dark-grey, #0E110F);
+    line-height: 1.75;
+}
+
+.blogContent a {
+    color: var(--gold, #BFA270);
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s;
+}
+
+.blogContent a:hover {
+    border-bottom-color: var(--gold, #BFA270);
+}
+
+.blogContent strong {
+    color: var(--dark-grey, #0E110F);
+    font-weight: 600;
+}
+
+.blogContent ul,
+.blogContent ol {
+    margin: 1.75rem 0;
+    padding-left: 1.75rem;
+}
+
+.blogContent li {
+    font-size: 1.125rem;
+    line-height: 1.85;
+    color: #3d3d3d;
+    margin-bottom: 0.6rem;
+}
+
+/* ─── Tags ─── */
+.tagsSection {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e1dc;
+}
+
+.tagsList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag {
+    padding: 7px 16px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-radius: 3px;
+    background-color: #fff;
+    color: #6b6b6b;
+    border: 1px solid #e5e1dc;
+    transition: all 0.3s;
+}
+
+.tag:hover {
+    border-color: var(--gold, #BFA270);
+    color: var(--gold, #BFA270);
+}
+
+/* ─── Mobile Share Row (shown below 1024px) ─── */
+.mobileShareRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 3rem;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.04);
+}
+
+@media (min-width: 1024px) {
+    .mobileShareRow {
+        display: none;
+    }
+}
+
+.mobileShareLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #999;
+}
+
+.mobileShareBtns {
+    display: flex;
+    gap: 10px;
+}
+
+.mobileShareBtn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #f9f6f3;
+    border: 1px solid #e5e1dc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #888;
+}
+
+.mobileShareBtn:hover {
+    background: var(--dark-turquoise, #183C38);
+    color: #fff;
+    border-color: var(--dark-turquoise, #183C38);
+}
+
+/* ─── Related Articles ─── */
+.relatedSection {
+    background-color: #fff;
+    padding: 6rem 0;
+    margin-top: 4rem;
+    border-top: 1px solid #f0ece7;
+}
+
+.relatedContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.relatedHeader {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 3.5rem;
+}
+
+.relatedSubtitle {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold, #BFA270);
+    margin-bottom: 0.75rem;
+}
+
+.relatedTitle {
+    font-family: var(--font-heading);
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 500;
+    color: var(--dark-turquoise, #183C38);
+    letter-spacing: -0.02em;
+}
+
+.relatedViewAll {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dark-turquoise, #183C38);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.relatedViewAll:hover {
+    color: var(--gold, #BFA270);
+}
+
+@media (min-width: 768px) {
+    .relatedViewAll {
+        display: inline-flex;
+    }
+}
+
+/* ─── Related Cards Grid ─── */
+.relatedGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .relatedGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.relatedCard {
+    transition: transform 0.4s ease;
+}
+
+.relatedCard:hover {
+    transform: translateY(-4px);
+}
+
+.relatedCardLink {
+    display: block;
+    text-decoration: none;
+}
+
+.relatedCardImage {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+}
+
+.relatedCardImg {
+    object-fit: cover;
+    transition: transform 0.7s ease;
+}
+
+.relatedCard:hover .relatedCardImg {
+    transform: scale(1.05);
+}
+
+.relatedCardBadge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 5px 12px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-radius: 2px;
+    color: var(--dark-turquoise, #183C38);
+}
+
+.relatedCardMeta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.7rem;
+    color: #999;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+}
+
+.relatedCardDot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: #ddd;
+}
+
+.relatedCardTitle {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--dark-grey, #0E110F);
+    margin-bottom: 0.6rem;
+    transition: color 0.3s;
+}
+
+.relatedCard:hover .relatedCardTitle {
+    color: var(--gold, #BFA270);
+}
+
+.relatedCardExcerpt {
+    font-size: 0.9rem;
+    color: #888;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ─── Related Mobile View All ─── */
+.relatedMobileViewAll {
+    margin-top: 3rem;
+    text-align: center;
+    display: block;
+}
+
+@media (min-width: 768px) {
+    .relatedMobileViewAll {
+        display: none;
+    }
+}
+
+.relatedMobileBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background-color: var(--dark-turquoise, #183C38);
+    color: #fff;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    width: 100%;
+    max-width: 320px;
+}
+
+.relatedMobileBtn:hover {
+    background-color: #2d7a6e;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+    .contentLayout {
+        padding: 3rem 1.25rem 2rem;
+    }
+
+    .hero {
+        height: 60vh;
+        min-height: 400px;
+    }
+
+    .heroTitle {
+        font-size: clamp(1.6rem, 6vw, 2.2rem);
+    }
+
+    .blogContent h2 {
+        font-size: 1.5rem;
+        margin-top: 2.5rem;
+    }
+
+    .blogContent p,
+    .blogContent li {
+        font-size: 1.0625rem;
+        line-height: 1.85;
+    }
+
+    .keyTakeaway {
+        padding: 1.75rem 1.5rem;
+    }
+
+    .authorCard {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem 1.5rem;
+    }
+
+    .relatedSection {
+        padding: 4rem 0;
+    }
+}

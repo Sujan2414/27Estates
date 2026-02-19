@@ -51,9 +51,9 @@ export default function AdminLoginPage() {
                 return
             }
 
-            if (profile.role !== 'admin') {
+            if (!['admin', 'super_admin', 'agent'].includes(profile.role)) {
                 await supabase.auth.signOut()
-                setError(`Access denied. Your role is: ${profile.role}. Admin role required.`)
+                setError(`Access denied. Your role is: ${profile.role}. Admin/Agent role required.`)
                 return
             }
 
@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
             <div className={styles.card}>
                 <div className={styles.header}>
                     <div className={styles.logo}>
-                        <Image src="/newlogo.png" alt="27 Estates" width={180} height={52} priority />
+                        <Image src="/logo-trimmed.png" alt="27 Estates" width={100} height={100} style={{ objectFit: 'contain' }} priority />
                     </div>
                     <h1 className={styles.title}>Admin Portal</h1>
                     <p className={styles.subtitle}>27 Estates Management</p>

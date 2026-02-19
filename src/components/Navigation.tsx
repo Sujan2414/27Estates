@@ -19,7 +19,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
     const lastScrollY = React.useRef(0);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [hasEntered, setHasEntered] = useState(false);
-    const { showAuthModal } = useAuth();
+    const { showAuthModal, isLoggedIn } = useAuth();
 
     const pathname = usePathname(); // Need this to check for home page
 
@@ -58,7 +58,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
     }, [pathname]);
 
     // Links that require auth modal
-    const protectedPaths = ['/properties', '/properties/search'];
+    const protectedPaths: string[] = ['/properties', '/properties/search'];
 
     const navLinks = [
         { href: '/services', label: 'Services', target: undefined },
@@ -106,7 +106,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                 {/* Desktop Links */}
                 <div className={styles.navLinks}>
                     {navLinks.map((link) => {
-                        const isProtected = protectedPaths.includes(link.href);
+                        const isProtected = protectedPaths.includes(link.href) && !isLoggedIn;
 
                         if (isProtected) {
                             return (
@@ -161,7 +161,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
                 {navLinks.map((link) => {
-                    const isProtected = protectedPaths.includes(link.href);
+                    const isProtected = protectedPaths.includes(link.href) && !isLoggedIn;
 
                     if (isProtected) {
                         return (

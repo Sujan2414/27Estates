@@ -1,0 +1,10 @@
+node_modules
+.next
+Ref
+exact-match-login
+emergent-main
+*.log
+seed-*.txt
+cols.txt
+nul
+/supabase

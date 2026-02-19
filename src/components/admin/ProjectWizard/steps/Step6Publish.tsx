@@ -308,7 +308,7 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                         checked={showAdOnHome}
                         onChange={(e) => handleAdToggle(e.target.checked)}
                         id="showAdOnHome"
-                        style={{ width: '18px', height: '18px', accentColor: '#1F524B' }}
+                        style={{ width: '18px', height: '18px', accentColor: '#183C38' }}
                     />
                     <label htmlFor="showAdOnHome" style={{ fontSize: '0.875rem', color: '#334155', cursor: 'pointer' }}>
                         Show this ad on the homepage stacking section
@@ -322,7 +322,7 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                         </p>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <button type="button" onClick={confirmFifoReplace}
-                                style={{ padding: '6px 14px', background: '#1F524B', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8125rem', cursor: 'pointer' }}>
+                                style={{ padding: '6px 14px', background: '#183C38', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8125rem', cursor: 'pointer' }}>
                                 Confirm Replace
                             </button>
                             <button type="button" onClick={() => { setShowAdOnHome(false); setFifoWarning({ show: false, oldestProject: null }) }}

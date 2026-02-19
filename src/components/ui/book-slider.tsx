@@ -19,9 +19,18 @@ export default function BookSlider({ pdfUrl }: BookSliderProps) {
     const [currentPage, setCurrentPage] = useState<number>(0);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
     const [pdfDimensions, setPdfDimensions] = useState<{ width: number; height: number } | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const flipBookRef = useRef<any>(null);
     const thumbnailContainerRef = useRef<HTMLDivElement>(null);
+
+    // Detect mobile
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth <= 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
@@ -85,12 +94,26 @@ export default function BookSlider({ pdfUrl }: BookSliderProps) {
 
         const ratio = pdfDimensions.height / pdfDimensions.width;
 
-        let pageHeight = availableHeight;
-        let pageWidth = pageHeight / ratio;
+        let pageWidth: number;
+        let pageHeight: number;
 
-        if (pageWidth * 2 > availableWidth) {
-            pageWidth = availableWidth / 2;
+        if (isMobile) {
+            // Single page on mobile — fill width with padding
+            pageWidth = availableWidth - 32;
             pageHeight = pageWidth * ratio;
+            // Cap height if it exceeds available
+            if (pageHeight > availableHeight) {
+                pageHeight = availableHeight;
+                pageWidth = pageHeight / ratio;
+            }
+        } else {
+            // Double page spread on desktop
+            pageHeight = availableHeight;
+            pageWidth = pageHeight / ratio;
+            if (pageWidth * 2 > availableWidth) {
+                pageWidth = availableWidth / 2;
+                pageHeight = pageWidth * ratio;
+            }
         }
 
         return {
@@ -107,7 +130,7 @@ export default function BookSlider({ pdfUrl }: BookSliderProps) {
             <div
                 ref={containerRef}
                 className="flex-grow relative flex justify-center items-center overflow-hidden"
-                style={{ minHeight: '500px' }}
+                style={{ minHeight: isMobile ? '300px' : '500px' }}
             >
                 <Document
                     file={pdfUrl}
@@ -135,7 +158,7 @@ export default function BookSlider({ pdfUrl }: BookSliderProps) {
                             mobileScrollSupport={true}
                             drawShadow={true}
                             flippingTime={1000}
-                            usePortrait={false}
+                            usePortrait={isMobile}
                             startZIndex={0}
                             autoSize={true}
                             clickEventForward={true}
@@ -194,8 +217,8 @@ export default function BookSlider({ pdfUrl }: BookSliderProps) {
                                 id={`thumb-${index + 1}`}
                                 onClick={() => goToPage(index)}
                                 className={`inline-block cursor-pointer transition-all duration-200 rounded-md overflow-hidden border-2 ${currentPage === index || (currentPage === index + 1 && index !== 0) // rough spread matching 
-                                        ? 'border-yellow-500 scale-105 opacity-100'
-                                        : 'border-transparent opacity-60 hover:opacity-100'
+                                    ? 'border-yellow-500 scale-105 opacity-100'
+                                    : 'border-transparent opacity-60 hover:opacity-100'
                                     }`}
                                 style={{ minWidth: '60px' }}
                             >

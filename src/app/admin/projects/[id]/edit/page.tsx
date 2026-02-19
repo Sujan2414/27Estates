@@ -10,6 +10,8 @@ import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import styles from '../../../admin.module.css'
 import formStyles from '../../../properties/form.module.css'
+import { AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from '@/lib/amenities-data'
+import { Check, Search } from 'lucide-react'
 
 interface Developer {
     id: string
@@ -179,14 +181,10 @@ export default function EditProjectPage() {
     // Highlights
     const [highlights, setHighlights] = useState<HighlightItem[]>([{ icon: '', label: '', value: '' }])
 
-    // Amenities (project-style grouped)
-    const [amenities, setAmenities] = useState({
-        clubhouse: [''],
-        outdoor: [''],
-        security: [''],
-        lifestyle: [''],
-        utilities: [''],
-    })
+    // Amenities
+    const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
+    const [amenitySearch, setAmenitySearch] = useState('')
+    const [amenityDropdownOpen, setAmenityDropdownOpen] = useState(false)
 
     // Category-specific: Towers / Clusters / Phases
     const [residentialTowers, setResidentialTowers] = useState<ResidentialTower[]>([{ name: '', total_floors: '', total_units: '', completion_date: '', status: '' }])
@@ -210,6 +208,17 @@ export default function EditProjectPage() {
         fetchProject()
         fetchDevelopers()
         fetchAgents()
+    }, [])
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            const dropdown = document.getElementById('amenity-dropdown')
+            if (dropdown && !dropdown.contains(e.target as Node)) {
+                setAmenityDropdownOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
     }, [])
 
     const fetchProject = async () => {
@@ -291,14 +300,7 @@ export default function EditProjectPage() {
         setHighlights(hl.length > 0 ? hl : [{ icon: '', label: '', value: '' }])
 
         // Amenities
-        const am = (data.amenities as Record<string, string[]>) || {}
-        setAmenities({
-            clubhouse: am.clubhouse?.length > 0 ? am.clubhouse : [''],
-            outdoor: am.outdoor?.length > 0 ? am.outdoor : [''],
-            security: am.security?.length > 0 ? am.security : [''],
-            lifestyle: am.lifestyle?.length > 0 ? am.lifestyle : [''],
-            utilities: am.utilities?.length > 0 ? am.utilities : [''],
-        })
+        setSelectedAmenities(flattenAmenities(data.amenities))
 
         // Specifications
         setSpecsJson(JSON.stringify(data.specifications_complex || {}, null, 2))
@@ -374,19 +376,23 @@ export default function EditProjectPage() {
         setAddress(prev => ({ ...prev, [name]: value }))
     }
 
-    // Generic array item handlers
-    const handleAmenityChange = (category: keyof typeof amenities, index: number, value: string) => {
-        setAmenities(prev => ({
-            ...prev,
-            [category]: prev[category].map((item, i) => i === index ? value : item)
-        }))
+    // Amenity handlers
+    const toggleAmenity = (label: string) => {
+        setSelectedAmenities(prev =>
+            prev.includes(label) ? prev.filter(a => a !== label) : [...prev, label]
+        )
     }
-    const addAmenity = (category: keyof typeof amenities) => {
-        setAmenities(prev => ({ ...prev, [category]: [...prev[category], ''] }))
+    const removeSelectedAmenity = (label: string) => {
+        setSelectedAmenities(prev => prev.filter(a => a !== label))
     }
-    const removeAmenity = (category: keyof typeof amenities, index: number) => {
-        setAmenities(prev => ({ ...prev, [category]: prev[category].filter((_, i) => i !== index) }))
-    }
+
+    // Filter amenities for dropdown
+    const filteredAmenityCategories = AMENITY_CATEGORIES.map(cat => ({
+        category: cat,
+        items: AMENITIES_BY_CATEGORY[cat].filter(a =>
+            a.label.toLowerCase().includes(amenitySearch.toLowerCase())
+        ),
+    })).filter(g => g.items.length > 0)
 
     // Image handlers
     const handleImageChange = (index: number, value: string) => setImages(prev => prev.map((img, i) => i === index ? value : img))
@@ -500,14 +506,8 @@ export default function EditProjectPage() {
         setSuccess(null)
 
         try {
-            // Build amenities — guard every level
-            const amenitiesData = {
-                clubhouse: (amenities.clubhouse || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-                outdoor: (amenities.outdoor || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-                security: (amenities.security || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-                lifestyle: (amenities.lifestyle || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-                utilities: (amenities.utilities || []).filter(a => a && typeof a === 'string' && a.trim() !== ''),
-            }
+            // Build amenities — using flat array now
+            const amenitiesData = selectedAmenities
 
             // Build floor plans
             const floorPlansData = (floorPlans || []).filter(fp => {
@@ -1085,31 +1085,69 @@ export default function EditProjectPage() {
                 {/* Amenities */}
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Amenities</h2>
+                    <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '12px' }}>
+                        Select amenities available in this project.
+                    </p>
 
-                    {(['clubhouse', 'outdoor', 'security', 'lifestyle', 'utilities'] as const).map(category => (
-                        <div key={category} className={formStyles.amenityGroup}>
-                            <label className={formStyles.label}>{category.charAt(0).toUpperCase() + category.slice(1)}</label>
-                            {amenities[category].map((item, index) => (
-                                <div key={index} className={formStyles.imageInput}>
-                                    <input
-                                        type="text"
-                                        value={item}
-                                        onChange={(e) => handleAmenityChange(category, index, e.target.value)}
-                                        className={formStyles.input}
-                                        placeholder={`Add ${category} amenity...`}
-                                    />
-                                    {amenities[category].length > 1 && (
-                                        <button type="button" onClick={() => removeAmenity(category, index)} className={formStyles.removeBtn}>
-                                            <X size={18} />
-                                        </button>
-                                    )}
-                                </div>
+                    {selectedAmenities.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                            {selectedAmenities.map(label => (
+                                <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '9999px', fontSize: '0.8125rem', fontWeight: 500, color: '#166534' }}>
+                                    {label}
+                                    <button type="button" onClick={() => removeSelectedAmenity(label)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#166534' }}>
+                                        <X size={14} />
+                                    </button>
+                                </span>
                             ))}
-                            <button type="button" onClick={() => addAmenity(category)} className={formStyles.addImageBtn}>
-                                <Plus size={16} /> Add {category}
-                            </button>
                         </div>
-                    ))}
+                    )}
+
+                    <div id="amenity-dropdown" style={{ position: 'relative', marginBottom: '16px' }}>
+                        <div
+                            onClick={() => setAmenityDropdownOpen(!amenityDropdownOpen)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: '#ffffff' }}
+                        >
+                            <Search size={16} color="#94a3b8" />
+                            <input
+                                type="text"
+                                value={amenitySearch}
+                                onChange={(e) => { setAmenitySearch(e.target.value); setAmenityDropdownOpen(true) }}
+                                onFocus={() => setAmenityDropdownOpen(true)}
+                                placeholder="Search amenities..."
+                                style={{ border: 'none', outline: 'none', flex: 1, fontSize: '0.875rem', background: 'transparent' }}
+                            />
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{selectedAmenities.length} selected</span>
+                        </div>
+
+                        {amenityDropdownOpen && (
+                            <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, maxHeight: '360px', overflowY: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 50, padding: '8px' }}>
+                                {filteredAmenityCategories.map(({ category, items }) => (
+                                    <div key={category}>
+                                        <div style={{ padding: '8px 10px 4px', fontSize: '0.6875rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{category}</div>
+                                        {items.map(amenity => {
+                                            const isSelected = selectedAmenities.includes(amenity.label)
+                                            return (
+                                                <button
+                                                    key={amenity.label}
+                                                    type="button"
+                                                    onClick={() => toggleAmenity(amenity.label)}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '8px 10px', border: 'none', borderRadius: '6px', background: isSelected ? '#f0fdf4' : 'transparent', cursor: 'pointer', fontSize: '0.8125rem', color: isSelected ? '#166534' : '#334155', fontWeight: isSelected ? 600 : 400, transition: 'background 0.15s' }}
+                                                >
+                                                    <span style={{ width: '18px', height: '18px', borderRadius: '4px', border: isSelected ? '2px solid #22c55e' : '2px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: isSelected ? '#22c55e' : 'transparent' }}>
+                                                        {isSelected && <Check size={12} color="#fff" />}
+                                                    </span>
+                                                    {amenity.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                ))}
+                                {filteredAmenityCategories.length === 0 && (
+                                    <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.8125rem' }}>No amenities match your search</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Media */}
@@ -1257,7 +1295,7 @@ export default function EditProjectPage() {
                             </p>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button type="button" onClick={confirmFifoReplace}
-                                    style={{ padding: '6px 14px', background: '#1F524B', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8125rem', cursor: 'pointer' }}>
+                                    style={{ padding: '6px 14px', background: '#183C38', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8125rem', cursor: 'pointer' }}>
                                     Confirm Replace
                                 </button>
                                 <button type="button" onClick={() => { setShowAdOnHome(false); setFifoWarning({ show: false, oldestProject: null }) }}

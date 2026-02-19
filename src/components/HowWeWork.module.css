@@ -35,7 +35,7 @@
     font-size: clamp(2rem, 4vw, 3.5rem);
     font-weight: 500;
     letter-spacing: -0.02em;
-    color: #1F524B;
+    color: #183C38;
     margin-bottom: 1.25rem;
     line-height: 1.2;
 }
@@ -76,8 +76,8 @@
 }
 
 .stepNavBtn.active {
-    background: #1F524B;
-    border-color: #1F524B;
+    background: #183C38;
+    border-color: #183C38;
 }
 
 @keyframes hwwTextWave {
@@ -186,7 +186,7 @@
     font-family: var(--font-heading);
     font-size: 4rem;
     font-weight: 300;
-    color: #1F524B;
+    color: #183C38;
     opacity: 0.15;
     display: block;
     line-height: 1;
@@ -198,7 +198,7 @@
     font-size: clamp(1.75rem, 3vw, 2.5rem);
     font-weight: 500;
     letter-spacing: -0.01em;
-    color: #1F524B;
+    color: #183C38;
     margin-bottom: 1.25rem;
     line-height: 1.2;
 }

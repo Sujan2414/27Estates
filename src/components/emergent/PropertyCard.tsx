@@ -47,23 +47,54 @@ const PropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkCha
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
+            const isProject = !!(property as any).is_project;
+            console.log('[Bookmark] User:', user?.id, 'ID:', property.id, 'isProject:', isProject, 'Currently bookmarked:', bookmarked);
+
             if (!user) {
-                router.push('/login');
+                // Guest mode: use sessionStorage (cleared when browser closes)
+                const key = 'guest_bookmarks';
+                const stored = JSON.parse(sessionStorage.getItem(key) || '[]') as string[];
+                if (bookmarked) {
+                    const updated = stored.filter((id: string) => id !== property.id);
+                    sessionStorage.setItem(key, JSON.stringify(updated));
+                    setBookmarked(false);
+                } else {
+                    stored.push(property.id);
+                    sessionStorage.setItem(key, JSON.stringify(stored));
+                    setBookmarked(true);
+                }
+                console.log('[Bookmark] Guest bookmarks:', JSON.parse(sessionStorage.getItem(key) || '[]'));
+                if (onBookmarkChange) onBookmarkChange();
                 return;
             }
 
+            // Build the correct bookmark record based on item type
+            const bookmarkRecord = isProject
+                ? { user_id: user.id, project_id: property.id }
+                : { user_id: user.id, property_id: property.id };
+
+            const idColumn = isProject ? 'project_id' : 'property_id';
+
             if (bookmarked) {
-                await supabase
+                const { error } = await supabase
                     .from('user_bookmarks')
                     .delete()
                     .eq('user_id', user.id)
-                    .eq('property_id', property.id);
-                setBookmarked(false);
+                    .eq(idColumn, property.id);
+                if (error) {
+                    console.error('[Bookmark] Delete error:', error);
+                } else {
+                    setBookmarked(false);
+                }
             } else {
-                await supabase
+                const { error } = await supabase
                     .from('user_bookmarks')
-                    .insert({ user_id: user.id, property_id: property.id });
-                setBookmarked(true);
+                    .insert(bookmarkRecord);
+                if (error) {
+                    console.error('[Bookmark] Insert error:', error);
+                } else {
+                    setBookmarked(true);
+                }
             }
             if (onBookmarkChange) onBookmarkChange();
         } catch (error) {

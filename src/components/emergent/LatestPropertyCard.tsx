@@ -72,8 +72,21 @@ const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookm
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
+
             if (!user) {
-                router.push('/login');
+                // Guest mode: use sessionStorage (cleared when browser closes)
+                const key = 'guest_bookmarks';
+                const stored = JSON.parse(sessionStorage.getItem(key) || '[]') as string[];
+                if (bookmarked) {
+                    const updated = stored.filter((id: string) => id !== property.id);
+                    sessionStorage.setItem(key, JSON.stringify(updated));
+                    setBookmarked(false);
+                } else {
+                    stored.push(property.id);
+                    sessionStorage.setItem(key, JSON.stringify(stored));
+                    setBookmarked(true);
+                }
+                if (onBookmarkChange) onBookmarkChange();
                 return;
             }
 

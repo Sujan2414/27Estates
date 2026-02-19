@@ -150,20 +150,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 padding: '56px 48px 48px 48px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                alignItems: 'flex-start',
+                                alignItems: 'center',
                             }}>
                                 {/* Logo */}
                                 <div style={{
                                     marginBottom: '32px',
                                     position: 'relative',
-                                    width: '140px',
-                                    height: '40px'
+                                    width: '280px',
+                                    height: '120px'
                                 }}>
                                     <Image
                                         src="/logo-trimmed.png"
                                         alt="27 Estates"
                                         fill
-                                        style={{ objectFit: 'contain', objectPosition: 'left' }}
+                                        style={{ objectFit: 'contain', objectPosition: 'center' }}
                                         priority
                                     />
                                 </div>
@@ -200,7 +200,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                backgroundColor: '#1F524B',
+                                                backgroundColor: '#183C38',
                                                 color: 'white',
                                                 fontWeight: 600,
                                                 fontSize: '15px',

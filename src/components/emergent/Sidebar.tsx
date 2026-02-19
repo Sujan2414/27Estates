@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Heart, Users, Building2, LogOut, LogIn } from "lucide-react";
+import { Search, Heart, Users, Building2, Building, LogOut, LogIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import styles from "./Sidebar.module.css";
 
@@ -21,7 +21,7 @@ const Sidebar = () => {
     const navItems = [
         { icon: PropertyIcon, label: "Home", path: "/properties" },
         { icon: Building2, label: "Projects", path: "/properties/projects" },
-        { icon: Search, label: "Properties", path: "/properties/search" },
+        { icon: Building, label: "Properties", path: "/properties/search" },
         { icon: Heart, label: "Bookmarks", path: "/properties/bookmarks" },
         { icon: Users, label: "Agents", path: "/properties/agents" },
     ];
@@ -35,6 +35,9 @@ const Sidebar = () => {
         }
         return pathname === path;
     };
+
+    // Protected paths that require login for guests
+    const protectedPaths: string[] = [];
 
     return (
         <aside className={styles.sidebar} data-lenis-prevent>
@@ -50,6 +53,23 @@ const Sidebar = () => {
                 {navItems.map((item) => {
                     const active = isActive(item.path);
                     const Icon = item.icon;
+                    const isProtected = protectedPaths.includes(item.path) && !user;
+
+                    if (isProtected) {
+                        return (
+                            <div key={item.path + item.label} className={styles.navItem}>
+                                <button
+                                    onClick={() => showAuthModal(item.path)}
+                                    className={`${styles.navLink} ${active ? styles.navLinkActive : ''}`}
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                    <Icon />
+                                </button>
+                                <span className={styles.tooltip}>{item.label}</span>
+                            </div>
+                        );
+                    }
+
                     return (
                         <div key={item.path + item.label} className={styles.navItem}>
                             <Link
@@ -78,19 +98,7 @@ const Sidebar = () => {
                         </button>
                         <span className={styles.tooltip}>Sign Out</span>
                     </div>
-                ) : (
-                    <div className={styles.backItem}>
-                        <button
-                            onClick={() => showAuthModal('/properties')}
-                            className={styles.backLink}
-                            style={{ border: 'none', background: 'none', cursor: 'pointer' }}
-                            title="Sign In"
-                        >
-                            <LogIn size={22} strokeWidth={1.5} />
-                        </button>
-                        <span className={styles.tooltip}>Sign In</span>
-                    </div>
-                )}
+                ) : null}
             </div>
         </aside>
     );

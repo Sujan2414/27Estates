@@ -264,7 +264,7 @@
 
 .viewDeveloper {
     font-size: 0.875rem;
-    color: #1F524B;
+    color: #183C38;
     text-decoration: none;
     font-weight: 500;
 }
@@ -459,9 +459,9 @@
 }
 
 .tabButton.active {
-    background: #1F524B;
+    background: #183C38;
     color: #fff;
-    border-color: #1F524B;
+    border-color: #183C38;
 }
 
 .floorPlanImage {
@@ -500,7 +500,7 @@
 .specsGroupTitle {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #1F524B;
+    color: #183C38;
     text-transform: capitalize;
     margin: 0;
 }
@@ -590,7 +590,7 @@
     position: fixed;
     bottom: 6rem;
     right: 1rem;
-    background-color: #1F524B;
+    background-color: #183C38;
     color: #ffffff;
     padding: 0.875rem 1.25rem;
     border-radius: 0.75rem;

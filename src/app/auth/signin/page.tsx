@@ -63,6 +63,8 @@ function LoginContent() {
                 });
 
                 const redirectTo = searchParams?.get('redirect') || '/properties';
+                // Mark session as active so AuthContext doesn't sign out
+                sessionStorage.setItem('session_active', 'true');
                 router.push(redirectTo);
             }
         } catch (err: any) {
@@ -77,7 +79,8 @@ function LoginContent() {
         <AuthLayout>
             <Logo />
 
-            <h2 className="text-2xl font-semibold mb-8 text-foreground">Welcome Back!</h2>
+            <h2 className="text-2xl font-semibold mb-2 text-foreground">Welcome Back</h2>
+            <p className="text-muted-foreground mb-6" style={{ textAlign: 'center', fontSize: '0.9375rem', color: '#6b7280' }}>Sign in to your account</p>
 
             {error && (
                 <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
@@ -124,7 +127,7 @@ function LoginContent() {
                             style={{
                                 width: '16px',
                                 height: '16px',
-                                accentColor: 'var(--dark-turquoise, #1F524B)',
+                                accentColor: 'var(--dark-turquoise, #183C38)',
                                 cursor: 'pointer',
                             }}
                         />
@@ -141,13 +144,13 @@ function LoginContent() {
                 </button>
             </form>
 
-            <div className="flex justify-between items-center" style={{ marginTop: '32px' }}>
-                <Link href="/auth/signup" className="font-medium hover:underline text-foreground">
-                    Create account
-                </Link>
-                <Link href="/auth/forgot-password" className="font-medium hover:underline text-foreground">
-                    Forgot password?
-                </Link>
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                <p style={{ color: '#6b7280', fontSize: '0.9375rem' }}>
+                    Don&apos;t have an account?{" "}
+                    <Link href="/auth/signup" className="font-medium hover:underline" style={{ color: '#183C38', fontWeight: 600 }}>
+                        Sign up
+                    </Link>
+                </p>
             </div>
 
             <AuthFooter />

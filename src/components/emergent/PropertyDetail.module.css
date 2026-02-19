@@ -112,6 +112,32 @@
     transform: scale(1.05);
 }
 
+.mainImage,
+.subImage {
+    cursor: pointer;
+}
+
+.viewAllOverlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.subImage:hover .viewAllOverlay {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.viewAllText {
+    color: #ffffff;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
 /* Right Column: Content */
 .rightColumn {
     display: flex;
@@ -344,9 +370,9 @@
 }
 
 .tabButton.active {
-    background: #1F524B;
+    background: #183C38;
     color: #fff;
-    border-color: #1F524B;
+    border-color: #183C38;
 }
 
 .floorPlanImage {
@@ -369,7 +395,7 @@
     bottom: 6rem;
     /* Above mobile nav on small screens */
     right: 1rem;
-    background-color: #1F524B;
+    background-color: #183C38;
     /* Dark Turquoise - Primary brand color */
     color: #ffffff;
     padding: 0.875rem 1.25rem;

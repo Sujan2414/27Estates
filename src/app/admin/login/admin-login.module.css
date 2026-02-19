@@ -4,7 +4,7 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background: linear-gradient(135deg, #1F524B 0%, #0d2926 100%);
+    background: linear-gradient(135deg, #183C38 0%, #0d2926 100%);
 }
 
 .card {
@@ -39,7 +39,7 @@
     justify-content: center;
     width: 56px;
     height: 56px;
-    background-color: #1F524B;
+    background-color: #183C38;
     color: #BFA270;
     font-size: 1.5rem;
     font-weight: 800;
@@ -49,7 +49,7 @@
 .title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1F524B;
+    color: #183C38;
     margin-bottom: 0.25rem;
 }
 
@@ -98,7 +98,7 @@
 
 .input:focus {
     outline: none;
-    border-color: #1F524B;
+    border-color: #183C38;
     box-shadow: 0 0 0 3px rgba(31, 82, 75, 0.1);
     background-color: #ffffff;
 }
@@ -110,7 +110,7 @@
 .button {
     width: 100%;
     padding: 0.875rem 1.5rem;
-    background-color: #1F524B;
+    background-color: #183C38;
     color: #ffffff;
     border: none;
     border-radius: 4px;

@@ -31,8 +31,11 @@ const imageConfigs = [
     { translateX: '130%', translateY: '200%', height: '15vh', width: '15vw' },
 ];
 
+import { useRouter } from 'next/navigation';
+
 export function ZoomParallax({ images }: ZoomParallaxProps) {
     const container = useRef(null);
+    const router = useRouter();
     const { scrollYProgress } = useScroll({
         target: container,
         offset: ['start start', 'end end'],
@@ -122,14 +125,14 @@ export function ZoomParallax({ images }: ZoomParallaxProps) {
                             className="flex justify-center"
                             style={{ y: contentY }}
                         >
-                            <motion.a
-                                href="mailto:connect@27estates.com"
+                            <motion.button
+                                onClick={() => router.push('/contact')}
                                 style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     padding: '0.875rem 1.75rem',
-                                    backgroundColor: '#1F524B',
+                                    backgroundColor: '#183C38',
                                     color: '#ffffff',
                                     fontFamily: "'Inter', sans-serif",
                                     fontSize: '0.8125rem',
@@ -137,14 +140,15 @@ export function ZoomParallax({ images }: ZoomParallaxProps) {
                                     letterSpacing: '0.08em',
                                     textTransform: 'uppercase' as const,
                                     textDecoration: 'none',
-                                    border: '1px solid #1F524B',
-                                    transition: 'all 0.3s ease'
+                                    border: '1px solid #183C38',
+                                    transition: 'all 0.3s ease',
+                                    cursor: 'pointer'
                                 }}
                                 className="hover:bg-[#2d7a6e] hover:border-[#2d7a6e] hover:-translate-y-0.5 hover:shadow-[0_4px_15px_rgba(31,82,75,0.4)]"
                                 whileHover={{ y: -2 }}
                             >
                                 Contact Us
-                            </motion.a>
+                            </motion.button>
                         </motion.div>
                     </div>
                 </motion.div>

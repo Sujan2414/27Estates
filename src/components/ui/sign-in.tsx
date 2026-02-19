@@ -86,7 +86,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 <div className="w-full max-w-md">
                     <div className="flex flex-col gap-6">
                         {/* Logo */}
-                        <Link href="/" className="mb-4 block relative w-48 h-12">
+                        <Link href="/" className="mb-4 block relative w-36 h-10">
                             <Image
                                 src="/logo-trimmed.png"
                                 alt="27 Estates"
@@ -165,7 +165,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                         type="checkbox"
                                         name="rememberMe"
                                         className="w-4 h-4 rounded"
-                                        style={{ accentColor: 'var(--dark-turquoise, #1F524B)' }}
+                                        style={{ accentColor: 'var(--dark-turquoise, #183C38)' }}
                                         data-testid="signin-remember-checkbox"
                                     />
                                     <span style={{ color: '#1a1a1a' }}>Keep me signed in</span>
@@ -174,7 +174,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                     type="button"
                                     onClick={onResetPassword}
                                     className="hover:underline transition-colors"
-                                    style={{ color: 'var(--dark-turquoise, #1F524B)' }}
+                                    style={{ color: 'var(--dark-turquoise, #183C38)' }}
                                     data-testid="signin-reset-password-button"
                                 >
                                     Reset password
@@ -185,7 +185,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                                 type="submit"
                                 className="w-full rounded-lg py-4 font-semibold uppercase tracking-wider text-sm transition-all hover:-translate-y-0.5"
                                 style={{
-                                    backgroundColor: 'var(--dark-turquoise, #1F524B)',
+                                    backgroundColor: 'var(--dark-turquoise, #183C38)',
                                     color: '#ffffff',
                                 }}
                                 data-testid="signin-submit-button"
@@ -222,7 +222,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                             <Link
                                 href="/auth/signup"
                                 className="hover:underline transition-colors font-medium"
-                                style={{ color: 'var(--dark-turquoise, #1F524B)' }}
+                                style={{ color: 'var(--dark-turquoise, #183C38)' }}
                                 data-testid="signin-signup-link"
                             >
                                 Create Account

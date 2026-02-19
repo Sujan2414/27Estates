@@ -46,7 +46,7 @@
     font-size: clamp(2rem, 4vw, 3.5rem);
     font-weight: 500;
     letter-spacing: -0.02em;
-    color: #1F524B;
+    color: #183C38;
     margin-bottom: 1.25rem;
     line-height: 1.2;
 }
@@ -131,7 +131,7 @@
     font-family: var(--font-heading);
     font-size: 1.375rem;
     font-weight: 500;
-    color: #1F524B;
+    color: #183C38;
     margin-bottom: 0.5rem;
     line-height: 1.3;
     display: -webkit-box;
@@ -201,7 +201,7 @@
     align-items: center;
     justify-content: center;
     padding: 1rem 2.25rem;
-    background: #1F524B;
+    background: #183C38;
     color: white;
     font-family: var(--font-body);
     font-size: 0.875rem;

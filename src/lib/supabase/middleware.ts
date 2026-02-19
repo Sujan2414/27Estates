@@ -47,9 +47,16 @@ export async function updateSession(request: NextRequest) {
             .eq('id', user.id)
             .single()
 
-        if (!profile || profile.role !== 'admin') {
+        const allowedRoles = ['admin', 'super_admin', 'agent']
+        if (!profile || !allowedRoles.includes(profile.role)) {
             const homeUrl = new URL('/', request.url)
             return NextResponse.redirect(homeUrl)
+        }
+
+        // Restrict /admin/users to admin and super_admin only
+        if (url.pathname.startsWith('/admin/users') && !['admin', 'super_admin'].includes(profile.role)) {
+            const adminUrl = new URL('/admin', request.url)
+            return NextResponse.redirect(adminUrl)
         }
     }
 

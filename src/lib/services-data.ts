@@ -533,21 +533,21 @@ export const services: Service[] = [
         featuredImage: "https://images.unsplash.com/photo-1519642918688-7e43b19245d8?auto=format&fit=crop&w=1200&q=80"
     },
     {
-        id: "mandate",
-        title: "Mandate & Creative",
-        description: "Strategic mandates and 360° branding for developers.",
-        slug: "mandate-creative",
-        image: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=1200",
-        heroTitle: "Exclusive Sales Mandates & Strategic Branding",
+        id: "marketing-mandate",
+        title: "Marketing and Mandate",
+        description: "Strategic marketing, sales mandates, and 360° branding for developers.",
+        slug: "marketing-mandate",
+        image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=1200",
+        heroTitle: "Strategic Marketing & Exclusive Sales Mandates",
         heroImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=2070",
         heroCta: "Discuss a Mandate",
         serviceList: [
             "Exclusive project sales mandates",
-            "Project naming, branding, and positioning",
+            "360° marketing strategy and execution",
+            "Project branding, naming, and positioning",
+            "Digital marketing and lead generation",
             "Marketing collateral and brochure design",
-            "Digital marketing and lead generation strategy",
-            "Sales gallery and unparalleled customer experience",
-            "Pricing strategy and inventory management"
+            "Sales gallery and customer experience design"
         ],
         insights: [
             "Projects with strong brand narratives command a 12-15% price premium over comparable non-branded developments in similar micro-markets.",
@@ -556,8 +556,8 @@ export const services: Service[] = [
             "Integrated mandate models (Sales + Marketing) reduce developer overheads by 30% while aligning incentives for faster inventory liquidation."
         ],
         ctaTitle: "Partner With Us",
-        overview: "We act as the strategic growth partner for developers, taking complete ownership of project lifecycles through exclusive sales mandates and world-class creative branding.",
-        detailedDescription: "In a competitive real estate landscape, a project's success is defined not just by its construction quality but by its market positioning. Our Mandate & Creative division bridges the gap between architectural vision and market reality. We don't just sell inventory; we build desire. From conceptualizing a project's identity and designing high-impact collateral to deploying trained sales teams and managing the entire go-to-market strategy, we offer a turnkey solution. We treat your project as our own, ensuring that every creative asset and sales pitch is calibrated to maximize realization and velocity.",
+        overview: "We act as the strategic growth partner for developers, taking complete ownership of project marketing and sales through exclusive mandates and integrated go-to-market strategies.",
+        detailedDescription: "In a competitive real estate landscape, a project's success is defined not just by its construction quality but by its market positioning. Our Marketing and Mandate division bridges the gap between architectural vision and market reality. We don't just sell inventory; we build desire. From crafting a project's marketing strategy and designing high-impact collateral to deploying trained sales teams and managing the entire go-to-market execution, we offer a turnkey solution. We treat your project as our own, ensuring that every marketing campaign and sales pitch is calibrated to maximize realization and velocity.",
         process: [
             {
                 title: "Discovery & Positioning",

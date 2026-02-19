@@ -7,8 +7,26 @@ import {
     MapPin, BedDouble, Bath, Maximize,
     Heart, UserCircle, Map as MapIcon
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/components/emergent/PropertyDetail.module.css";
+import ImageGalleryModal from "@/components/emergent/ImageGalleryModal";
+import { AMENITY_ICON_MAP, AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from "@/lib/amenities-data";
+import type { AmenityCategory } from "@/lib/amenities-data";
+import * as LucideIcons from "lucide-react";
+
+// Helper to get Lucide icon component by name
+const getLucideIcon = (iconName: string) => {
+    const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number; color?: string }>>;
+    const Icon = icons[iconName];
+    return Icon || LucideIcons.Circle;
+};
+
+// Dynamic import for Map to avoid SSR issues
+const PropertyMap = dynamic(() => import("@/components/emergent/PropertyMap"), {
+    ssr: false,
+    loading: () => <div style={{ height: '400px', background: '#f5f5f5', borderRadius: '1rem' }} />
+});
 
 // Types matching Supabase V2 schema
 interface Property {
@@ -103,6 +121,13 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [loading, setLoading] = useState(true);
     const [activeFloorPlan, setActiveFloorPlan] = useState(0);
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const [initialGalleryIndex, setInitialGalleryIndex] = useState(0);
+
+    const openGallery = (index: number) => {
+        setInitialGalleryIndex(index);
+        setIsGalleryOpen(true);
+    };
 
     const fetchPropertyData = async () => {
         try {
@@ -234,15 +259,39 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                 <div className={styles.leftColumn}>
                     <div className={styles.stickyGallery}>
                         <div className={styles.imageGallery}>
-                            <div className={styles.mainImage}>
+                            <div className={styles.mainImage} onClick={() => openGallery(0)}>
                                 <img src={displayImages[0]} alt={property.title} />
                             </div>
-                            {displayImages.slice(1, 3).map((img, idx) => (
-                                <div key={idx} className={styles.subImage}>
-                                    <img src={img} alt={`${property.title} ${idx + 2}`} />
-                                </div>
-                            ))}
+                            {displayImages.slice(1, 3).map((img, idx) => {
+                                const globalIndex = idx + 1;
+                                const isLastVisble = idx === 1; // 2nd sub-image (3rd total)
+                                const hasMore = displayImages.length > 3;
+
+                                return (
+                                    <div
+                                        key={idx}
+                                        className={styles.subImage}
+                                        onClick={() => openGallery(globalIndex)}
+                                        style={{ cursor: 'pointer', position: 'relative' }}
+                                    >
+                                        <img src={img} alt={`${property.title} ${idx + 2}`} />
+                                        {isLastVisble && hasMore && (
+                                            <div className={styles.viewAllOverlay}>
+                                                <span className={styles.viewAllText}>
+                                                    +{displayImages.length - 3} photos
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
+                        <ImageGalleryModal
+                            isOpen={isGalleryOpen}
+                            onClose={() => setIsGalleryOpen(false)}
+                            images={displayImages}
+                            initialIndex={initialGalleryIndex}
+                        />
                     </div>
                 </div>
 
@@ -423,58 +472,58 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
 
             {/* Full Width Sections */}
             <div className={styles.fullWidthContent}>
+
                 {/* Amenities & Features */}
-                {property.amenities && (
-                    <div className={styles.sectionContainer}>
-                        <h2 className={styles.sectionTitle}>AMENITIES & FEATURES</h2>
-                        <div className={styles.amenitiesGrid}>
-                            <div className={styles.detailColumn}>
-                                {property.amenities.interior && property.amenities.interior.length > 0 && (
-                                    <div className={styles.amenityGroup}>
-                                        <h4>Interior Details</h4>
-                                        <ul className={styles.amenityList}>
-                                            {property.amenities.interior.map((item, i) => (
-                                                <li key={i}><span className={styles.bullet}></span>{item}</li>
-                                            ))}
-                                        </ul>
+                {(() => {
+                    const amenitiesList = flattenAmenities(property.amenities);
+                    if (amenitiesList.length === 0) return null;
+
+                    // Group amenities by their category from the master list
+                    const amenitiesByCategory: Partial<Record<AmenityCategory, string[]>> = {};
+                    amenitiesList.forEach(label => {
+                        let found = false;
+                        for (const cat of AMENITY_CATEGORIES) {
+                            if (AMENITIES_BY_CATEGORY[cat].some(a => a.label === label)) {
+                                if (!amenitiesByCategory[cat]) amenitiesByCategory[cat] = [];
+                                amenitiesByCategory[cat]!.push(label);
+                                found = true;
+                                break;
+                            }
+                        }
+                        // uncategorized -> Lifestyle & Wellness (fallback)
+                        if (!found) {
+                            if (!amenitiesByCategory['Lifestyle & Wellness']) amenitiesByCategory['Lifestyle & Wellness'] = [];
+                            amenitiesByCategory['Lifestyle & Wellness']!.push(label);
+                        }
+                    });
+
+                    return (
+                        <div className={styles.sectionContainer}>
+                            <h2 className={styles.sectionTitle}>AMENITIES & FEATURES</h2>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                {Object.entries(amenitiesByCategory).map(([cat, items]) => (
+                                    <div key={cat}>
+                                        <h4 style={{ fontSize: '0.8125rem', color: '#a3a3a3', marginBottom: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cat}</h4>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+                                            {items!.map((label, i) => {
+                                                const iconName = AMENITY_ICON_MAP[label] || 'Circle';
+                                                const IconComp = getLucideIcon(iconName);
+                                                return (
+                                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: '10px' }}>
+                                                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                            <IconComp size={18} color="#183C38" />
+                                                        </div>
+                                                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a0a' }}>{label}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                )}
-                                {property.amenities.utilities && property.amenities.utilities.length > 0 && (
-                                    <div className={styles.amenityGroup}>
-                                        <h4>Utilities</h4>
-                                        <ul className={styles.amenityList}>
-                                            {property.amenities.utilities.map((item, i) => (
-                                                <li key={i}><span className={styles.bullet}></span>{item}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                            <div className={styles.detailColumn}>
-                                {property.amenities.outdoor && property.amenities.outdoor.length > 0 && (
-                                    <div className={styles.amenityGroup}>
-                                        <h4>Outdoor Details</h4>
-                                        <ul className={styles.amenityList}>
-                                            {property.amenities.outdoor.map((item, i) => (
-                                                <li key={i}><span className={styles.bullet}></span>{item}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                                {property.amenities.other && property.amenities.other.length > 0 && (
-                                    <div className={styles.amenityGroup}>
-                                        <h4>Other Features</h4>
-                                        <ul className={styles.amenityList}>
-                                            {property.amenities.other.map((item, i) => (
-                                                <li key={i}><span className={styles.bullet}></span>{item}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
+                                ))}
                             </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
 
                 {/* Floor Plans */}
                 {property.floor_plans && property.floor_plans.length > 0 && (
@@ -524,15 +573,23 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                 <div className={styles.sectionHeader}>
                     <h2 className={styles.sectionTitle} style={{ margin: 0 }}>LOCATION</h2>
                 </div>
-                <div className={styles.mapPlaceholder}>
-                    <div style={{ textAlign: 'center' }}>
-                        <MapIcon size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                        <p>Map Integration Coming Soon</p>
-                        <p style={{ fontSize: '0.875rem', opacity: 0.7 }}>
-                            {property.location}
-                            {property.city && `, ${property.city}`}
-                        </p>
-                    </div>
+                <div style={{ height: '400px', width: '100%', marginTop: '1rem' }}>
+                    <PropertyMap
+                        properties={[{
+                            id: property.id,
+                            title: property.title,
+                            display_name: property.display_name,
+                            project_name: property.project_name,
+                            price: property.price,
+                            price_text: property.price_text,
+                            images: property.images || [],
+                            location: property.location,
+                            latitude: property.latitude,
+                            longitude: property.longitude,
+                            type: 'property',
+                            category: property.category
+                        }]}
+                    />
                 </div>
             </div>
 
@@ -560,6 +617,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                 Contact Agent <UserCircle size={20} />
             </button>
         </div>
+
     );
 };
 

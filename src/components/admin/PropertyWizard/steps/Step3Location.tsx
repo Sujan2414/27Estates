@@ -1,8 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowRight, ArrowLeft, MapPin } from 'lucide-react'
+import { ArrowRight, ArrowLeft } from 'lucide-react'
 import styles from '../property-wizard.module.css'
+import dynamic from 'next/dynamic'
+
+// Dynamic import for Map
+const PropertyMap = dynamic(() => import('@/components/emergent/PropertyMap'), {
+    ssr: false,
+    loading: () => <div style={{ height: '300px', background: '#f5f5f5', borderRadius: '1rem' }} />
+})
 
 interface StepProps {
     initialData: any
@@ -40,26 +47,31 @@ export default function PropertyLocationStep({ initialData, onNext, onBack }: St
         onNext(formData)
     }
 
+    // Helper to safely parse coordinates
+    const parseCoord = (val: string) => {
+        const num = parseFloat(val)
+        return isNaN(num) ? null : num
+    }
+
+    // Construct preview item for map
+    const mapPreviewItem = {
+        id: 'preview',
+        title: formData.project_name || 'New Property',
+        location: formData.location || formData.city || 'Bangalore',
+        latitude: parseCoord(formData.latitude),
+        longitude: parseCoord(formData.longitude),
+        type: 'property' as const,
+        images: [],
+        price: 0
+    }
+
     return (
         <form onSubmit={handleSubmit}>
             <h2 className={styles.stepTitle}>Where is the property located?</h2>
 
-            {/* Map Placeholder */}
-            <div style={{
-                background: '#eef2f6',
-                height: '300px',
-                borderRadius: '8px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: '2rem',
-                border: '2px dashed #cbd5e1',
-                color: '#64748b'
-            }}>
-                <MapPin size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                <p>Interactive Map Integration</p>
-                <small>(Google Maps API Key required)</small>
+            {/* Map Preview */}
+            <div style={{ height: '350px', marginBottom: '2rem', borderRadius: '1rem', overflow: 'hidden' }}>
+                <PropertyMap properties={[mapPreviewItem]} />
             </div>
 
             <div className={styles.field}>
@@ -144,3 +156,4 @@ export default function PropertyLocationStep({ initialData, onNext, onBack }: St
         </form>
     )
 }
+

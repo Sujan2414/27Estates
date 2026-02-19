@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { motion, Variants } from "framer-motion";
@@ -25,17 +26,45 @@ interface CardProps {
     description: string;
     imgSrc: string;
     href: string;
+    isActive: boolean;
+    onActivate: () => void;
 }
 
-const Card = ({ heading, description, imgSrc, href }: CardProps) => {
+const Card = ({ heading, description, imgSrc, href, isActive, onActivate }: CardProps) => {
     const [isHovered, setIsHovered] = React.useState(false);
+    const [isMobile, setIsMobile] = React.useState(false);
+    const router = useRouter();
+
+    React.useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (!isMobile) return;
+
+        if (isActive) {
+            // Second tap - navigate
+            e.preventDefault();
+            router.push(href);
+        } else {
+            // First tap - activate (show color)
+            e.preventDefault();
+            onActivate();
+        }
+    };
+
+    const showColor = isMobile ? isActive : isHovered;
 
     return (
         <Link
             href={href}
             style={{ display: 'block', width: '100%', textDecoration: 'none' }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseEnter={() => !isMobile && setIsHovered(true)}
+            onMouseLeave={() => !isMobile && setIsHovered(false)}
+            onClick={handleClick}
         >
             <div
                 style={{
@@ -59,8 +88,8 @@ const Card = ({ heading, description, imgSrc, href }: CardProps) => {
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        filter: isHovered ? 'grayscale(0%)' : 'grayscale(100%)',
-                        transform: isHovered ? 'scale(1.1)' : 'scale(1)',
+                        filter: showColor ? 'grayscale(0%)' : 'grayscale(100%)',
+                        transform: showColor ? 'scale(1.1)' : 'scale(1)',
                         transition: 'transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.5s ease',
                         zIndex: 0
                     }}
@@ -71,7 +100,7 @@ const Card = ({ heading, description, imgSrc, href }: CardProps) => {
                     style={{
                         position: 'absolute',
                         inset: 0,
-                        backgroundColor: isHovered ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)',
+                        backgroundColor: showColor ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)',
                         zIndex: 1,
                         transition: 'background-color 0.5s ease'
                     }}
@@ -95,7 +124,7 @@ const Card = ({ heading, description, imgSrc, href }: CardProps) => {
                             style={{
                                 fontSize: '1.5rem',
                                 color: '#ffffff',
-                                transform: isHovered ? 'rotate(-45deg)' : 'rotate(0deg)',
+                                transform: showColor ? 'rotate(-45deg)' : 'rotate(0deg)',
                                 transition: 'transform 0.5s ease'
                             }}
                         />
@@ -110,11 +139,11 @@ const Card = ({ heading, description, imgSrc, href }: CardProps) => {
                             textShadow: '0 2px 4px rgba(0,0,0,0.5)'
                         }}>
                             {heading.split("").map((letter, index) => (
-                                <AnimatedLetter letter={letter} key={index} isHovered={isHovered} />
+                                <AnimatedLetter letter={letter} key={index} isHovered={showColor} />
                             ))}
                         </h3>
                         <p style={{
-                            color: isHovered ? '#ffffff' : '#e5e5e5',
+                            color: showColor ? '#ffffff' : '#e5e5e5',
                             fontSize: '0.95rem',
                             lineHeight: '1.5',
                             display: '-webkit-box',
@@ -160,6 +189,8 @@ const AnimatedLetter = ({ letter, isHovered }: AnimatedLetterProps) => {
 };
 
 export default function ServicesPage() {
+    const [activeCardIndex, setActiveCardIndex] = React.useState<number | null>(null);
+
     return (
         <main className="min-h-screen bg-light-grey">
             <Navigation alwaysScrolled={false} />
@@ -208,7 +239,7 @@ export default function ServicesPage() {
                                 fontSize: 'clamp(2rem, 4vw, 3.5rem)',
                                 fontWeight: 500,
                                 letterSpacing: '-0.02em',
-                                color: '#1F524B',
+                                color: '#183C38',
                                 marginBottom: '1.25rem',
                                 lineHeight: 1.2,
                             }}
@@ -251,6 +282,8 @@ export default function ServicesPage() {
                                 description={service.description}
                                 imgSrc={service.imgSrc}
                                 href={service.href}
+                                isActive={activeCardIndex === index}
+                                onActivate={() => setActiveCardIndex(index)}
                             />
                         ))}
                     </div>

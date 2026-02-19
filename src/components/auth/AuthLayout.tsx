@@ -20,8 +20,8 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
     }, []);
 
     return (
-        <div className="auth-page-root h-screen w-full overflow-hidden flex" style={{ fontFamily: 'Inter, sans-serif' }}>
-            {/* Left Panel - Image Cover */}
+        <div className="auth-page-root w-full overflow-hidden flex" style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh' }}>
+            {/* Left Panel - Image Cover (desktop only) */}
             <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-muted">
                 <img
                     src="/auth-cover.png"
@@ -31,12 +31,12 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
             </div>
 
             {/* Right Panel - Auth Form */}
+            {/* Desktop: plain white half-screen | Mobile: gradient bg with centered card */}
             <div
-                className="w-full lg:w-1/2 relative h-screen flex flex-col"
-                style={{ backgroundColor: '#ffffff' }}
+                className="w-full lg:w-1/2 relative h-screen flex flex-col auth-right-panel"
             >
-                <div className="auth-form-container flex-1 flex items-center justify-center overflow-y-auto py-6">
-                    <div className="max-w-[540px] mx-auto w-full px-4 my-auto">
+                <div className="auth-form-container flex-1 flex items-start justify-center overflow-y-auto py-6">
+                    <div className="auth-form-card max-w-[540px] mx-auto w-full px-4" style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                         {children}
                     </div>
                 </div>
@@ -46,3 +46,4 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
 };
 
 export default AuthLayout;
+

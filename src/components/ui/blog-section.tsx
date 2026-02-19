@@ -113,7 +113,7 @@ export function BlogSection({
                                 {/* Read more link */}
                                 <span
                                     className="inline-flex items-center text-sm font-medium mt-2 group-hover:underline"
-                                    style={{ color: 'var(--dark-turquoise, #1F524B)' }}
+                                    style={{ color: 'var(--dark-turquoise, #183C38)' }}
                                 >
                                     Read more →
                                 </span>

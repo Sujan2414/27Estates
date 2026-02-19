@@ -4,8 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from './ContactCTA.module.css';
 
+import { useRouter } from 'next/navigation';
+
 const ContactCTA: React.FC = () => {
     const [isMobile, setIsMobile] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
@@ -73,13 +76,13 @@ const ContactCTA: React.FC = () => {
                     viewport={{ once: true }}
                     transition={{ delay: 0.3, duration: 0.6 }}
                 >
-                    <motion.a
-                        href="mailto:connect@27estates.com"
+                    <motion.button
+                        onClick={() => router.push('/contact')}
                         className={styles.ctaPrimary}
                         whileHover={{ y: -2 }}
                     >
                         Contact Us
-                    </motion.a>
+                    </motion.button>
                 </motion.div>
             </div>
         </section>

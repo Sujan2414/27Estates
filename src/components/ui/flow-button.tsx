@@ -21,9 +21,9 @@ export function FlowButton({
     // Color schemes based on variant
     const colors = {
         primary: {
-            border: 'var(--dark-turquoise, #1F524B)',
-            text: 'var(--dark-turquoise, #1F524B)',
-            bg: 'var(--dark-turquoise, #1F524B)',
+            border: 'var(--dark-turquoise, #183C38)',
+            text: 'var(--dark-turquoise, #183C38)',
+            bg: 'var(--dark-turquoise, #183C38)',
             hoverText: '#ffffff',
         },
         secondary: {
@@ -36,7 +36,7 @@ export function FlowButton({
             border: 'rgba(255, 255, 255, 0.5)',
             text: '#ffffff',
             bg: '#ffffff',
-            hoverText: 'var(--dark-turquoise, #1F524B)',
+            hoverText: 'var(--dark-turquoise, #183C38)',
         },
     };
 

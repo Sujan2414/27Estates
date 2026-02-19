@@ -39,6 +39,15 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
     }
 
     const handleDownloadExisting = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+            if (profile?.role === 'agent') {
+                alert('Restricted: Please contact admin to download data.')
+                return
+            }
+        }
+
         if (type === 'property') {
             const { data } = await supabase.from('properties').select('*')
             if (data && data.length > 0) exportPropertiesToExcel(data)
