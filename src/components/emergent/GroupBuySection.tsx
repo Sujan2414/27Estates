@@ -38,9 +38,10 @@ const GROUP_BUY_HERO_IMAGE = "https://images.unsplash.com/photo-1560518883-ce090
 interface GroupBuyProps {
     projectName: string
     projectImage?: string
+    agentPhone?: string
 }
 
-export default function GroupBuySection({ projectName }: GroupBuyProps) {
+export default function GroupBuySection({ projectName, agentPhone }: GroupBuyProps) {
     const [openIndex, setOpenIndex] = useState<number | null>(null)
     const [showModal, setShowModal] = useState(false)
     const [firstName, setFirstName] = useState('')
@@ -316,20 +317,23 @@ export default function GroupBuySection({ projectName }: GroupBuyProps) {
                             Join Group Buy
                         </button>
 
-                        <button style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '14px 32px',
-                            background: 'transparent',
-                            color: '#fafafa',
-                            border: '1px solid #404040',
-                            borderRadius: '8px',
-                            fontSize: '0.9375rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease',
-                        }}
+                        <a
+                            href={agentPhone ? `tel:${agentPhone}` : 'tel:+919999999999'}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '14px 32px',
+                                background: 'transparent',
+                                color: '#fafafa',
+                                border: '1px solid #404040',
+                                borderRadius: '8px',
+                                fontSize: '0.9375rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                textDecoration: 'none',
+                                transition: 'all 0.3s ease',
+                            }}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.borderColor = '#d4a853'
                                 e.currentTarget.style.color = '#d4a853'
@@ -343,7 +347,7 @@ export default function GroupBuySection({ projectName }: GroupBuyProps) {
                         >
                             <Phone size={18} />
                             Talk to an Expert
-                        </button>
+                        </a>
                     </div>
 
                     <p style={{

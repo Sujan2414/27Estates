@@ -947,7 +947,10 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
 
 
             {/* Group Buy Section */}
-            <GroupBuySection projectName={project.project_name} />
+            <GroupBuySection
+                projectName={project.project_name}
+                agentPhone={agent?.phone || project?.employee_phone || undefined}
+            />
 
             {/* Similar Projects */}
             {similarProjects.length > 0 && (
