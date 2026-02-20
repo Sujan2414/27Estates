@@ -32,9 +32,9 @@ export default function BrochureUpload({
             return
         }
 
-        // Validate size (20MB limit for brochures)
-        if (file.size > 20 * 1024 * 1024) {
-            setError('File must be under 20MB')
+        // Validate size (50MB limit for brochures)
+        if (file.size > 50 * 1024 * 1024) {
+            setError('File must be under 50MB')
             return
         }
 
@@ -43,22 +43,27 @@ export default function BrochureUpload({
 
         try {
             // Clean filename
-            // Upload via API to bypass RLS
-            const formData = new FormData()
-            formData.append('file', file)
-            formData.append('folder', folder)
+            const cleanName = file.name.toLowerCase().replace(/[^a-z0-9.]/g, '-').replace(/-+/g, '-')
+            const timestamp = Date.now()
+            const fileName = `${folder}/${timestamp}-${cleanName}`
 
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            })
+            // Direct Supabase upload from client
+            const { error: uploadError } = await supabase.storage
+                .from('media')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                })
 
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Upload failed')
+            if (uploadError) {
+                console.error('Supabase Storage Error:', uploadError)
+                throw new Error(uploadError.message || 'Upload failed')
             }
 
-            const { publicUrl } = await response.json()
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('media')
+                .getPublicUrl(fileName)
 
             onChange(publicUrl)
         } catch (err) {

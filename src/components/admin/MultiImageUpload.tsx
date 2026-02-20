@@ -46,22 +46,30 @@ export default function MultiImageUpload({
                     continue
                 }
 
-                // Upload via API to bypass RLS
-                const formData = new FormData()
-                formData.append('file', file)
-                formData.append('folder', folder)
+                // Clean filename
+                const cleanName = file.name.toLowerCase().replace(/[^a-z0-9.]/g, '-').replace(/-+/g, '-')
+                const timestamp = Date.now()
+                // Add index to filename to prevent collisions when uploading multiple files at once
+                const fileName = `${folder}/${timestamp}-${cleanName}`
 
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData,
-                })
+                // Direct Supabase upload from client
+                const { error: uploadError } = await supabase.storage
+                    .from('media')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    })
 
-                if (!response.ok) {
+                if (uploadError) {
+                    console.error(`Failed to upload ${file.name}:`, uploadError)
                     setError(`Failed to upload ${file.name}`)
                     continue
                 }
 
-                const { publicUrl } = await response.json()
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('media')
+                    .getPublicUrl(fileName)
 
                 uploadedUrls.push(publicUrl)
             }
