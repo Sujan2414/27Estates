@@ -132,8 +132,8 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                 address: allData.address,
                 pincode: allData.pincode,
                 landmark: allData.landmark,
-                latitude: parseFloat(allData.latitude) || null,
-                longitude: parseFloat(allData.longitude) || null,
+                latitude: allData.latitude && !isNaN(parseFloat(allData.latitude)) ? parseFloat(allData.latitude) : null,
+                longitude: allData.longitude && !isNaN(parseFloat(allData.longitude)) ? parseFloat(allData.longitude) : null,
 
                 status: 'Available',
                 is_featured: allData.is_featured,
