@@ -87,4 +87,8 @@ ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS latitude NUMERIC;
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS longitude NUMERIC;
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS master_plan_image TEXT;
 
-SELECT 'Storage limits increased, RLS policies updated, and ALL schemas fixed successfully!' as result;
+-- 5. CHANGE LAUNCH DATE TYPE
+-- The form collects launch_date as text like "March 2024", which crashes the DATE type.
+ALTER TABLE public.projects ALTER COLUMN launch_date TYPE TEXT USING launch_date::TEXT;
+
+SELECT 'Storage limits increased, RLS policies updated, schemas fixed, and launch_date type corrected successfully!' as result;
