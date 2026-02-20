@@ -56,6 +56,12 @@ ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS keywords TEXT[] DEFAULT '
 ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS commercial_details JSONB;
 ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS warehouse_details JSONB;
 ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS pricing_details JSONB;
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS pincode TEXT;
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS latitude NUMERIC;
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS longitude NUMERIC;
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS owner_id UUID; -- Or TEXT if just storing a string ID
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS branch TEXT;
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS refer_by TEXT;
 
 -- 4. ADD MISSING COLUMNS TO PROJECTS TABLE
 -- The admin project wizard sends these fields, but they were missing from the schema.
@@ -71,5 +77,12 @@ ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS project_plan JSONB;
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS specifications_complex JSONB;
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS ad_card_image TEXT;
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS show_ad_on_home BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS sub_category TEXT;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS total_units INTEGER;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS price_per_sqft NUMERIC;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS latitude NUMERIC;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS longitude NUMERIC;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS master_plan_image TEXT;
 
-SELECT 'Storage limits increased, RLS policies updated, and schemas fixed successfully!' as result;
+SELECT 'Storage limits increased, RLS policies updated, and ALL schemas fixed successfully!' as result;
