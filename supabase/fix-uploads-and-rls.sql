@@ -32,6 +32,7 @@ DROP POLICY IF EXISTS "Admins can manage properties" ON public.properties;
 DROP POLICY IF EXISTS "Admins can manage projects" ON public.projects;
 
 -- Create new policies allowing admin, super_admin, and agent access
+DROP POLICY IF EXISTS "Authorized users can manage properties" ON public.properties;
 CREATE POLICY "Authorized users can manage properties" ON public.properties 
 FOR ALL USING (
     EXISTS (
@@ -40,6 +41,7 @@ FOR ALL USING (
     )
 );
 
+DROP POLICY IF EXISTS "Authorized users can manage projects" ON public.projects;
 CREATE POLICY "Authorized users can manage projects" ON public.projects 
 FOR ALL USING (
     EXISTS (
