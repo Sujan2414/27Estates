@@ -187,6 +187,8 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [loading, setLoading] = useState(true);
     const [activeFloorPlan, setActiveFloorPlan] = useState(0);
+    const [agent, setAgent] = useState<any | null>(null);
+    const [showContactModal, setShowContactModal] = useState(false);
 
     const fetchProjectData = async () => {
         try {
@@ -229,6 +231,16 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     .eq('id', projectData.developer_id)
                     .single();
                 setDeveloper(devData || null);
+            }
+
+            // Get agent
+            if (projectData.assigned_agent_id) {
+                const { data: agentData } = await supabase
+                    .from('agents')
+                    .select('*')
+                    .eq('id', projectData.assigned_agent_id)
+                    .single();
+                setAgent(agentData || null);
             }
 
             // Get similar projects (same city or category, different id)
@@ -285,6 +297,21 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                 .insert({ user_id: user.id, project_id: project.id });
             setIsBookmarked(true);
         }
+    };
+
+    const getWhatsAppLink = () => {
+        const phone = agent?.phone || project?.employee_phone || '+919999999999'; // Fallback
+        // Remove non-numeric characters for link, ensuring country code is present if typical Indian
+        let cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+
+        const message = `Hey! I am interested in this project:\n\n*${project?.project_name}*\n📍 ${project?.location || project?.city || ''}\n🔗 ${typeof window !== 'undefined' ? window.location.href : ''}\n\nPlease share more details.`;
+        return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    };
+
+    const getCallLink = () => {
+        const phone = agent?.phone || project?.employee_phone || '+919999999999';
+        return `tel:${phone}`;
     };
 
     if (loading) {
@@ -947,9 +974,47 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
             )}
 
             {/* Sticky Contact Button */}
-            <button className={styles.contactFloat}>
-                Contact Agent <UserCircle size={20} />
+            <button className={styles.contactFloat} onClick={() => setShowContactModal(true)}>
+                <span>Contact Agent</span> <UserCircle size={24} strokeWidth={1.5} />
             </button>
+
+            {/* Contact Modal Overlay */}
+            {showContactModal && (
+                <div className={styles.modalOverlay} onClick={() => setShowContactModal(false)}>
+                    <div className={styles.contactModal} onClick={e => e.stopPropagation()}>
+                        <button className={styles.closeModalBtn} onClick={() => setShowContactModal(false)}>
+                            <LucideIcons.X size={24} />
+                        </button>
+
+                        <div className={styles.modalHeader}>
+                            <div className={styles.agentImageWrapper}>
+                                {agent?.image ? (
+                                    <img src={agent.image} alt={agent.name} className={styles.agentImage} />
+                                ) : (
+                                    <UserCircle size={64} color="#94a3b8" strokeWidth={1} />
+                                )}
+                            </div>
+                            <h3 className={styles.agentName}>{agent?.name || project?.employee_name || 'Property Expert'}</h3>
+                            <p className={styles.agentRole}>Assigned Agent</p>
+                        </div>
+
+                        <div className={styles.modalBody}>
+                            <p className={styles.modalText}>
+                                Want to know more about <strong style={{ color: '#183C38' }}>{project.project_name}</strong>? Get in touch with our expert today!
+                            </p>
+
+                            <div className={styles.contactActions}>
+                                <a href={getCallLink()} className={`${styles.actionBtn} ${styles.callBtn}`}>
+                                    <LucideIcons.Phone size={18} fill="currentColor" /> Call Now
+                                </a>
+                                <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer" className={`${styles.actionBtn} ${styles.whatsappBtn}`}>
+                                    <LucideIcons.MessageCircle size={18} fill="currentColor" /> WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

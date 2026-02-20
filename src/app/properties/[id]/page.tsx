@@ -123,6 +123,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
     const [activeFloorPlan, setActiveFloorPlan] = useState(0);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [initialGalleryIndex, setInitialGalleryIndex] = useState(0);
+    const [showContactModal, setShowContactModal] = useState(false);
 
     const openGallery = (index: number) => {
         setInitialGalleryIndex(index);
@@ -222,6 +223,22 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
 
     const isPropertyInBookmarks = (propertyId: string) => {
         return bookmarkIds.includes(propertyId);
+    };
+
+    const getWhatsAppLink = () => {
+        const phone = agent?.phone || '+919999999999'; // Fallback
+
+        // Remove non-numeric characters for link, ensuring country code is present if typical Indian
+        let cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+
+        const message = `Hey! I am interested in this property:\n\n*${property?.title}*\n📍 ${property?.location || property?.city || ''}\n🔗 ${typeof window !== 'undefined' ? window.location.href : ''}\n\nPlease share more details.`;
+        return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    };
+
+    const getCallLink = () => {
+        const phone = agent?.phone || '+919999999999';
+        return `tel:${phone}`;
     };
 
     if (loading) {
@@ -613,9 +630,47 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
             )}
 
             {/* Sticky Contact Button */}
-            <button className={styles.contactFloat}>
-                Contact Agent <UserCircle size={20} />
+            <button className={styles.contactFloat} onClick={() => setShowContactModal(true)}>
+                <span>Contact Agent</span> <UserCircle size={24} strokeWidth={1.5} />
             </button>
+
+            {/* Contact Modal Overlay */}
+            {showContactModal && (
+                <div className={styles.modalOverlay} onClick={() => setShowContactModal(false)}>
+                    <div className={styles.contactModal} onClick={e => e.stopPropagation()}>
+                        <button className={styles.closeModalBtn} onClick={() => setShowContactModal(false)}>
+                            <LucideIcons.X size={24} />
+                        </button>
+
+                        <div className={styles.modalHeader}>
+                            <div className={styles.agentImageWrapper}>
+                                {agent?.image ? (
+                                    <img src={agent.image} alt={agent.name} className={styles.agentImage} />
+                                ) : (
+                                    <UserCircle size={64} color="#94a3b8" strokeWidth={1} />
+                                )}
+                            </div>
+                            <h3 className={styles.agentName}>{agent?.name || 'Property Expert'}</h3>
+                            <p className={styles.agentRole}>Assigned Agent</p>
+                        </div>
+
+                        <div className={styles.modalBody}>
+                            <p className={styles.modalText}>
+                                Want to know more about <strong style={{ color: '#183C38' }}>{property.title}</strong>? Get in touch with our expert today!
+                            </p>
+
+                            <div className={styles.contactActions}>
+                                <a href={getCallLink()} className={`${styles.actionBtn} ${styles.callBtn}`}>
+                                    <LucideIcons.Phone size={18} fill="currentColor" /> Call Now
+                                </a>
+                                <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer" className={`${styles.actionBtn} ${styles.whatsappBtn}`}>
+                                    <LucideIcons.MessageCircle size={18} fill="currentColor" /> WhatsApp
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
 
     );
