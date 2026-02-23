@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, Mail, Phone, Building, X, Save, Loader2 } from 'lucide-react'
 import styles from '../admin.module.css'
 
@@ -17,7 +17,7 @@ interface Owner {
 }
 
 export default function OwnersPage() {
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
     const [owners, setOwners] = useState<Owner[]>([])
     const [loading, setLoading] = useState(true)
     const [deleteId, setDeleteId] = useState<string | null>(null)

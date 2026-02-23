@@ -94,7 +94,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
                 {/* Logo */}
                 <Link href="/" className={styles.logoLink}>
                     <Image
-                        src="/logo-trimmed.png"
+                        src="/logo without bg (1).png"
                         alt="27 Estates"
                         width={300}
                         height={90}

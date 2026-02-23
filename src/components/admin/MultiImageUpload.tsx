@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { Upload, X, Loader2, Plus } from 'lucide-react'
 
 interface MultiImageUploadProps {
@@ -19,7 +19,7 @@ export default function MultiImageUpload({
     label = 'Upload Images',
     maxImages = 20,
 }: MultiImageUploadProps) {
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
     const inputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -96,6 +96,9 @@ export default function MultiImageUpload({
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
+                <strong>Note:</strong> The 1st image will be shown as the main card image and cover photo.
+            </p>
             <input
                 ref={inputRef}
                 type="file"
@@ -133,6 +136,22 @@ export default function MultiImageUpload({
                                     display: 'block',
                                 }}
                             />
+                            {/* Number Badge */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '8px',
+                                left: '8px',
+                                background: 'rgba(24, 60, 56, 0.9)',
+                                color: 'white',
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                zIndex: 1,
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }}>
+                                {index + 1}
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => removeImage(index)}
@@ -150,6 +169,7 @@ export default function MultiImageUpload({
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    zIndex: 2,
                                 }}
                             >
                                 <X size={12} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -133,6 +133,12 @@ function FitBounds({ items }: { items: MapItem[] }) {
 }
 
 const PropertyMap = ({ properties, projects = [] }: PropertyMapProps) => {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const allItems = useMemo(() => [...properties, ...projects], [properties, projects]);
 
     const resolvedItems = useMemo(() => {
@@ -150,15 +156,23 @@ const PropertyMap = ({ properties, projects = [] }: PropertyMapProps) => {
         return Array.from(cats).sort();
     }, [allItems]);
 
-    // Default center: Bangalore
     const defaultCenter: [number, number] = [12.9716, 77.5946];
     const center =
         resolvedItems.length > 0
             ? resolvedItems[0].coords
             : defaultCenter;
 
+    if (!mounted) {
+        return <div style={{ height: "100%", width: "100%", borderRadius: "1rem", background: "#f5f5f5" }} />;
+    }
+
+    // Leaflet does not support React 18 strict mode well, 
+    // we use a timestamp or unique string on remount to avoid "Map container is being reused"
+    const mapKey = `map-${resolvedItems.length}-${center.join(',')}`;
+
     return (
         <MapContainer
+            key={mapKey}
             center={center}
             zoom={12}
             style={{ height: "100%", width: "100%", borderRadius: "1rem" }}

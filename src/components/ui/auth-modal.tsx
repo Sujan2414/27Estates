@@ -156,14 +156,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 <div style={{
                                     marginBottom: '32px',
                                     position: 'relative',
-                                    width: '280px',
-                                    height: '120px'
+                                    width: '200px',
+                                    height: '140px'
                                 }}>
                                     <Image
-                                        src="/logo-trimmed.png"
+                                        src="/logo without bg (1).png"
                                         alt="27 Estates"
                                         fill
-                                        style={{ objectFit: 'contain', objectPosition: 'center' }}
+                                        style={{ objectFit: 'contain', objectPosition: 'center', transform: 'scale(1.6)' }}
                                         priority
                                     />
                                 </div>

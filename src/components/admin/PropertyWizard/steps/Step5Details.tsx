@@ -1,9 +1,29 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ArrowRight, ArrowLeft, Search, X, Check } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Search, X, Check, Plus } from 'lucide-react'
 import styles from '../property-wizard.module.css'
 import { AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from '@/lib/amenities-data'
+
+interface ConnectivityItem {
+    type: string
+    name: string
+    distance: string
+    icon?: string
+}
+
+const CONNECTIVITY_ICONS = [
+    { label: 'Map Pin', value: 'MapPin' },
+    { label: 'Train', value: 'Train' },
+    { label: 'Bus', value: 'Bus' },
+    { label: 'Plane', value: 'Plane' },
+    { label: 'Hospital', value: 'Building2' },
+    { label: 'School', value: 'GraduationCap' },
+    { label: 'Shopping', value: 'ShoppingCart' },
+    { label: 'Park', value: 'TreePine' },
+    { label: 'Office', value: 'Briefcase' },
+    { label: 'Metro', value: 'TrainFront' },
+]
 
 interface StepProps {
     initialData: any
@@ -45,6 +65,8 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
         ...initialData
     })
 
+    const [connectivity, setConnectivity] = useState<ConnectivityItem[]>(initialData.connectivity || [])
+
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>(() => flattenAmenities(initialData.amenities))
     const [amenitySearch, setAmenitySearch] = useState('')
     const [amenityDropdownOpen, setAmenityDropdownOpen] = useState(false)
@@ -57,6 +79,29 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
     }
     const removeSelectedAmenity = (label: string) => {
         setSelectedAmenities(prev => prev.filter(a => a !== label))
+    }
+
+    // Connectivity handlers
+    const handleConnectivityChange = (index: number, field: keyof ConnectivityItem, value: string) => {
+        setConnectivity(prev => prev.map((c, i) => i === index ? { ...c, [field]: value } : c))
+    }
+    const addConnectivity = () => setConnectivity(prev => [...prev, { type: '', name: '', distance: '', icon: '' }])
+    const removeConnectivity = (index: number) => setConnectivity(prev => prev.filter((_, i) => i !== index))
+
+    const addBtnStyle: React.CSSProperties = {
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        padding: '8px 16px', background: '#f1f5f9', border: '1px solid #e2e8f0',
+        borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', color: '#334155',
+        marginTop: '8px',
+    }
+    const removeBtnStyle: React.CSSProperties = {
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: '32px', height: '32px', borderRadius: '6px', border: '1px solid #fecaca',
+        background: '#fff5f5', color: '#ef4444', cursor: 'pointer', flexShrink: 0,
+    }
+    const rowStyle: React.CSSProperties = {
+        background: '#f8fafc', padding: '16px', borderRadius: '8px',
+        marginBottom: '12px', border: '1px solid #e2e8f0',
     }
 
     useEffect(() => {
@@ -87,7 +132,7 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onNext({ ...formData, amenities: selectedAmenities })
+        onNext({ ...formData, amenities: selectedAmenities, connectivity })
     }
 
     return (
@@ -287,6 +332,34 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
                     </div>
                 )}
             </div>
+
+            {/* Connectivity */}
+            <h3 className={styles.stepTitle} style={{ fontSize: '1.1rem', textAlign: 'left', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>Connectivity</h3>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '12px' }}>
+                Nearby landmarks, schools, hospitals, transport etc.
+            </p>
+            {connectivity.map((conn, index) => (
+                <div key={index} style={rowStyle}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select
+                            value={conn.icon || ''}
+                            onChange={(e) => handleConnectivityChange(index, 'icon', e.target.value)}
+                            className={styles.input}
+                            style={{ flex: '1 1 120px', maxWidth: '140px', padding: '10px', height: 'auto', margin: 0 }}
+                        >
+                            <option value="">Select Icon</option>
+                            {CONNECTIVITY_ICONS.map(i => (
+                                <option key={i.value} value={i.value}>{i.label}</option>
+                            ))}
+                        </select>
+                        <input type="text" value={conn.type} onChange={(e) => handleConnectivityChange(index, 'type', e.target.value)} className={styles.input} placeholder="Type (School...)" style={{ flex: '1 1 150px', margin: 0 }} />
+                        <input type="text" value={conn.name} onChange={(e) => handleConnectivityChange(index, 'name', e.target.value)} className={styles.input} placeholder="Name" style={{ flex: '1 1 150px', margin: 0 }} />
+                        <input type="text" value={conn.distance} onChange={(e) => handleConnectivityChange(index, 'distance', e.target.value)} className={styles.input} placeholder="Dist (2 km)" style={{ flex: '1 1 100px', maxWidth: '120px', margin: 0 }} />
+                        <button type="button" onClick={() => removeConnectivity(index)} style={removeBtnStyle}><X size={16} /></button>
+                    </div>
+                </div>
+            ))}
+            <button type="button" onClick={addConnectivity} style={addBtnStyle}><Plus size={16} /> Add Connectivity</button>
 
             <div className={styles.actions}>
                 <button type="button" className={`${styles.btn} ${styles.secondaryBtn}`} onClick={onBack}>

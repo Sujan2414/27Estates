@@ -142,7 +142,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                     }} />
                     {/* Large decorative icon */}
                     <div style={{ position: 'absolute', top: '40px', right: '60px', opacity: 0.08 }}>
-                        <Users size={180} color="#d4a853" />
+                        <Users size={180} color="#BFA270" />
                     </div>
                     {/* Badge */}
                     <div style={{
@@ -151,7 +151,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                         <span style={{
                             display: 'inline-block',
                             padding: '6px 16px',
-                            background: 'linear-gradient(135deg, #d4a853, #c9913c)',
+                            background: 'linear-gradient(135deg, #BFA270, #A88F61)',
                             color: '#0a0a0a',
                             fontSize: '0.75rem',
                             fontWeight: 700,
@@ -179,7 +179,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                     <h3 style={{
                         fontSize: '1.5rem',
                         fontWeight: 800,
-                        color: '#d4a853',
+                        color: '#BFA270',
                         marginBottom: '20px',
                         letterSpacing: '0.02em',
                     }}>
@@ -193,7 +193,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                         marginBottom: '32px',
                     }}>
                         27 Estates brings together interested buyers for <strong style={{ color: '#d4d4d4' }}>{projectName}</strong> and
-                        negotiates directly with the developer to get you the absolute <strong style={{ color: '#d4a853' }}>BEST discounted price</strong> for
+                        negotiates directly with the developer to get you the absolute <strong style={{ color: '#BFA270' }}>BEST discounted price</strong> for
                         the property.
                     </p>
 
@@ -228,7 +228,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                         }}>
                                             {index + 1}.
                                         </span>
-                                        <span style={{ color: '#d4a853', display: 'flex', alignItems: 'center' }}>
+                                        <span style={{ color: '#BFA270', display: 'flex', alignItems: 'center' }}>
                                             {faq.icon}
                                         </span>
                                         {faq.question}
@@ -276,7 +276,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                         color: '#fafafa',
                         marginBottom: '6px',
                     }}>
-                        Guaranteed Savings with <span style={{ color: '#d4a853' }}>GROUP BUY</span>
+                        Guaranteed Savings with <span style={{ color: '#BFA270' }}>GROUP BUY</span>
                     </h4>
                     <p style={{
                         fontSize: '0.875rem',
@@ -294,7 +294,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                 alignItems: 'center',
                                 gap: '8px',
                                 padding: '14px 32px',
-                                background: 'linear-gradient(135deg, #d4a853, #c9913c)',
+                                background: 'linear-gradient(135deg, #BFA270, #A88F61)',
                                 color: '#0a0a0a',
                                 border: 'none',
                                 borderRadius: '8px',
@@ -335,8 +335,8 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                 transition: 'all 0.3s ease',
                             }}
                             onMouseEnter={(e) => {
-                                e.currentTarget.style.borderColor = '#d4a853'
-                                e.currentTarget.style.color = '#d4a853'
+                                e.currentTarget.style.borderColor = '#BFA270'
+                                e.currentTarget.style.color = '#BFA270'
                                 e.currentTarget.style.transform = 'translateY(-2px)'
                             }}
                             onMouseLeave={(e) => {
@@ -358,7 +358,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                     }}>
                         Experience unbiased advisory, get total peace of mind & buy confidently with 27 Estates.
                         <br />
-                        <span style={{ color: '#d4a853', fontWeight: 600 }}>100% Free of Charge</span>
+                        <span style={{ color: '#BFA270', fontWeight: 600 }}>100% Free of Charge</span>
                     </p>
                 </div>
             </section>
@@ -420,7 +420,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                 <span style={{
                                     display: 'inline-block',
                                     padding: '4px 12px',
-                                    background: 'linear-gradient(135deg, #d4a853, #c9913c)',
+                                    background: 'linear-gradient(135deg, #BFA270, #A88F61)',
                                     color: '#0a0a0a',
                                     fontSize: '0.6875rem',
                                     fontWeight: 700,
@@ -516,7 +516,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                             value={firstName}
                                             onChange={(e) => setFirstName(e.target.value)}
                                             style={inputStyle}
-                                            onFocus={(e) => (e.target.style.borderColor = '#d4a853')}
+                                            onFocus={(e) => (e.target.style.borderColor = '#BFA270')}
                                             onBlur={(e) => (e.target.style.borderColor = '#333')}
                                         />
                                     </div>
@@ -528,7 +528,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                             value={lastName}
                                             onChange={(e) => setLastName(e.target.value)}
                                             style={inputStyle}
-                                            onFocus={(e) => (e.target.style.borderColor = '#d4a853')}
+                                            onFocus={(e) => (e.target.style.borderColor = '#BFA270')}
                                             onBlur={(e) => (e.target.style.borderColor = '#333')}
                                         />
                                     </div>
@@ -543,7 +543,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         style={inputStyle}
-                                        onFocus={(e) => (e.target.style.borderColor = '#d4a853')}
+                                        onFocus={(e) => (e.target.style.borderColor = '#BFA270')}
                                         onBlur={(e) => (e.target.style.borderColor = '#333')}
                                     />
                                 </div>
@@ -557,7 +557,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
                                         style={inputStyle}
-                                        onFocus={(e) => (e.target.style.borderColor = '#d4a853')}
+                                        onFocus={(e) => (e.target.style.borderColor = '#BFA270')}
                                         onBlur={(e) => (e.target.style.borderColor = '#333')}
                                     />
                                 </div>
@@ -574,7 +574,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                             resize: 'vertical',
                                             minHeight: '80px',
                                         }}
-                                        onFocus={(e) => (e.target.style.borderColor = '#d4a853')}
+                                        onFocus={(e) => (e.target.style.borderColor = '#BFA270')}
                                         onBlur={(e) => (e.target.style.borderColor = '#333')}
                                     />
                                 </div>
@@ -587,7 +587,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                         padding: '14px',
                                         background: submitting
                                             ? '#8a7a4a'
-                                            : 'linear-gradient(135deg, #d4a853, #c9913c)',
+                                            : 'linear-gradient(135deg, #BFA270, #A88F61)',
                                         color: '#0a0a0a',
                                         border: 'none',
                                         borderRadius: '8px',
@@ -614,7 +614,7 @@ export default function GroupBuySection({ projectName, agentPhone }: GroupBuyPro
                                     lineHeight: 1.5,
                                     margin: 0,
                                 }}>
-                                    Our service is <span style={{ color: '#d4a853', fontWeight: 600 }}>100% free</span> for home buyers. No hidden charges.
+                                    Our service is <span style={{ color: '#BFA270', fontWeight: 600 }}>100% free</span> for home buyers. No hidden charges.
                                 </p>
                             </form>
                         </div>

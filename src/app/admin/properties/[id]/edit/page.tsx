@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import ImageUpload from '@/components/admin/ImageUpload'
@@ -29,10 +29,30 @@ interface FloorPlan {
     image: string
 }
 
+interface ConnectivityItem {
+    type: string
+    name: string
+    distance: string
+    icon?: string
+}
+
+const CONNECTIVITY_ICONS = [
+    { label: 'Map Pin', value: 'MapPin' },
+    { label: 'Train', value: 'Train' },
+    { label: 'Bus', value: 'Bus' },
+    { label: 'Plane', value: 'Plane' },
+    { label: 'Hospital', value: 'Building2' },
+    { label: 'School', value: 'GraduationCap' },
+    { label: 'Shopping', value: 'ShoppingCart' },
+    { label: 'Park', value: 'TreePine' },
+    { label: 'Office', value: 'Briefcase' },
+    { label: 'Metro', value: 'TrainFront' },
+]
+
 export default function EditPropertyPage() {
     const router = useRouter()
     const params = useParams()
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -81,6 +101,9 @@ export default function EditPropertyPage() {
     // Images & Floor Plans
     const [images, setImages] = useState<string[]>([''])
     const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([{ name: '', image: '' }])
+
+    // Connectivity
+    const [connectivity, setConnectivity] = useState<ConnectivityItem[]>([{ type: '', name: '', distance: '', icon: '' }])
 
     useEffect(() => {
         fetchProperty()
@@ -158,6 +181,10 @@ export default function EditPropertyPage() {
         const fp = data.floor_plans || []
         setFloorPlans(fp.length > 0 ? fp : [{ name: '', image: '' }])
 
+        // Parse connectivity
+        const connData = data.connectivity || []
+        setConnectivity(connData.length > 0 ? connData : [{ type: '', name: '', distance: '', icon: '' }])
+
         setLoading(false)
     }
 
@@ -217,6 +244,13 @@ export default function EditPropertyPage() {
     const addFloorPlan = () => setFloorPlans(prev => [...prev, { name: '', image: '' }])
     const removeFloorPlan = (index: number) => setFloorPlans(prev => prev.filter((_, i) => i !== index))
 
+    // Connectivity handlers
+    const handleConnectivityChange = (index: number, field: keyof ConnectivityItem, value: string) => {
+        setConnectivity(prev => prev.map((c, i) => i === index ? { ...c, [field]: value } : c))
+    }
+    const addConnectivity = () => setConnectivity(prev => [...prev, { type: '', name: '', distance: '', icon: '' }])
+    const removeConnectivity = (index: number) => setConnectivity(prev => prev.filter((_, i) => i !== index))
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setSaving(true)
@@ -249,6 +283,8 @@ export default function EditPropertyPage() {
                 return name.trim() !== '' || image.trim() !== ''
             })
 
+            const connectivityData = connectivity.filter(c => c.type || c.name || c.distance || c.icon)
+
             const propertyData = {
                 property_id: formData.property_id,
                 title: formData.title,
@@ -272,6 +308,7 @@ export default function EditPropertyPage() {
                 images: (images || []).filter(img => img && typeof img === 'string' && img.trim() !== ''),
                 amenities: amenitiesData,
                 floor_plans: floorPlansData.length > 0 ? floorPlansData : null,
+                connectivity: connectivityData.length > 0 ? connectivityData : null,
             }
 
             const { error: updateError } = await supabase
@@ -607,6 +644,38 @@ export default function EditPropertyPage() {
                     ))}
                     <button type="button" onClick={addFloorPlan} className={formStyles.addImageBtn}>
                         <Plus size={16} /> Add Floor Plan
+                    </button>
+                </div>
+
+                {/* Connectivity */}
+                <div className={formStyles.section}>
+                    <h2 className={formStyles.sectionTitle}>Connectivity</h2>
+                    <p className={formStyles.sectionHelp}>Nearby landmarks, schools, hospitals, transport etc.</p>
+                    {connectivity.map((conn, index) => (
+                        <div key={index} style={{ marginBottom: '12px', padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <select
+                                    value={conn.icon || ''}
+                                    onChange={(e) => handleConnectivityChange(index, 'icon', e.target.value)}
+                                    className={formStyles.input}
+                                    style={{ flex: '1 1 120px', maxWidth: '140px', padding: '10px', height: 'auto', margin: 0 }}
+                                >
+                                    <option value="">Select Icon</option>
+                                    {CONNECTIVITY_ICONS.map(i => (
+                                        <option key={i.value} value={i.value}>{i.label}</option>
+                                    ))}
+                                </select>
+                                <input type="text" value={conn.type} onChange={(e) => handleConnectivityChange(index, 'type', e.target.value)} className={formStyles.input} placeholder="Type (School...)" style={{ flex: '1 1 150px', margin: 0 }} />
+                                <input type="text" value={conn.name} onChange={(e) => handleConnectivityChange(index, 'name', e.target.value)} className={formStyles.input} placeholder="Name" style={{ flex: '1 1 150px', margin: 0 }} />
+                                <input type="text" value={conn.distance} onChange={(e) => handleConnectivityChange(index, 'distance', e.target.value)} className={formStyles.input} placeholder="Dist (2 km)" style={{ flex: '1 1 100px', maxWidth: '120px', margin: 0 }} />
+                                {connectivity.length > 1 && (
+                                    <button type="button" onClick={() => removeConnectivity(index)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '6px', cursor: 'pointer', flexShrink: 0 }}><X size={16} /></button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addConnectivity} className={formStyles.addImageBtn}>
+                        <Plus size={16} /> Add Connectivity
                     </button>
                 </div>
 

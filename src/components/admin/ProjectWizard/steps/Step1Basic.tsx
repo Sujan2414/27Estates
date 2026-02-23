@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { ArrowRight } from 'lucide-react'
 import styles from '../../PropertyWizard/property-wizard.module.css'
 
@@ -16,7 +16,7 @@ interface StepProps {
 }
 
 export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
     const [developers, setDevelopers] = useState<Developer[]>([])
 
     const [formData, setFormData] = useState({

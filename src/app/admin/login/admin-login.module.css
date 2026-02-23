@@ -107,6 +107,13 @@
     color: #9ca3af;
 }
 
+.input::-ms-reveal,
+.input::-ms-clear,
+[type="password"]::-ms-reveal,
+[type="password"]::-ms-clear {
+    display: none !important;
+}
+
 .button {
     width: 100%;
     padding: 0.875rem 1.5rem;
@@ -127,7 +134,32 @@
 
 .button:disabled {
     background-color: #9ca3af;
+    color: #ffffff;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+}
+
+.passwordWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.eyeButton {
+    position: absolute;
+    right: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.eyeButton:hover {
+    color: #374151;
 }

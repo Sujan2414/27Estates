@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import {
     LayoutDashboard,
@@ -30,7 +30,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const router = useRouter()
     const pathname = usePathname()
-    const supabase = useMemo(() => createAdminBrowserClient(), [])
+    const supabase = useMemo(() => createClient(), [])
 
     const isLoginPage = pathname === '/admin/login'
 
@@ -114,7 +114,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {/* Sidebar */}
             <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
                 <div className={styles.sidebarHeader}>
-                    <Image src="/sidebar-logo.png" alt="27 Estates" width={40} height={40} className={styles.sidebarLogo} />
+                    <div className={styles.logoWrapper}>
+                        <Image src="/logo without bg (1).png" alt="27 Estates" fill style={{ objectFit: 'contain', objectPosition: 'left' }} className={styles.sidebarLogo} priority />
+                    </div>
                     <span className={styles.logoText}>Admin</span>
                 </div>
 

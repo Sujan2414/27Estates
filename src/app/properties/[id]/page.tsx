@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import PropertyCard from "@/components/emergent/PropertyCard";
 import {
     MapPin, BedDouble, Bath, Maximize,
-    Heart, UserCircle, Map as MapIcon
+    Heart, UserCircle, Map as MapIcon,
+    Share2, Facebook, Link as LinkIcon
 } from "lucide-react";
+import { FaWhatsapp, FaXTwitter } from "react-icons/fa6";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/components/emergent/PropertyDetail.module.css";
@@ -80,6 +82,7 @@ interface Property {
         utilities?: string[];
         other?: string[];
     } | null;
+    connectivity?: { type: string; name: string; distance: string; icon?: string }[] | null;
     video_url?: string | null;
     floor_plans?: { name: string; image: string }[] | null;
     // Index signature for compatibility with PropertyCard
@@ -526,11 +529,11 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                                                 const iconName = AMENITY_ICON_MAP[label] || 'Circle';
                                                 const IconComp = getLucideIcon(iconName);
                                                 return (
-                                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: '10px' }}>
-                                                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                            <IconComp size={18} color="#183C38" />
+                                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: '12px' }}>
+                                                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                            <IconComp size={24} color="#183C38" />
                                                         </div>
-                                                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a0a' }}>{label}</span>
+                                                        <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#0a0a0a' }}>{label}</span>
                                                     </div>
                                                 );
                                             })}
@@ -541,6 +544,33 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                         </div>
                     );
                 })()}
+
+                {/* Connectivity */}
+                {property.connectivity && property.connectivity.length > 0 && (
+                    <div className={styles.sectionContainer}>
+                        <h2 className={styles.sectionTitle}>CONNECTIVITY</h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                            {property.connectivity.map((conn, idx) => {
+                                const IconComp = conn.icon ? getLucideIcon(conn.icon) : LucideIcons.MapPin;
+                                return (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: '12px' }}>
+                                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <IconComp size={24} color="#183C38" />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#0a0a0a' }}>{conn.name}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#64748b' }}>
+                                                <span>{conn.type}</span>
+                                                <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#cbd5e1' }} />
+                                                <span style={{ fontWeight: 500 }}>{conn.distance}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* Floor Plans */}
                 {property.floor_plans && property.floor_plans.length > 0 && (
@@ -629,10 +659,40 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                 </div>
             )}
 
-            {/* Sticky Contact Button */}
-            <button className={styles.contactFloat} onClick={() => setShowContactModal(true)}>
-                <span>Contact Agent</span> <UserCircle size={24} strokeWidth={1.5} />
-            </button>
+            {/* Sticky Actions Container */}
+            <div className={styles.stickyActionsContainer}>
+                {/* Contact Agent Button */}
+                <button className={styles.contactFloat} onClick={() => setShowContactModal(true)}>
+                    <span>Contact Agent</span> <UserCircle size={24} strokeWidth={1.5} />
+                </button>
+
+                {/* Share Button Group */}
+                <div className={styles.shareGroup}>
+                    <button className={styles.shareBtnFloat}>
+                        <Share2 size={24} strokeWidth={1.5} />
+                    </button>
+                    <div className={styles.socialIconsMenu}>
+                        <a
+                            href={`https://wa.me/?text=${encodeURIComponent(`Check out this property: *${property.title}*\nPrice: ${property.price_text}\nLocation: ${property.location}\n\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="WhatsApp"
+                            className={`${styles.socialIconBtn} ${styles.whatsapp}`}
+                        >
+                            <FaWhatsapp size={20} />
+                        </a>
+                        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`} target="_blank" rel="noopener noreferrer" title="Facebook" className={`${styles.socialIconBtn} ${styles.facebook}`}>
+                            <Facebook size={20} />
+                        </a>
+                        <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent('Check out this property!')}`} target="_blank" rel="noopener noreferrer" title="X" className={`${styles.socialIconBtn} ${styles.twitter}`}>
+                            <FaXTwitter size={20} />
+                        </a>
+                        <button onClick={() => navigator.clipboard.writeText(typeof window !== 'undefined' ? window.location.href : '')} title="Copy Link" className={`${styles.socialIconBtn} ${styles.copy}`}>
+                            <LinkIcon size={20} />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {/* Contact Modal Overlay */}
             {showContactModal && (

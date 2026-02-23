@@ -6,12 +6,15 @@ import ProjectCard from "@/components/emergent/ProjectCard";
 import * as LucideIcons from "lucide-react";
 import {
     MapPin, Heart, UserCircle, Map as MapIcon,
-    Building2, Home, Calendar, CheckCircle2
+    Building2, Home, Calendar, CheckCircle2,
+    Share2, Facebook, Link as LinkIcon
 } from "lucide-react";
+import { FaWhatsapp, FaXTwitter } from "react-icons/fa6";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/components/emergent/ProjectDetail.module.css";
 import GroupBuySection from "@/components/emergent/GroupBuySection";
+import ImageGalleryModal from "@/components/emergent/ImageGalleryModal";
 import { AMENITY_ICON_MAP, AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from "@/lib/amenities-data";
 import type { AmenityCategory } from "@/lib/amenities-data";
 
@@ -158,6 +161,7 @@ interface ConnectivityItem {
     type: string;
     name: string;
     distance: string;
+    icon?: string;
 }
 
 interface HighlightItem {
@@ -189,6 +193,13 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
     const [activeFloorPlan, setActiveFloorPlan] = useState(0);
     const [agent, setAgent] = useState<any | null>(null);
     const [showContactModal, setShowContactModal] = useState(false);
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const [initialGalleryIndex, setInitialGalleryIndex] = useState(0);
+
+    const openGallery = (index: number) => {
+        setInitialGalleryIndex(index);
+        setIsGalleryOpen(true);
+    };
 
     const fetchProjectData = async () => {
         try {
@@ -394,15 +405,39 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                 <div className={styles.leftColumn}>
                     <div className={styles.stickyGallery}>
                         <div className={styles.imageGallery}>
-                            <div className={styles.mainImage}>
+                            <div className={styles.mainImage} onClick={() => openGallery(0)}>
                                 <img src={displayImages[0]} alt={project.project_name} />
                             </div>
-                            {displayImages.slice(1, 3).map((img, idx) => (
-                                <div key={idx} className={styles.subImage}>
-                                    <img src={img} alt={`${project.project_name} ${idx + 2}`} />
-                                </div>
-                            ))}
+                            {displayImages.slice(1, 3).map((img, idx) => {
+                                const globalIndex = idx + 1;
+                                const isLastVisble = idx === 1; // 2nd sub-image (3rd total)
+                                const hasMore = displayImages.length > 3;
+
+                                return (
+                                    <div
+                                        key={idx}
+                                        className={styles.subImage}
+                                        onClick={() => openGallery(globalIndex)}
+                                        style={{ cursor: 'pointer', position: 'relative' }}
+                                    >
+                                        <img src={img} alt={`${project.project_name} ${idx + 2}`} />
+                                        {isLastVisble && hasMore && (
+                                            <div className={styles.viewAllOverlay}>
+                                                <span className={styles.viewAllText}>
+                                                    +{displayImages.length - 3} photos
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
+                        <ImageGalleryModal
+                            isOpen={isGalleryOpen}
+                            onClose={() => setIsGalleryOpen(false)}
+                            images={displayImages}
+                            initialIndex={initialGalleryIndex}
+                        />
                     </div>
                 </div>
 
@@ -694,11 +729,11 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                                             const iconName = AMENITY_ICON_MAP[label] || 'Circle';
                                             const IconComp = getLucideIcon(iconName);
                                             return (
-                                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: '10px' }}>
-                                                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                        <IconComp size={18} color="#183C38" />
+                                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: '12px' }}>
+                                                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                        <IconComp size={24} color="#183C38" />
                                                     </div>
-                                                    <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#0a0a0a' }}>{label}</span>
+                                                    <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#0a0a0a' }}>{label}</span>
                                                 </div>
                                             );
                                         })}
@@ -890,13 +925,24 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     <div className={styles.sectionContainer}>
                         <h2 className={styles.sectionTitle}>CONNECTIVITY</h2>
                         <div className={styles.connectivityGrid}>
-                            {connectivity.map((item, idx) => (
-                                <div key={idx} className={styles.connectivityCard}>
-                                    <span className={styles.connectivityType}>{item.type}</span>
-                                    <span className={styles.connectivityName}>{item.name}</span>
-                                    <span className={styles.connectivityDistance}>{item.distance}</span>
-                                </div>
-                            ))}
+                            {connectivity.map((item, idx) => {
+                                const IconComp = item.icon ? getLucideIcon(item.icon) : LucideIcons.MapPin;
+                                return (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#ffffff', border: '1px solid #f0f0f0', borderRadius: '12px' }}>
+                                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <IconComp size={24} color="#183C38" />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#0a0a0a' }}>{item.name}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#64748b' }}>
+                                                <span>{item.type}</span>
+                                                <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#cbd5e1' }} />
+                                                <span style={{ fontWeight: 500 }}>{item.distance}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -976,10 +1022,40 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                 </div>
             )}
 
-            {/* Sticky Contact Button */}
-            <button className={styles.contactFloat} onClick={() => setShowContactModal(true)}>
-                <span>Contact Agent</span> <UserCircle size={24} strokeWidth={1.5} />
-            </button>
+            {/* Sticky Actions Container */}
+            <div className={styles.stickyActionsContainer}>
+                {/* Contact Agent Button */}
+                <button className={styles.contactFloat} onClick={() => setShowContactModal(true)}>
+                    <span>Contact Agent</span> <UserCircle size={24} strokeWidth={1.5} />
+                </button>
+
+                {/* Share Button Group */}
+                <div className={styles.shareGroup}>
+                    <button className={styles.shareBtnFloat}>
+                        <Share2 size={24} strokeWidth={1.5} />
+                    </button>
+                    <div className={styles.socialIconsMenu}>
+                        <a
+                            href={`https://wa.me/?text=${encodeURIComponent(`Check out this project: *${project.project_name}*\nPrice: ${project.min_price || 'Price on Request'}\nLocation: ${project.location || project.address || 'Location Unknown'}\n\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="WhatsApp"
+                            className={`${styles.socialIconBtn} ${styles.whatsapp}`}
+                        >
+                            <FaWhatsapp size={20} />
+                        </a>
+                        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`} target="_blank" rel="noopener noreferrer" title="Facebook" className={`${styles.socialIconBtn} ${styles.facebook}`}>
+                            <Facebook size={20} />
+                        </a>
+                        <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent('Check out this project!')}`} target="_blank" rel="noopener noreferrer" title="X" className={`${styles.socialIconBtn} ${styles.twitter}`}>
+                            <FaXTwitter size={20} />
+                        </a>
+                        <button onClick={() => navigator.clipboard.writeText(typeof window !== 'undefined' ? window.location.href : '')} title="Copy Link" className={`${styles.socialIconBtn} ${styles.copy}`}>
+                            <LinkIcon size={20} />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {/* Contact Modal Overlay */}
             {showContactModal && (

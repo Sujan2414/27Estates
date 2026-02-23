@@ -5,12 +5,12 @@ import Image from 'next/image';
 
 const Logo = () => {
     return (
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '40px' }}>
             {/* Mobile: sidebar icon logo, centered */}
             <div className="block lg:hidden" style={{ textAlign: 'center' }}>
-                <Link href="/" style={{ display: 'inline-block', position: 'relative', width: '60px', height: '60px' }}>
+                <Link href="/" style={{ display: 'inline-block', position: 'relative', width: '120px', height: '120px' }}>
                     <Image
-                        src="/sidebar-logo.png"
+                        src="/logo without bg (1).png"
                         alt="27 Estates"
                         fill
                         style={{ objectFit: 'contain' }}
@@ -23,11 +23,11 @@ const Logo = () => {
                 <Link href="/" style={{
                     display: 'block',
                     position: 'relative',
-                    width: '160px',
-                    height: '90px',
+                    width: '320px',
+                    height: '160px',
                 }}>
                     <Image
-                        src="/logo-trimmed.png"
+                        src="/logo without bg (1).png"
                         alt="27 Estates"
                         fill
                         style={{ objectFit: 'contain', objectPosition: 'left' }}

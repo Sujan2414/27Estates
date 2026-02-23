@@ -51,6 +51,8 @@
     background: transparent;
     transition: filter 0.3s ease;
     display: block;
+    transform: scale(1.6) translateY(6px);
+    transform-origin: center;
 }
 
 .navLinks {

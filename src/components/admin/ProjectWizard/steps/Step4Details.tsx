@@ -10,7 +10,21 @@ interface ConnectivityItem {
     type: string
     name: string
     distance: string
+    icon?: string
 }
+
+const CONNECTIVITY_ICONS = [
+    { label: 'Map Pin', value: 'MapPin' },
+    { label: 'Train', value: 'Train' },
+    { label: 'Bus', value: 'Bus' },
+    { label: 'Plane', value: 'Plane' },
+    { label: 'Hospital', value: 'Building2' },
+    { label: 'School', value: 'GraduationCap' },
+    { label: 'Shopping', value: 'ShoppingCart' },
+    { label: 'Park', value: 'TreePine' },
+    { label: 'Office', value: 'Briefcase' },
+    { label: 'Metro', value: 'TrainFront' },
+]
 
 interface HighlightItem {
     icon: string
@@ -80,7 +94,7 @@ interface StepProps {
 export default function ProjectStep4Details({ initialData, onNext, onBack }: StepProps) {
     const category = initialData.category || 'Residential'
 
-    const [connectivity, setConnectivity] = useState<ConnectivityItem[]>(initialData.connectivity || [{ type: '', name: '', distance: '' }])
+    const [connectivity, setConnectivity] = useState<ConnectivityItem[]>(initialData.connectivity || [{ type: '', name: '', distance: '', icon: '' }])
     const [highlights, setHighlights] = useState<HighlightItem[]>(initialData.highlights || [{ icon: '', label: '', value: '' }])
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>(() => flattenAmenities(initialData.amenities))
     const [amenitySearch, setAmenitySearch] = useState('')
@@ -127,7 +141,7 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
     const handleConnectivityChange = (index: number, field: keyof ConnectivityItem, value: string) => {
         setConnectivity(prev => prev.map((c, i) => i === index ? { ...c, [field]: value } : c))
     }
-    const addConnectivity = () => setConnectivity(prev => [...prev, { type: '', name: '', distance: '' }])
+    const addConnectivity = () => setConnectivity(prev => [...prev, { type: '', name: '', distance: '', icon: '' }])
     const removeConnectivity = (index: number) => setConnectivity(prev => prev.filter((_, i) => i !== index))
 
     // Highlight handlers
@@ -470,10 +484,21 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
             </p>
             {connectivity.map((conn, index) => (
                 <div key={index} style={rowStyle}>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <input type="text" value={conn.type} onChange={(e) => handleConnectivityChange(index, 'type', e.target.value)} className={styles.input} placeholder="Type (School, Hospital, Metro)" />
-                        <input type="text" value={conn.name} onChange={(e) => handleConnectivityChange(index, 'name', e.target.value)} className={styles.input} placeholder="Name" />
-                        <input type="text" value={conn.distance} onChange={(e) => handleConnectivityChange(index, 'distance', e.target.value)} className={styles.input} placeholder="Distance (2 km)" style={{ maxWidth: '150px' }} />
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select
+                            value={conn.icon || ''}
+                            onChange={(e) => handleConnectivityChange(index, 'icon', e.target.value)}
+                            className={styles.input}
+                            style={{ flex: '1 1 120px', maxWidth: '140px', padding: '10px', height: 'auto', margin: 0 }}
+                        >
+                            <option value="">Select Icon</option>
+                            {CONNECTIVITY_ICONS.map(i => (
+                                <option key={i.value} value={i.value}>{i.label}</option>
+                            ))}
+                        </select>
+                        <input type="text" value={conn.type} onChange={(e) => handleConnectivityChange(index, 'type', e.target.value)} className={styles.input} placeholder="Type (School...)" style={{ flex: '1 1 150px', margin: 0 }} />
+                        <input type="text" value={conn.name} onChange={(e) => handleConnectivityChange(index, 'name', e.target.value)} className={styles.input} placeholder="Name" style={{ flex: '1 1 150px', margin: 0 }} />
+                        <input type="text" value={conn.distance} onChange={(e) => handleConnectivityChange(index, 'distance', e.target.value)} className={styles.input} placeholder="Dist (2 km)" style={{ flex: '1 1 100px', maxWidth: '120px', margin: 0 }} />
                         {connectivity.length > 1 && (
                             <button type="button" onClick={() => removeConnectivity(index)} style={removeBtnStyle}><X size={16} /></button>
                         )}

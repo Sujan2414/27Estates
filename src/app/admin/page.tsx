@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { Building2, FolderKanban, FileText, MessageSquare, Upload, Users, Plus } from 'lucide-react'
 import styles from './admin.module.css'
 
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
     })
     const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([])
     const [loading, setLoading] = useState(true)
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
 
     useEffect(() => {
         const fetchData = async () => {

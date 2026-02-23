@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import BrochureUpload from '@/components/admin/BrochureUpload'
@@ -34,7 +34,21 @@ interface ConnectivityItem {
     type: string
     name: string
     distance: string
+    icon?: string
 }
+
+const CONNECTIVITY_ICONS = [
+    { label: 'Map Pin', value: 'MapPin' },
+    { label: 'Train', value: 'Train' },
+    { label: 'Bus', value: 'Bus' },
+    { label: 'Plane', value: 'Plane' },
+    { label: 'Hospital', value: 'Building2' },
+    { label: 'School', value: 'GraduationCap' },
+    { label: 'Shopping', value: 'ShoppingCart' },
+    { label: 'Park', value: 'TreePine' },
+    { label: 'Office', value: 'Briefcase' },
+    { label: 'Metro', value: 'TrainFront' },
+]
 
 interface HighlightItem {
     icon: string
@@ -105,7 +119,7 @@ interface PlotConfig {
 export default function EditProjectPage() {
     const router = useRouter()
     const params = useParams()
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [success, setSuccess] = useState<string | null>(null)
@@ -176,7 +190,7 @@ export default function EditProjectPage() {
     const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([{ name: '', image: '', bhk: '', area: '' }])
 
     // Connectivity
-    const [connectivity, setConnectivity] = useState<ConnectivityItem[]>([{ type: '', name: '', distance: '' }])
+    const [connectivity, setConnectivity] = useState<ConnectivityItem[]>([{ type: '', name: '', distance: '', icon: '' }])
 
     // Highlights
     const [highlights, setHighlights] = useState<HighlightItem[]>([{ icon: '', label: '', value: '' }])
@@ -410,7 +424,7 @@ export default function EditProjectPage() {
     const handleConnectivityChange = (index: number, field: keyof ConnectivityItem, value: string) => {
         setConnectivity(prev => prev.map((c, i) => i === index ? { ...c, [field]: value } : c))
     }
-    const addConnectivity = () => setConnectivity(prev => [...prev, { type: '', name: '', distance: '' }])
+    const addConnectivity = () => setConnectivity(prev => [...prev, { type: '', name: '', distance: '', icon: '' }])
     const removeConnectivity = (index: number) => setConnectivity(prev => prev.filter((_, i) => i !== index))
 
     // Highlight handlers
@@ -1228,16 +1242,25 @@ export default function EditProjectPage() {
                     <h2 className={formStyles.sectionTitle}>Connectivity</h2>
                     <p className={formStyles.sectionHelp}>Nearby landmarks, schools, hospitals, transport etc.</p>
                     {connectivity.map((conn, index) => (
-                        <div key={index} className={formStyles.floorPlanRow}>
-                            <div className={formStyles.grid3}>
-                                <input type="text" value={conn.type} onChange={(e) => handleConnectivityChange(index, 'type', e.target.value)} className={formStyles.input} placeholder="Type (School, Hospital, Metro)" />
-                                <input type="text" value={conn.name} onChange={(e) => handleConnectivityChange(index, 'name', e.target.value)} className={formStyles.input} placeholder="Name" />
-                                <div className={formStyles.imageInput}>
-                                    <input type="text" value={conn.distance} onChange={(e) => handleConnectivityChange(index, 'distance', e.target.value)} className={formStyles.input} placeholder="Distance (2 km)" />
-                                    {connectivity.length > 1 && (
-                                        <button type="button" onClick={() => removeConnectivity(index)} className={formStyles.removeBtn}><X size={18} /></button>
-                                    )}
-                                </div>
+                        <div key={index} style={{ marginBottom: '12px', padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <select
+                                    value={conn.icon || ''}
+                                    onChange={(e) => handleConnectivityChange(index, 'icon', e.target.value)}
+                                    className={formStyles.input}
+                                    style={{ flex: '1 1 120px', maxWidth: '140px', padding: '10px', height: 'auto', margin: 0 }}
+                                >
+                                    <option value="">Select Icon</option>
+                                    {CONNECTIVITY_ICONS.map(i => (
+                                        <option key={i.value} value={i.value}>{i.label}</option>
+                                    ))}
+                                </select>
+                                <input type="text" value={conn.type} onChange={(e) => handleConnectivityChange(index, 'type', e.target.value)} className={formStyles.input} placeholder="Type (School...)" style={{ flex: '1 1 150px', margin: 0 }} />
+                                <input type="text" value={conn.name} onChange={(e) => handleConnectivityChange(index, 'name', e.target.value)} className={formStyles.input} placeholder="Name" style={{ flex: '1 1 150px', margin: 0 }} />
+                                <input type="text" value={conn.distance} onChange={(e) => handleConnectivityChange(index, 'distance', e.target.value)} className={formStyles.input} placeholder="Dist (2 km)" style={{ flex: '1 1 100px', maxWidth: '120px', margin: 0 }} />
+                                {connectivity.length > 1 && (
+                                    <button type="button" onClick={() => removeConnectivity(index)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '6px', cursor: 'pointer', flexShrink: 0 }}><X size={16} /></button>
+                                )}
                             </div>
                         </div>
                     ))}

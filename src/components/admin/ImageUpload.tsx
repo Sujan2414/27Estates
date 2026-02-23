@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
 
 interface ImageUploadProps {
@@ -19,7 +19,7 @@ export default function ImageUpload({
     label = 'Upload Image',
     accept = 'image/jpeg,image/png,image/webp,image/gif',
 }: ImageUploadProps) {
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
     const inputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)

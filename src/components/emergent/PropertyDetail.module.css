@@ -96,6 +96,38 @@
 
 .subImage {
     aspect-ratio: 4/3;
+    border-radius: 1rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.subImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.viewAllOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.viewAllText {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.subImage {
+    aspect-ratio: 4/3;
     overflow: hidden;
     border-radius: 1rem;
 }
@@ -390,10 +422,24 @@
 }
 
 /* Contact Floating Button (or Fixed in Bottom Corner) */
-.contactFloat {
+.stickyActionsContainer {
     position: fixed;
     bottom: 6rem;
     right: 1rem;
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    z-index: 9999;
+}
+
+@media (min-width: 768px) {
+    .stickyActionsContainer {
+        bottom: 2rem;
+        right: 2rem;
+    }
+}
+
+.contactFloat {
     background-color: #183C38;
     color: #ffffff;
     padding: 0.875rem 1.25rem;
@@ -403,7 +449,6 @@
     gap: 0.5rem;
     box-shadow: 0 4px 12px rgba(31, 82, 75, 0.3);
     cursor: pointer;
-    z-index: 9999;
     font-weight: 500;
     font-size: 0.875rem;
     border: none;
@@ -412,8 +457,6 @@
 
 @media (min-width: 768px) {
     .contactFloat {
-        bottom: 2rem;
-        right: 2rem;
         padding: 1rem 1.5rem;
         gap: 0.75rem;
         font-size: 1rem;
@@ -423,6 +466,127 @@
 .contactFloat:hover {
     background-color: #2a6b62;
     transform: translateY(-2px);
+}
+
+/* Share Group */
+.shareGroup {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.shareBtnFloat {
+    background-color: #ffffff;
+    color: #183C38;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    border: 1px solid #e5e5e5;
+    transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+    .shareBtnFloat {
+        width: 3.5rem;
+        height: 3.5rem;
+    }
+}
+
+.shareBtnFloat:hover {
+    background-color: #f5f5f5;
+    transform: translateY(-2px);
+}
+
+.socialIconsMenu {
+    position: absolute;
+    bottom: calc(100% + 1rem);
+    /* popup above */
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: #ffffff;
+    padding: 0.5rem;
+    border-radius: 2rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e5e5;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.95);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: bottom right;
+}
+
+.shareGroup:hover .socialIconsMenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.socialIconBtn {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    color: #64748b;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    position: relative;
+}
+
+.socialIconBtn:hover {
+    color: #ffffff;
+}
+
+.socialIconBtn.whatsapp:hover {
+    background: #25D366;
+}
+
+.socialIconBtn.facebook:hover {
+    background: #1877F2;
+}
+
+.socialIconBtn.twitter:hover {
+    background: #000000;
+}
+
+.socialIconBtn.copy:hover {
+    background: #475569;
+}
+
+.socialIconBtn::after {
+    content: attr(title);
+    position: absolute;
+    right: calc(100% + 0.75rem);
+    top: 50%;
+    transform: translateY(-50%) translateX(10px);
+    background: #1e293b;
+    color: #fff;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+    pointer-events: none;
+    font-weight: 500;
+}
+
+.socialIconBtn:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
 }
 
 /* Contact Modal Styles */

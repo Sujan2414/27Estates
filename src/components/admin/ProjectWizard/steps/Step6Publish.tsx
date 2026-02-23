@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ArrowLeft, Save, Plus, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import BrochureUpload from '@/components/admin/BrochureUpload'
@@ -24,7 +24,7 @@ interface StepProps {
 
 export default function ProjectStep6Publish({ initialData, onNext, onBack }: StepProps) {
     const router = useRouter()
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
 

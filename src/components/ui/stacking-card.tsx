@@ -66,13 +66,13 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
             >
                 {/* Full Background Image */}
                 <motion.div
-                    className="absolute inset-0"
+                    className="absolute inset-0 bg-white flex items-center justify-center p-2 md:p-4"
                     style={{ scale: imageScale }}
                 >
                     <img
                         src={project.image}
                         alt={project.title}
-                        className="w-full h-full object-cover"
+                        className="max-w-full max-h-full object-contain"
                     />
                 </motion.div>
             </motion.div>
