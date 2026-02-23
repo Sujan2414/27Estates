@@ -45,7 +45,7 @@
     width: 3.5rem;
     height: 3.5rem;
     border-radius: 1rem;
-    object-fit: contain;
+    object-fit: cover;
 }
 
 .logoText {

@@ -1,37 +1,44 @@
 import sharp from 'sharp';
 import fs from 'fs';
-import path from 'path';
 
 const input = 'public/og-image.jpg';
 
 async function generate() {
-    console.log('Generating favicons from og-image.jpg...');
+    console.log('Generating square favicons and logos from og-image.jpg...');
 
-    // Favicons - using fit: contain so the logo isn't cropped, with white background
-    await sharp(input).resize(16, 16, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toFormat('png').toFile('public/favicon-16x16.png');
-    await sharp(input).resize(32, 32, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toFormat('png').toFile('public/favicon-32x32.png');
+    // First, crop the image to a square from the center
+    const metadata = await sharp(input).metadata();
+    const size = Math.min(metadata.width, metadata.height);
+    const left = Math.floor((metadata.width - size) / 2);
+    const top = Math.floor((metadata.height - size) / 2);
 
-    // Copy 32x32 as favicon.ico implementation since standard PNGs work for most modern browsers even when renamed
+    const squareBuffer = await sharp(input)
+        .extract({ left, top, width: size, height: size })
+        .toBuffer();
+
+    // Now generate the icons from the square buffer
+    // For favicons, a simple resize is sufficient since it's already a square
+    await sharp(squareBuffer).resize(16, 16).toFormat('png').toFile('public/favicon-16x16.png');
+    await sharp(squareBuffer).resize(32, 32).toFormat('png').toFile('public/favicon-32x32.png');
+
     fs.copyFileSync('public/favicon-32x32.png', 'public/favicon.ico');
 
-    // Apple & Android PWA icons
-    await sharp(input).resize(180, 180, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toFormat('png').toFile('public/apple-touch-icon.png');
-    await sharp(input).resize(192, 192, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toFormat('png').toFile('public/android-chrome-192x192.png');
-    await sharp(input).resize(512, 512, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toFormat('png').toFile('public/android-chrome-512x512.png');
+    await sharp(squareBuffer).resize(180, 180).toFormat('png').toFile('public/apple-touch-icon.png');
+    await sharp(squareBuffer).resize(192, 192).toFormat('png').toFile('public/android-chrome-192x192.png');
+    await sharp(squareBuffer).resize(512, 512).toFormat('png').toFile('public/android-chrome-512x512.png');
 
     // Dashboard logos
-    // The previous sidebar logo was named `sidebar-logo.png` and `logo-trimmed.png`.
-    await sharp(input).resize(400, null, { withoutEnlargement: true }).toFormat('png').toFile('public/sidebar-logo.png');
+    await sharp(squareBuffer).resize(400, 400).toFormat('png').toFile('public/sidebar-logo.png');
 
     if (fs.existsSync('public/logo-trimmed.png')) {
-        await sharp(input).resize(400, null, { withoutEnlargement: true }).toFormat('png').toFile('public/logo-trimmed.png');
+        await sharp(squareBuffer).resize(400, 400).toFormat('png').toFile('public/logo-trimmed.png');
     }
 
     if (fs.existsSync('public/logo.png')) {
-        await sharp(input).resize(400, null, { withoutEnlargement: true }).toFormat('png').toFile('public/logo.png');
+        await sharp(squareBuffer).resize(400, 400).toFormat('png').toFile('public/logo.png');
     }
 
-    console.log('Successfully replaced all icons and dashboard logos with og-image.jpg variations!');
+    console.log('Successfully replaced all icons and dashboard logos with a square crop of og-image.jpg!');
 }
 
 generate().catch(console.error);
