@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import BrochureUpload from '@/components/admin/BrochureUpload'
+import BHKMultiSelect from '@/components/admin/BHKMultiSelect'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import styles from '../../../admin.module.css'
@@ -21,6 +22,8 @@ interface Developer {
 interface Agent {
     id: string
     name: string
+    phone?: string
+    email?: string
 }
 
 interface FloorPlan {
@@ -136,6 +139,8 @@ export default function EditProjectPage() {
         rera_number: '',
         developer_id: '',
         developer_name: '',
+        developer_image: '',
+        developer_description: '',
         status: 'Under Construction',
         category: 'Residential',
         sub_category: '',
@@ -257,6 +262,8 @@ export default function EditProjectPage() {
             rera_number: data.rera_number || '',
             developer_id: data.developer_id || '',
             developer_name: data.developer_name || '',
+            developer_image: data.developer_image || '',
+            developer_description: data.developer_description || '',
             status: data.status || 'Under Construction',
             category: (data as Record<string, unknown>).category as string || 'Residential',
             sub_category: (data as Record<string, unknown>).sub_category as string || '',
@@ -372,8 +379,21 @@ export default function EditProjectPage() {
     }
 
     const fetchAgents = async () => {
-        const { data } = await supabase.from('agents').select('id, name').order('name')
+        const { data } = await supabase.from('agents').select('id, name, phone, email').order('name')
         if (data) setAgents(data)
+    }
+
+    const handleAgentSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const agentId = e.target.value
+        const selectedAgent = agents.find(a => a.id === agentId)
+
+        setFormData(prev => ({
+            ...prev,
+            assigned_agent_id: agentId,
+            employee_name: selectedAgent?.name || prev.employee_name,
+            employee_phone: selectedAgent?.phone || prev.employee_phone,
+            employee_email: selectedAgent?.email || prev.employee_email,
+        }))
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -572,6 +592,8 @@ export default function EditProjectPage() {
                 rera_number: formData.rera_number || null,
                 developer_id: formData.developer_id || null,
                 developer_name: formData.developer_name || null,
+                developer_image: formData.developer_image || null,
+                developer_description: formData.developer_description || null,
                 status: formData.status,
                 category: formData.category,
                 sub_category: formData.sub_category || null,
@@ -637,6 +659,23 @@ export default function EditProjectPage() {
                 console.error('Supabase update error:', updateError)
                 console.error('Project data sent:', JSON.stringify(projectData, null, 2))
                 throw new Error(updateError.message || updateError.details || JSON.stringify(updateError))
+            }
+
+            // Auto-save new developer to developers table if created via edit form
+            if (!projectData.developer_id && projectData.developer_name) {
+                const { data: existingDevs } = await supabase
+                    .from('developers')
+                    .select('id')
+                    .ilike('name', projectData.developer_name as string)
+                    .limit(1)
+
+                if (!existingDevs || existingDevs.length === 0) {
+                    await supabase.from('developers').insert([{
+                        name: projectData.developer_name,
+                        logo: projectData.developer_image || null,
+                        description: projectData.developer_description || null
+                    }])
+                }
             }
 
             setSuccess('Project saved successfully!')
@@ -733,19 +772,39 @@ export default function EditProjectPage() {
 
                     <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>Developer</label>
-                            <select name="developer_id" value={formData.developer_id} onChange={handleChange} className={formStyles.select}>
-                                <option value="">Select Developer</option>
-                                {developers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                            </select>
-                        </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Developer Name (Manual)</label>
-                            <input type="text" name="developer_name" value={formData.developer_name} onChange={handleChange} className={formStyles.input} />
-                        </div>
-                        <div className={formStyles.field}>
                             <label className={formStyles.label}>Total Units</label>
                             <input type="number" name="total_units" value={formData.total_units} onChange={handleChange} className={formStyles.input} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Developer Information */}
+                <div className={formStyles.section}>
+                    <h2 className={formStyles.sectionTitle}>Developer Info</h2>
+                    <div className={formStyles.grid2}>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Developer Name</label>
+                            <input type="text" name="developer_name" value={formData.developer_name} onChange={handleChange} className={formStyles.input} />
+                        </div>
+                    </div>
+                    <div className={formStyles.grid2}>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Developer Image</label>
+                            <ImageUpload
+                                folder="developers"
+                                onChange={(url) => setFormData(prev => ({ ...prev, developer_image: url }))}
+                                value={formData.developer_image || ''}
+                            />
+                        </div>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Developer Description</label>
+                            <textarea
+                                name="developer_description"
+                                value={formData.developer_description}
+                                onChange={handleChange}
+                                className={formStyles.textarea}
+                                rows={5}
+                            />
                         </div>
                     </div>
 
@@ -756,7 +815,10 @@ export default function EditProjectPage() {
                         </div>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>BHK Options (comma-separated)</label>
-                            <input type="text" name="bhk_options" value={formData.bhk_options} onChange={handleChange} className={formStyles.input} placeholder="1 BHK, 2 BHK, 3 BHK" />
+                            <BHKMultiSelect
+                                value={formData.bhk_options}
+                                onChange={(val) => setFormData(prev => ({ ...prev, bhk_options: val }))}
+                            />
                         </div>
                     </div>
 
@@ -905,7 +967,7 @@ export default function EditProjectPage() {
                     </div>
                     <div className={formStyles.field} style={{ marginTop: '1rem' }}>
                         <label className={formStyles.label}>Assigned Agent</label>
-                        <select name="assigned_agent_id" value={formData.assigned_agent_id} onChange={handleChange} className={formStyles.select}>
+                        <select name="assigned_agent_id" value={formData.assigned_agent_id} onChange={handleAgentSelect} className={formStyles.select}>
                             <option value="">Select Agent</option>
                             {agents.map(agent => (
                                 <option key={agent.id} value={agent.id}>{agent.name}</option>

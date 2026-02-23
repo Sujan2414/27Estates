@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowRight } from 'lucide-react'
+import ImageUpload from '@/components/admin/ImageUpload'
+import BHKMultiSelect from '@/components/admin/BHKMultiSelect'
 import styles from '../../PropertyWizard/property-wizard.module.css'
 
-interface Developer {
+interface DevOption {
     id: string
     name: string
+    image: string
+    description: string
 }
 
 interface StepProps {
@@ -17,7 +21,8 @@ interface StepProps {
 
 export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
     const supabase = createClient()
-    const [developers, setDevelopers] = useState<Developer[]>([])
+    const [existingDevs, setExistingDevs] = useState<DevOption[]>([])
+    const [devMode, setDevMode] = useState<'existing' | 'new'>(initialData.developer_name && !initialData.developer_id ? 'new' : 'existing')
 
     const [formData, setFormData] = useState({
         project_id: initialData.project_id || '',
@@ -27,6 +32,8 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
         rera_number: initialData.rera_number || '',
         developer_id: initialData.developer_id || '',
         developer_name: initialData.developer_name || '',
+        developer_image: initialData.developer_image || '',
+        developer_description: initialData.developer_description || '',
         status: initialData.status || 'Under Construction',
         category: initialData.category || 'Residential',
         sub_category: initialData.sub_category || '',
@@ -38,8 +45,51 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
 
     useEffect(() => {
         const fetchDevelopers = async () => {
-            const { data } = await supabase.from('developers').select('id, name')
-            if (data) setDevelopers(data)
+            const { data: dbDevs } = await supabase.from('developers').select('id, name, logo, description')
+
+            const { data: projDevs } = await supabase
+                .from('projects')
+                .select('developer_name, developer_image, developer_description')
+                .not('developer_name', 'is', null)
+
+            const devMap = new Map<string, DevOption>()
+
+            if (dbDevs) {
+                dbDevs.forEach(d => {
+                    devMap.set(d.name.toLowerCase().trim(), {
+                        id: d.id,
+                        name: d.name,
+                        image: d.logo || '',
+                        description: d.description || ''
+                    })
+                })
+            }
+
+            if (projDevs) {
+                projDevs.forEach(p => {
+                    if (p.developer_name) {
+                        const key = p.developer_name.toLowerCase().trim()
+                        if (!devMap.has(key)) {
+                            devMap.set(key, {
+                                id: '',
+                                name: p.developer_name,
+                                image: p.developer_image || '',
+                                description: p.developer_description || ''
+                            })
+                        } else {
+                            // Update image/desc if missing in dbDevs
+                            const existing = devMap.get(key)!
+                            if (!existing.image && p.developer_image) existing.image = p.developer_image
+                            if (!existing.description && p.developer_description) existing.description = p.developer_description
+                            devMap.set(key, existing)
+                        }
+                    }
+                })
+            }
+
+            // Sort alphabetically by name
+            const finalDevs = Array.from(devMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+            setExistingDevs(finalDevs)
         }
         fetchDevelopers()
     }, [supabase])
@@ -101,7 +151,7 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                 <textarea name="description" value={formData.description} onChange={handleChange} className={styles.textarea} rows={4} />
             </div>
 
-            <div className={styles.grid3}>
+            <div className={styles.grid2}>
                 <div className={styles.field}>
                     <label className={styles.label}>Category *</label>
                     <select name="category" value={formData.category} onChange={handleChange} className={styles.select}>
@@ -115,29 +165,105 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                         {(subCategories[formData.category] || []).map(sc => <option key={sc} value={sc}>{sc}</option>)}
                     </select>
                 </div>
+            </div>
+            <div className={styles.grid2}>
                 <div className={styles.field}>
                     <label className={styles.label}>Status</label>
                     <select name="status" value={formData.status} onChange={handleChange} className={styles.select}>
                         {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                 </div>
-            </div>
-
-            <div className={styles.grid3}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Developer</label>
-                    <select name="developer_id" value={formData.developer_id} onChange={handleChange} className={styles.select}>
-                        <option value="">Select Developer</option>
-                        {developers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                </div>
-                <div className={styles.field}>
-                    <label className={styles.label}>Developer Name (Manual)</label>
-                    <input type="text" name="developer_name" value={formData.developer_name} onChange={handleChange} className={styles.input} />
-                </div>
                 <div className={styles.field}>
                     <label className={styles.label}>{totalLabel}</label>
                     <input type="number" name="total_units" value={formData.total_units} onChange={handleChange} className={styles.input} />
+                </div>
+            </div>
+
+            <div style={{ marginTop: '2.5rem', marginBottom: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>Developer Information</h3>
+                <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Select an existing developer to auto-fill details, or create a new one.</p>
+            </div>
+
+            <div className={styles.grid2}>
+                <div className={styles.field}>
+                    <label className={styles.label}>Action</label>
+                    <select
+                        className={styles.select}
+                        value={devMode}
+                        onChange={(e) => {
+                            setDevMode(e.target.value as 'existing' | 'new')
+                            if (e.target.value === 'new') {
+                                setFormData(prev => ({ ...prev, developer_id: '', developer_name: '', developer_image: '', developer_description: '' }))
+                            }
+                        }}
+                    >
+                        <option value="existing">Select Existing Developer</option>
+                        <option value="new">Add New Developer</option>
+                    </select>
+                </div>
+
+                {devMode === 'existing' ? (
+                    <div className={styles.field}>
+                        <label className={styles.label}>Choose Developer *</label>
+                        <select
+                            className={styles.select}
+                            value={formData.developer_name}
+                            onChange={(e) => {
+                                const selected = existingDevs.find(d => d.name === e.target.value)
+                                if (selected) {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        developer_id: selected.id,
+                                        developer_name: selected.name,
+                                        developer_image: selected.image,
+                                        developer_description: selected.description
+                                    }))
+                                } else {
+                                    setFormData(prev => ({ ...prev, developer_id: '', developer_name: '', developer_image: '', developer_description: '' }))
+                                }
+                            }}
+                            required={devMode === 'existing'}
+                        >
+                            <option value="">Select...</option>
+                            {existingDevs.map(d => (
+                                <option key={d.name} value={d.name}>{d.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                ) : (
+                    <div className={styles.field}>
+                        <label className={styles.label}>Developer Name *</label>
+                        <input
+                            type="text"
+                            name="developer_name"
+                            value={formData.developer_name}
+                            onChange={handleChange}
+                            className={styles.input}
+                            required={devMode === 'new'}
+                        />
+                    </div>
+                )}
+            </div>
+
+            <div className={styles.grid2}>
+                <div className={styles.field}>
+                    <label className={styles.label}>Developer Image</label>
+                    <ImageUpload
+                        folder="developers"
+                        onChange={(url) => setFormData(prev => ({ ...prev, developer_image: url }))}
+                        value={formData.developer_image || ''}
+                    />
+                </div>
+                <div className={styles.field}>
+                    <label className={styles.label}>Developer Description</label>
+                    <textarea
+                        name="developer_description"
+                        value={formData.developer_description}
+                        onChange={handleChange}
+                        className={styles.textarea}
+                        rows={5}
+                        placeholder="Add a small description about the developer..."
+                    />
                 </div>
             </div>
 
@@ -148,8 +274,11 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                 </div>
                 {formData.category !== 'Plot' && (
                     <div className={styles.field}>
-                        <label className={styles.label}>BHK Options (comma-separated)</label>
-                        <input type="text" name="bhk_options" value={formData.bhk_options} onChange={handleChange} className={styles.input} placeholder="1 BHK, 2 BHK, 3 BHK" />
+                        <label className={styles.label}>BHK Options</label>
+                        <BHKMultiSelect
+                            value={formData.bhk_options || ''}
+                            onChange={(val) => setFormData(prev => ({ ...prev, bhk_options: val }))}
+                        />
                     </div>
                 )}
             </div>

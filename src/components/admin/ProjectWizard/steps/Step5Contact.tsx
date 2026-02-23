@@ -8,6 +8,8 @@ import styles from '../../PropertyWizard/property-wizard.module.css'
 interface Agent {
     id: string
     name: string
+    phone?: string
+    email?: string
 }
 
 interface StepProps {
@@ -29,11 +31,24 @@ export default function ProjectStep5Contact({ initialData, onNext, onBack }: Ste
 
     useEffect(() => {
         const fetchAgents = async () => {
-            const { data } = await supabase.from('agents').select('id, name').order('name')
+            const { data } = await supabase.from('agents').select('id, name, phone, email').order('name')
             if (data) setAgents(data)
         }
         fetchAgents()
     }, [supabase])
+
+    const handleAgentSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const agentId = e.target.value
+        const selectedAgent = agents.find(a => a.id === agentId)
+
+        setFormData(prev => ({
+            ...prev,
+            assigned_agent_id: agentId,
+            employee_name: selectedAgent?.name || prev.employee_name,
+            employee_phone: selectedAgent?.phone || prev.employee_phone,
+            employee_email: selectedAgent?.email || prev.employee_email,
+        }))
+    }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target
@@ -66,7 +81,7 @@ export default function ProjectStep5Contact({ initialData, onNext, onBack }: Ste
 
             <div className={styles.field}>
                 <label className={styles.label}>Assigned Agent</label>
-                <select name="assigned_agent_id" value={formData.assigned_agent_id} onChange={handleChange} className={styles.select}>
+                <select name="assigned_agent_id" value={formData.assigned_agent_id} onChange={handleAgentSelect} className={styles.select}>
                     <option value="">Select Agent</option>
                     {agents.map(agent => (
                         <option key={agent.id} value={agent.id}>{agent.name}</option>

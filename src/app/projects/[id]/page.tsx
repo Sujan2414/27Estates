@@ -84,6 +84,8 @@ interface Project {
     highlights: unknown;
     ad_card_image: string | null;
     show_ad_on_home: boolean;
+    developer_image?: string | null;
+    developer_description?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -193,6 +195,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
     const [activeFloorPlan, setActiveFloorPlan] = useState(0);
     const [agent, setAgent] = useState<any | null>(null);
     const [showContactModal, setShowContactModal] = useState(false);
+    const [showDeveloperModal, setShowDeveloperModal] = useState(false);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [initialGalleryIndex, setInitialGalleryIndex] = useState(0);
 
@@ -487,15 +490,23 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     {(developer || project.developer_name) && (
                         <div className={styles.developerCard}>
                             <div className={styles.developerLogo}>
-                                {developer?.logo ? (
-                                    <img src={developer.logo} alt={developer.name} />
+                                {developer?.logo || project.developer_image ? (
+                                    <img src={developer?.logo || project.developer_image || ''} alt={developer?.name || project.developer_name} style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
                                 ) : (
                                     <Building2 size={24} color="#a3a3a3" />
                                 )}
                             </div>
                             <div className={styles.developerInfo}>
                                 <h3>{developer?.name || project.developer_name}</h3>
-                                <span className={styles.viewDeveloper}>View Developer</span>
+                                {(developer?.description || project.developer_description) && (
+                                    <span
+                                        className={styles.viewDeveloper}
+                                        onClick={() => setShowDeveloperModal(true)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        View Developer
+                                    </span>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1090,6 +1101,32 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                                     <LucideIcons.MessageCircle size={18} fill="currentColor" /> WhatsApp
                                 </a>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Developer Modal Overlay */}
+            {showDeveloperModal && (
+                <div className={styles.modalOverlay} onClick={() => setShowDeveloperModal(false)}>
+                    <div className={styles.contactModal} onClick={e => e.stopPropagation()} style={{ textAlign: 'center', maxWidth: '400px' }}>
+                        <button className={styles.closeModalBtn} onClick={() => setShowDeveloperModal(false)}>
+                            <LucideIcons.X size={24} />
+                        </button>
+
+                        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+                            {developer?.logo || project.developer_image ? (
+                                <img src={developer?.logo || project.developer_image || ''} alt={developer?.name || project.developer_name} style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '8px' }} />
+                            ) : (
+                                <Building2 size={48} color="#a3a3a3" />
+                            )}
+                        </div>
+                        <h3 className={styles.agentName} style={{ marginBottom: '12px' }}>{developer?.name || project.developer_name}</h3>
+                        <div style={{ width: '40px', height: '2px', background: 'var(--color-gold)', margin: '0 auto 16px' }} />
+                        <div className={styles.modalBody} style={{ padding: '0 8px 16px' }}>
+                            <p className={styles.modalText} style={{ textAlign: 'center', lineHeight: '1.6', fontSize: '0.95rem' }}>
+                                {project.developer_description || developer?.description}
+                            </p>
                         </div>
                     </div>
                 </div>

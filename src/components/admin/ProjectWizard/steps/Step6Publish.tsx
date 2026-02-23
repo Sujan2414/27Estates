@@ -149,6 +149,8 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                 rera_number: d.rera_number || null,
                 developer_id: d.developer_id && d.developer_id.trim() !== '' ? d.developer_id : null,
                 developer_name: d.developer_name || null,
+                developer_image: d.developer_image || null,
+                developer_description: d.developer_description || null,
                 status: d.status || 'Available',
                 category: d.category,
                 sub_category: d.sub_category || null,
@@ -200,6 +202,23 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                 .insert(projectData)
 
             if (insertError) throw insertError
+
+            // Auto-save new developer to developers table if created via wizard
+            if (!projectData.developer_id && projectData.developer_name) {
+                const { data: existingDevs } = await supabase
+                    .from('developers')
+                    .select('id')
+                    .ilike('name', projectData.developer_name as string)
+                    .limit(1)
+
+                if (!existingDevs || existingDevs.length === 0) {
+                    await supabase.from('developers').insert([{
+                        name: projectData.developer_name,
+                        logo: projectData.developer_image || null,
+                        description: projectData.developer_description || null
+                    }])
+                }
+            }
 
             router.push('/admin/projects')
         } catch (err) {

@@ -81,7 +81,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: 'Submissions', href: '/admin/submissions', icon: Upload, roles: ['admin', 'super_admin', 'agent'] },
         { name: 'Agents', href: '/admin/agents', icon: Users, roles: ['admin', 'super_admin'] },
         { name: 'Users', href: '/admin/users', icon: Users, roles: ['admin', 'super_admin'] },
-        { name: 'Owners', href: '/admin/owners', icon: Contact, roles: ['admin', 'super_admin'] },
+        { name: 'Owners/Developers', href: '/admin/owners', icon: Contact, roles: ['admin', 'super_admin', 'agent'] },
     ]
 
     const userRole = (user as any)?.role || 'agent'
