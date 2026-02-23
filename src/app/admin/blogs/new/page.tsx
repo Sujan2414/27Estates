@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import ImageUpload from '@/components/admin/ImageUpload'
@@ -11,7 +11,7 @@ import formStyles from '../../properties/form.module.css'
 
 export default function NewBlogPage() {
     const router = useRouter()
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createAdminBrowserClient } from '@/lib/supabase/client';
 import { Mail, Phone, DollarSign, Home, Calendar, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import styles from '../admin.module.css';
@@ -28,7 +28,7 @@ export default function AdminSubmissionsPage() {
     const [filter, setFilter] = useState<string>('all');
     const [userRole, setUserRole] = useState<string>('');
     const [lightboxImg, setLightboxImg] = useState<string | null>(null);
-    const supabase = createClient();
+    const supabase = createAdminBrowserClient();
 
     useEffect(() => {
         fetchSubmissions();

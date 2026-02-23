@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import BrochureUpload from '@/components/admin/BrochureUpload'
@@ -105,7 +105,7 @@ interface PlotConfig {
 export default function EditProjectPage() {
     const router = useRouter()
     const params = useParams()
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [success, setSuccess] = useState<string | null>(null)

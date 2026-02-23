@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { Upload, X, Loader2, Plus } from 'lucide-react'
 
 interface MultiImageUploadProps {
@@ -19,7 +19,7 @@ export default function MultiImageUpload({
     label = 'Upload Images',
     maxImages = 20,
 }: MultiImageUploadProps) {
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
     const inputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)

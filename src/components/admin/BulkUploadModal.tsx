@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { X, Download, Upload, FileSpreadsheet, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import {
     generatePropertyTemplate,
@@ -31,7 +31,7 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
     const [uploadErrors, setUploadErrors] = useState<{ row: number; message: string }[]>([])
     const [dragOver, setDragOver] = useState(false)
     const fileRef = useRef<HTMLInputElement>(null)
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
 
     const handleDownloadTemplate = () => {
         if (type === 'property') generatePropertyTemplate()

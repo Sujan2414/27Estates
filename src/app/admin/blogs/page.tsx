@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, Eye, Calendar } from 'lucide-react'
 import styles from '../admin.module.css'
 
@@ -22,7 +22,7 @@ export default function BlogsPage() {
     const [blogs, setBlogs] = useState<Blog[]>([])
     const [loading, setLoading] = useState(true)
     const [deleteId, setDeleteId] = useState<string | null>(null)
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
 
     useEffect(() => {
         fetchBlogs()

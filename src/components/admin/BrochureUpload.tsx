@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { Upload, X, Loader2, FileText } from 'lucide-react'
 
 interface BrochureUploadProps {
@@ -17,7 +17,7 @@ export default function BrochureUpload({
     folder = 'projects/brochures',
     label = 'Upload Brochure (PDF)',
 }: BrochureUploadProps) {
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
     const inputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import ImageUpload from '@/components/admin/ImageUpload'
@@ -12,7 +12,7 @@ import formStyles from '../../../properties/form.module.css'
 export default function EditAgentPage() {
     const router = useRouter()
     const params = useParams()
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)

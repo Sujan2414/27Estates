@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, Search, FileSpreadsheet } from 'lucide-react'
 import BulkUploadModal from '@/components/admin/BulkUploadModal'
 import styles from '../admin.module.css'
@@ -36,7 +36,7 @@ export default function PropertiesPage() {
     const [searchQuery, setSearchQuery] = useState('')
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [showBulkModal, setShowBulkModal] = useState(false)
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
 
     useEffect(() => {
         fetchProperties()

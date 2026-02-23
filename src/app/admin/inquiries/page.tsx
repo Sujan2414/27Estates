@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { MessageSquare, Mail, Phone, Calendar, Building2 } from 'lucide-react'
 import styles from '../admin.module.css'
 
@@ -25,7 +25,7 @@ export default function InquiriesPage() {
     const [inquiries, setInquiries] = useState<Inquiry[]>([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState<string>('all')
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
 
     useEffect(() => {
         fetchInquiries()

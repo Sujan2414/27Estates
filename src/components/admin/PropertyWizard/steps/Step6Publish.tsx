@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, Save, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import styles from '../property-wizard.module.css'
 
@@ -20,7 +20,7 @@ interface StepProps {
 
 export default function PropertyPublishStep({ initialData, onBack }: StepProps) {
     const router = useRouter()
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
     const [submitting, setSubmitting] = useState(false)
     const [agents, setAgents] = useState<Agent[]>([])
 

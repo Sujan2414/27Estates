@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createAdminBrowserClient } from '@/lib/supabase/client';
 import { Plus, Trash2, Search, RefreshCw, UserCheck } from 'lucide-react';
 import styles from '../admin.module.css';
 import UserModal from '@/components/admin/UserModal';
@@ -32,9 +32,9 @@ export default function UsersPage() {
 
     useEffect(() => {
         const checkUserRole = async () => {
-            const { data: { user } } = await createClient().auth.getUser();
+            const { data: { user } } = await createAdminBrowserClient().auth.getUser();
             if (user) {
-                const { data: profile } = await createClient()
+                const { data: profile } = await createAdminBrowserClient()
                     .from('profiles')
                     .select('role')
                     .eq('id', user.id)

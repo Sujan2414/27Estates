@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, Mail, Phone } from 'lucide-react'
 import styles from '../admin.module.css'
 
@@ -22,7 +22,7 @@ export default function AgentsPage() {
     const [agents, setAgents] = useState<Agent[]>([])
     const [loading, setLoading] = useState(true)
     const [deleteId, setDeleteId] = useState<string | null>(null)
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
 
     useEffect(() => {
         fetchAgents()

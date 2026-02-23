@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import styles from '../../PropertyWizard/property-wizard.module.css'
 
 interface Agent {
@@ -17,7 +17,7 @@ interface StepProps {
 }
 
 export default function ProjectStep5Contact({ initialData, onNext, onBack }: StepProps) {
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
     const [agents, setAgents] = useState<Agent[]>([])
 
     const [formData, setFormData] = useState({

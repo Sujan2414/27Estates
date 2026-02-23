@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { createAdminBrowserClient } from '@/lib/supabase/client'
 import { UserPlus, ArrowRight, X, Search, Loader2 } from 'lucide-react'
 import styles from '../property-wizard.module.css'
 
@@ -19,7 +19,7 @@ interface Owner {
 }
 
 export default function PropertyContactStep({ initialData, onNext }: StepProps) {
-    const supabase = createClient()
+    const supabase = createAdminBrowserClient()
     const [owners, setOwners] = useState<Owner[]>([])
     const [selectedOwner, setSelectedOwner] = useState(initialData.owner_id || '')
     const [loading, setLoading] = useState(true)
