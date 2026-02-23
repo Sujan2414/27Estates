@@ -102,7 +102,9 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
 
             const pricing_details = {
                 is_negotiable: allData.is_negotiable,
+                maintenance_charges: allData.maintenance_charges,
                 maintenance_paid_by_licensor: allData.maintenance_paid_by_licensor,
+                deposit_amount: allData.deposit_amount,
                 deposit_negotiable: allData.deposit_negotiable,
                 deposit_refundable: allData.deposit_refundable
             }

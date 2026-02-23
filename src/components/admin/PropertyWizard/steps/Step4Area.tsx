@@ -101,31 +101,35 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                 </div>
             </div>
 
-            <div className={styles.grid2}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Maintenance Charges (₹)</label>
-                    <input type="number" name="maintenance_charges" value={formData.maintenance_charges} onChange={handleChange} className={styles.input} />
-                </div>
-                <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
-                    <input type="checkbox" name="maintenance_paid_by_licensor" checked={formData.maintenance_paid_by_licensor} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
-                    <label style={{ marginBottom: 0 }}>Paid By Licensor</label>
-                </div>
-            </div>
+            {initialData.property_type_for === 'Rent' && (
+                <>
+                    <div className={styles.grid2}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Maintenance Charges (₹)</label>
+                            <input type="number" name="maintenance_charges" value={formData.maintenance_charges} onChange={handleChange} className={styles.input} />
+                        </div>
+                        <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
+                            <input type="checkbox" name="maintenance_paid_by_licensor" checked={formData.maintenance_paid_by_licensor} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
+                            <label style={{ marginBottom: 0 }}>Paid By Licensor</label>
+                        </div>
+                    </div>
 
-            <div className={styles.grid3}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Security Deposit</label>
-                    <input type="number" name="deposit_amount" value={formData.deposit_amount} onChange={handleChange} className={styles.input} />
-                </div>
-                <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
-                    <input type="checkbox" name="deposit_negotiable" checked={formData.deposit_negotiable} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
-                    <label style={{ marginBottom: 0, fontSize: '0.8rem' }}>Negotiable</label>
-                </div>
-                <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
-                    <input type="checkbox" name="deposit_refundable" checked={formData.deposit_refundable} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
-                    <label style={{ marginBottom: 0, fontSize: '0.8rem' }}>Refundable</label>
-                </div>
-            </div>
+                    <div className={styles.grid3}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Security Deposit</label>
+                            <input type="number" name="deposit_amount" value={formData.deposit_amount} onChange={handleChange} className={styles.input} />
+                        </div>
+                        <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
+                            <input type="checkbox" name="deposit_negotiable" checked={formData.deposit_negotiable} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
+                            <label style={{ marginBottom: 0, fontSize: '0.8rem' }}>Negotiable</label>
+                        </div>
+                        <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
+                            <input type="checkbox" name="deposit_refundable" checked={formData.deposit_refundable} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
+                            <label style={{ marginBottom: 0, fontSize: '0.8rem' }}>Refundable</label>
+                        </div>
+                    </div>
+                </>
+            )}
 
             <div className={styles.actions}>
                 <button type="button" className={`${styles.btn} ${styles.secondaryBtn}`} onClick={onBack}>

@@ -85,6 +85,13 @@ interface Property {
     connectivity?: { type: string; name: string; distance: string; icon?: string }[] | null;
     video_url?: string | null;
     floor_plans?: { name: string; image: string }[] | null;
+    pricing_details?: {
+        maintenance_charges?: string | number;
+        maintenance_paid_by_licensor?: boolean;
+        deposit_amount?: string | number;
+        deposit_negotiable?: boolean;
+        deposit_refundable?: boolean;
+    } | null;
     // Index signature for compatibility with PropertyCard
     [key: string]: unknown;
 }
@@ -355,6 +362,44 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                                 <span>{property.sqft} ft²</span>
                             </div>
                         </div>
+
+                        {/* RENT SPECIFIC PRICING CARDS */}
+                        {property.property_type === 'Rent' && property.pricing_details && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginTop: '20px' }}>
+                                {(property.pricing_details.maintenance_charges || property.pricing_details.maintenance_paid_by_licensor) ? (
+                                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Maintenance</span>
+                                        <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a' }}>
+                                            {property.pricing_details.maintenance_charges ? `₹ ${property.pricing_details.maintenance_charges.toLocaleString()}` : (property.pricing_details.maintenance_paid_by_licensor ? 'Included' : 'N/A')}
+                                        </span>
+                                        {property.pricing_details.maintenance_paid_by_licensor && (
+                                            <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 500, marginTop: '4px' }}>Paid by Licensor</span>
+                                        )}
+                                    </div>
+                                ) : null}
+                                {(property.pricing_details.deposit_amount || property.pricing_details.deposit_negotiable || property.pricing_details.deposit_refundable) ? (
+                                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Security Deposit</span>
+                                        <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a' }}>
+                                            {property.pricing_details.deposit_amount ? `₹ ${property.pricing_details.deposit_amount.toLocaleString()}` : 'N/A'}
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                            {property.pricing_details.deposit_negotiable && (
+                                                <span style={{ fontSize: '0.7rem', background: '#e0e7ff', color: '#4338ca', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 }}>Negotiable</span>
+                                            )}
+                                            {property.pricing_details.deposit_refundable && (
+                                                <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 }}>Refundable</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
+                        )}
+                        {property.property_type === 'Rent' && (
+                            <div style={{ marginTop: '12px', padding: '12px 16px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', borderLeft: '4px solid #f59e0b', fontSize: '0.85rem', color: '#92400e' }}>
+                                <strong>Note:</strong> Rental terms such as maintenance charges and security deposits are subject to the final agreement between the landlord and the tenant.
+                            </div>
+                        )}
                     </div>
 
                     {/* Agent Info */}

@@ -93,6 +93,15 @@ export default function EditPropertyPage() {
         lng: '',
     })
 
+    // Pricing Details
+    const [pricingDetails, setPricingDetails] = useState({
+        maintenance_charges: '',
+        maintenance_paid_by_licensor: false,
+        deposit_amount: '',
+        deposit_negotiable: false,
+        deposit_refundable: false
+    })
+
     // Amenities
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
     const [amenitySearch, setAmenitySearch] = useState('')
@@ -169,6 +178,16 @@ export default function EditPropertyPage() {
             lng: addr.coordinates?.lng?.toString() || '',
         })
 
+        // Parse pricing details
+        const pwd = data.pricing_details || {}
+        setPricingDetails({
+            maintenance_charges: pwd.maintenance_charges?.toString() || '',
+            maintenance_paid_by_licensor: pwd.maintenance_paid_by_licensor || false,
+            deposit_amount: pwd.deposit_amount?.toString() || '',
+            deposit_negotiable: pwd.deposit_negotiable || false,
+            deposit_refundable: pwd.deposit_refundable || false
+        })
+
         // Parse amenities using helper
         setSelectedAmenities(flattenAmenities(data.amenities))
 
@@ -210,6 +229,11 @@ export default function EditPropertyPage() {
     const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target
         setAddress(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handlePricingDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value, type, checked } = e.target
+        setPricingDetails(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
     }
 
     // Amenity handlers
@@ -309,6 +333,13 @@ export default function EditPropertyPage() {
                 amenities: amenitiesData,
                 floor_plans: floorPlansData.length > 0 ? floorPlansData : null,
                 connectivity: connectivityData.length > 0 ? connectivityData : null,
+                pricing_details: formData.property_type === 'Rent' ? {
+                    maintenance_charges: pricingDetails.maintenance_charges ? parseFloat(pricingDetails.maintenance_charges) : null,
+                    maintenance_paid_by_licensor: pricingDetails.maintenance_paid_by_licensor,
+                    deposit_amount: pricingDetails.deposit_amount ? parseFloat(pricingDetails.deposit_amount) : null,
+                    deposit_negotiable: pricingDetails.deposit_negotiable,
+                    deposit_refundable: pricingDetails.deposit_refundable
+                } : null,
             }
 
             const { error: updateError } = await supabase
@@ -399,6 +430,35 @@ export default function EditPropertyPage() {
                             <input type="text" name="location" value={formData.location} onChange={handleChange} className={formStyles.input} required />
                         </div>
                     </div>
+
+                    {formData.property_type === 'Rent' && (
+                        <>
+                            <div className={formStyles.grid2}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Maintenance Charges (₹)</label>
+                                    <input type="number" name="maintenance_charges" value={pricingDetails.maintenance_charges} onChange={handlePricingDetailsChange} className={formStyles.input} />
+                                </div>
+                                <div className={formStyles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
+                                    <input type="checkbox" name="maintenance_paid_by_licensor" checked={pricingDetails.maintenance_paid_by_licensor} onChange={handlePricingDetailsChange} style={{ width: '20px', height: '20px' }} />
+                                    <label style={{ marginBottom: 0, marginLeft: '8px' }}>Paid By Licensor</label>
+                                </div>
+                            </div>
+                            <div className={formStyles.grid3}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Security Deposit (₹)</label>
+                                    <input type="number" name="deposit_amount" value={pricingDetails.deposit_amount} onChange={handlePricingDetailsChange} className={formStyles.input} />
+                                </div>
+                                <div className={formStyles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
+                                    <input type="checkbox" name="deposit_negotiable" checked={pricingDetails.deposit_negotiable} onChange={handlePricingDetailsChange} style={{ width: '20px', height: '20px' }} />
+                                    <label style={{ marginBottom: 0, marginLeft: '8px', fontSize: '0.875rem' }}>Negotiable</label>
+                                </div>
+                                <div className={formStyles.field} style={{ flexDirection: 'row', alignItems: 'center', marginTop: '30px' }}>
+                                    <input type="checkbox" name="deposit_refundable" checked={pricingDetails.deposit_refundable} onChange={handlePricingDetailsChange} style={{ width: '20px', height: '20px' }} />
+                                    <label style={{ marginBottom: 0, marginLeft: '8px', fontSize: '0.875rem' }}>Refundable</label>
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
