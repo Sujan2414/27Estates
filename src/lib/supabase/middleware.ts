@@ -6,10 +6,14 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
+    const url = request.nextUrl
+    const isAdminRoute = url.pathname.startsWith('/admin')
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
+            cookieOptions: isAdminRoute ? { name: 'sb-admin-auth-token' } : undefined,
             cookies: {
                 getAll() {
                     return request.cookies.getAll()
@@ -30,11 +34,8 @@ export async function updateSession(request: NextRequest) {
     // Refreshing the auth token
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Protected routes check
-    const url = request.nextUrl
-
     // Protect /admin routes - redirect to admin login if not authenticated
-    if (url.pathname.startsWith('/admin') && !url.pathname.startsWith('/admin/login')) {
+    if (isAdminRoute && !url.pathname.startsWith('/admin/login')) {
         if (!user) {
             const loginUrl = new URL('/admin/login', request.url)
             return NextResponse.redirect(loginUrl)

@@ -46,6 +46,12 @@ function LoginContent() {
                     localStorage.setItem('rememberMe', 'true');
                 } else {
                     localStorage.removeItem('rememberMe');
+                    // Instruct the server to convert the auth cookie to a Session cookie
+                    await fetch('/api/auth/session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rememberMe: false })
+                    });
                 }
 
                 // Sync profile — ensure user's profile row exists with correct data
