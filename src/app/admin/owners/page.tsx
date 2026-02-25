@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createAdminBrowserClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, Mail, Phone, Building, X, Save, Loader2, Image as ImageIcon } from 'lucide-react'
 import styles from '../admin.module.css'
 import ImageUpload from '@/components/admin/ImageUpload'
@@ -26,7 +26,7 @@ interface Developer {
 }
 
 export default function OwnersPage() {
-    const supabase = createAdminBrowserClient()
+    const supabase = createClient()
     const [activeTab, setActiveTab] = useState<'owners' | 'developers'>('owners')
     const [owners, setOwners] = useState<Owner[]>([])
     const [developers, setDevelopers] = useState<Developer[]>([])
