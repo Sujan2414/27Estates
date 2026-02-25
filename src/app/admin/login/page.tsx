@@ -38,8 +38,6 @@ export default function AdminLoginPage() {
                 .eq('id', authData.user.id)
                 .single()
 
-            console.log('Profile check:', { profile, profileError, userId: authData.user.id })
-
             if (profileError) {
                 await supabase.auth.signOut()
                 setError(`Profile error: ${profileError.message}`)

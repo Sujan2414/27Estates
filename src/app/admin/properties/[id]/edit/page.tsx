@@ -73,8 +73,9 @@ export default function EditPropertyPage() {
         lot_size: '',
         floors: '',
         rooms: '',
-        property_type: 'Sales',
+        property_type: 'Sale',
         category: 'House',
+        status: 'Available',
         is_featured: false,
         agent_id: '',
         owner_id: '',
@@ -87,7 +88,7 @@ export default function EditPropertyPage() {
         area: '',
         city: '',
         state: '',
-        zip: '',
+        pincode: '',
         country: 'India',
         lat: '',
         lng: '',
@@ -157,25 +158,26 @@ export default function EditPropertyPage() {
             lot_size: data.lot_size?.toString() || '',
             floors: data.floors?.toString() || '',
             rooms: data.rooms?.toString() || '',
-            property_type: data.property_type || 'Sales',
+            // Normalise legacy 'Sales' value to 'Sale'
+            property_type: data.property_type === 'Sales' ? 'Sale' : (data.property_type || 'Sale'),
             category: data.category || 'House',
+            status: data.status || 'Available',
             is_featured: data.is_featured || false,
             agent_id: data.agent_id || '',
             owner_id: data.owner_id || '',
             video_url: data.video_url || '',
         })
 
-        // Parse address
-        const addr = data.address || {}
+        // Read address from flat DB columns (not legacy JSONB object)
         setAddress({
-            street: addr.street || '',
-            area: addr.area || '',
-            city: addr.city || '',
-            state: addr.state || '',
-            zip: addr.zip || '',
-            country: addr.country || 'India',
-            lat: addr.coordinates?.lat?.toString() || '',
-            lng: addr.coordinates?.lng?.toString() || '',
+            street: data.street || '',
+            area: data.area || '',
+            city: data.city || '',
+            state: data.state || '',
+            pincode: data.pincode || '',
+            country: data.country || 'India',
+            lat: data.latitude?.toString() || '',
+            lng: data.longitude?.toString() || '',
         })
 
         // Parse pricing details
@@ -281,24 +283,6 @@ export default function EditPropertyPage() {
         setError(null)
 
         try {
-            const addressData = {
-                street: address.street,
-                area: address.area,
-                city: address.city,
-                state: address.state,
-                zip: address.zip,
-                country: address.country,
-                coordinates: {
-                    lat: address.lat ? parseFloat(address.lat) : 0,
-                    lng: address.lng ? parseFloat(address.lng) : 0,
-                }
-            }
-
-            // Amenities are now sent as a flat array. Our backend stores jsonb, so flat array is fine for now,
-            // or we might need to send it as step5 does if we want strict compatibility with the wizard structure.
-            // But the wizard ultimately just sends the data, and if the DB column is jsonb, it accepts anything.
-            // The Property Details page (display) uses a flat list logic or handles whatever is there.
-            // Let's use the flat array as per the plan.
             const amenitiesData = selectedAmenities
 
             const floorPlansData = (floorPlans || []).filter(fp => {
@@ -309,28 +293,49 @@ export default function EditPropertyPage() {
 
             const connectivityData = connectivity.filter(c => c.type || c.name || c.distance || c.icon)
 
+            const priceNum = parseFloat(formData.price)
+            const sqftNum = parseInt(formData.sqft)
+
+            // Compute human-readable price text (matches wizard logic)
+            let priceText = ''
+            if (!isNaN(priceNum) && priceNum > 0) {
+                if (priceNum >= 10000000) priceText = `₹ ${(priceNum / 10000000).toFixed(2)} Cr`
+                else if (priceNum >= 100000) priceText = `₹ ${(priceNum / 100000).toFixed(2)} L`
+                else priceText = `₹ ${priceNum.toLocaleString('en-IN')}`
+            }
+
             const propertyData = {
                 property_id: formData.property_id,
                 title: formData.title,
                 description: formData.description,
-                price: parseFloat(formData.price),
-                price_per_sqft: formData.price_per_sqft ? parseFloat(formData.price_per_sqft) : null,
+                price: priceNum,
+                price_text: priceText || null,
+                price_per_sqft: (sqftNum && priceNum) ? Math.round(priceNum / sqftNum) : (formData.price_per_sqft ? parseFloat(formData.price_per_sqft) : null),
                 location: formData.location,
-                address: addressData,
-                bedrooms: parseInt(formData.bedrooms),
-                bathrooms: parseInt(formData.bathrooms),
-                sqft: parseInt(formData.sqft),
+                // Flat address columns (matches wizard and display page)
+                street: address.street || null,
+                area: address.area || null,
+                city: address.city || null,
+                state: address.state || null,
+                pincode: address.pincode || null,
+                country: address.country || null,
+                latitude: address.lat ? parseFloat(address.lat) : null,
+                longitude: address.lng ? parseFloat(address.lng) : null,
+                bedrooms: parseInt(formData.bedrooms) || 0,
+                bathrooms: parseInt(formData.bathrooms) || 0,
+                sqft: sqftNum || 0,
                 lot_size: formData.lot_size ? parseInt(formData.lot_size) : null,
                 floors: formData.floors ? parseInt(formData.floors) : null,
                 rooms: formData.rooms ? parseInt(formData.rooms) : null,
                 property_type: formData.property_type,
                 category: formData.category,
+                status: formData.status,
                 is_featured: formData.is_featured,
                 agent_id: formData.agent_id || null,
                 owner_id: formData.owner_id || null,
                 video_url: formData.video_url || null,
                 images: (images || []).filter(img => img && typeof img === 'string' && img.trim() !== ''),
-                amenities: amenitiesData,
+                amenities: amenitiesData.length > 0 ? amenitiesData : null,
                 floor_plans: floorPlansData.length > 0 ? floorPlansData : null,
                 connectivity: connectivityData.length > 0 ? connectivityData : null,
                 pricing_details: formData.property_type === 'Rent' ? {
@@ -363,7 +368,7 @@ export default function EditPropertyPage() {
         }
     }
 
-    const categories = ['Apartment', 'House', 'Duplex', 'Villa', 'Plot', 'Commercial', 'Farmhouse', 'Offices']
+    const categories = ['Apartment', 'House', 'Duplex', 'Villa', 'Bungalow', 'Row Villa', 'Penthouse', 'Studio', 'Plot', 'Commercial', 'Office', 'Offices', 'Warehouse', 'Farmhouse']
 
     if (loading) {
         return (
@@ -464,7 +469,7 @@ export default function EditPropertyPage() {
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Type</label>
                             <select name="property_type" value={formData.property_type} onChange={handleChange} className={formStyles.select}>
-                                <option value="Sales">For Sale</option>
+                                <option value="Sale">For Sale</option>
                                 <option value="Rent">For Rent</option>
                             </select>
                         </div>
@@ -472,6 +477,15 @@ export default function EditPropertyPage() {
                             <label className={formStyles.label}>Category</label>
                             <select name="category" value={formData.category} onChange={handleChange} className={formStyles.select}>
                                 {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                            </select>
+                        </div>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Possession / Status</label>
+                            <select name="status" value={formData.status} onChange={handleChange} className={formStyles.select}>
+                                <option value="Available">Available</option>
+                                <option value="Ready To Move">Ready To Move</option>
+                                <option value="Under Construction">Under Construction</option>
+                                <option value="Sold">Sold</option>
                             </select>
                         </div>
                         <div className={formStyles.field}>
@@ -563,8 +577,8 @@ export default function EditPropertyPage() {
                             <input type="text" name="state" value={address.state} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>ZIP Code</label>
-                            <input type="text" name="zip" value={address.zip} onChange={handleAddressChange} className={formStyles.input} />
+                            <label className={formStyles.label}>Pincode</label>
+                            <input type="text" name="pincode" value={address.pincode} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
                     </div>
 

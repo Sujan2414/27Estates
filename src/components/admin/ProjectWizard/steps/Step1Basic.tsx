@@ -104,20 +104,21 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                 ...prev,
                 category: value,
                 sub_category: '',
-                bhk_options: value === 'Plot' ? '' : prev.bhk_options,
+                bhk_options: (value === 'Plot' || value === 'Commercial') ? '' : prev.bhk_options,
             }))
         } else {
             setFormData(prev => ({ ...prev, [name]: value }))
         }
     }
 
-    const totalLabel = formData.category === 'Villa' ? 'Total Villas' : formData.category === 'Plot' ? 'Total Plots' : 'Total Units'
+    const totalLabel = formData.category === 'Villa' ? 'Total Villas' : formData.category === 'Plot' ? 'Total Plots' : formData.category === 'Commercial' ? 'Total Units' : 'Total Units'
 
-    const categories = ['Residential', 'Villa', 'Plot']
+    const categories = ['Residential', 'Villa', 'Plot', 'Commercial']
     const subCategories: Record<string, string[]> = {
         Residential: ['Apartment', 'Penthouse', 'Studio', 'Duplex'],
         Villa: ['Independent Villa', 'Row House', 'Twin Villa', 'Farm Villa'],
         Plot: ['Farm Plot', 'Residential Plot', 'Commercial Plot', 'NA Plot'],
+        Commercial: ['Office Space', 'Retail Shops', 'Co-Working Space', 'Showroom', 'Mixed Use', 'Business Park', 'Mall'],
     }
     const statusOptions = ['Under Construction', 'Ready to Move', 'Pre-Launch', 'Upcoming', 'Completed']
 
@@ -272,7 +273,7 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                     <label className={styles.label}>RERA Number</label>
                     <input type="text" name="rera_number" value={formData.rera_number} onChange={handleChange} className={styles.input} />
                 </div>
-                {formData.category !== 'Plot' && (
+                {formData.category !== 'Plot' && formData.category !== 'Commercial' && (
                     <div className={styles.field}>
                         <label className={styles.label}>BHK Options</label>
                         <BHKMultiSelect

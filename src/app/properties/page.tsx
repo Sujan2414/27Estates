@@ -267,18 +267,19 @@ const Dashboard = () => {
         fetchProfile();
     }, [user?.id]);
 
-    const handleSearch = async (e?: React.FormEvent, overrideParams?: { config?: string, city?: string }) => {
+    const handleSearch = async (e?: React.FormEvent, overrideParams?: { config?: string, city?: string, type?: 'Buy' | 'Rent' }) => {
         if (e) e.preventDefault();
         setLoading(true);
 
         const currentConfig = overrideParams?.config ?? selectedConfig;
         const currentCity = overrideParams?.city ?? selectedCity;
+        const currentType = overrideParams?.type ?? listingType;
 
         // Build property query
         let propQuery = supabase.from('properties').select('*');
 
         // Filter by Buy/Rent
-        propQuery = propQuery.eq('property_type', listingType === 'Buy' ? 'Sale' : 'Rent');
+        propQuery = propQuery.eq('property_type', currentType === 'Buy' ? 'Sale' : 'Rent');
 
         // City filter
         if (currentCity) {
@@ -427,6 +428,10 @@ const Dashboard = () => {
     const filteredProjects = projectStatusFilter
         ? allProjects.filter(p => p._status === projectStatusFilter)
         : allProjects;
+
+    const filteredPropertiesByStatus = projectStatusFilter
+        ? allProperties.filter(p => p.status === projectStatusFilter)
+        : allProperties;
 
     if (loading) {
         return (
@@ -642,11 +647,11 @@ const Dashboard = () => {
                 <div className={styles.listingToggle}>
                     <button
                         className={`${styles.listingBtn} ${listingType === 'Buy' ? styles.listingBtnActive : ''}`}
-                        onClick={() => setListingType('Buy')}
+                        onClick={() => { setListingType('Buy'); handleSearch(undefined, { type: 'Buy' }); }}
                     >Buy</button>
                     <button
                         className={`${styles.listingBtn} ${listingType === 'Rent' ? styles.listingBtnActive : ''}`}
-                        onClick={() => setListingType('Rent')}
+                        onClick={() => { setListingType('Rent'); handleSearch(undefined, { type: 'Rent' }); }}
                     >Rent</button>
                 </div>
             </div>
@@ -782,63 +787,65 @@ const Dashboard = () => {
             </div>
 
             {/* Section 1: PROJECTS */}
-            <section className={styles.section}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>PROJECTS</h2>
-                </div>
-                <div className={styles.statusFilters}>
-                    {statusOptions.map((opt) => (
-                        <button
-                            key={opt.label}
-                            className={`${styles.statusPill} ${projectStatusFilter === opt.id ? styles.statusPillActive : ''}`}
-                            onClick={() => {
-                                setProjectStatusFilter(opt.id);
-                                setProjectsVisible(6);
-                            }}
-                        >
-                            {opt.label}
-                        </button>
-                    ))}
-                </div>
-                {filteredProjects.length > 0 ? (
-                    <>
-                        <div className={styles.grid}>
-                            {filteredProjects.slice(0, projectsVisible).map((project) => (
-                                <PropertyCard
-                                    key={project.id}
-                                    property={project}
-                                    isBookmarked={isBookmarked(project.id)}
-                                    onBookmarkChange={fetchData}
-                                />
-                            ))}
-                        </div>
-                        {projectsVisible < filteredProjects.length && (
-                            <div className={styles.loadMoreContainer}>
-                                <button
-                                    className={styles.loadMoreButton}
-                                    onClick={() => setProjectsVisible(prev => prev + 6)}
-                                >
-                                    Load More Projects
-                                </button>
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <div className={styles.emptyState}>
-                        <p className={styles.emptyText}>No projects found</p>
+            {listingType === 'Buy' && (
+                <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                        <h2 className={styles.sectionTitle}>PROJECTS</h2>
                     </div>
-                )}
-            </section>
+                    <div className={styles.statusFilters}>
+                        {statusOptions.map((opt) => (
+                            <button
+                                key={opt.label}
+                                className={`${styles.statusPill} ${projectStatusFilter === opt.id ? styles.statusPillActive : ''}`}
+                                onClick={() => {
+                                    setProjectStatusFilter(opt.id);
+                                    setProjectsVisible(6);
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                    {filteredProjects.length > 0 ? (
+                        <>
+                            <div className={styles.grid}>
+                                {filteredProjects.slice(0, projectsVisible).map((project) => (
+                                    <PropertyCard
+                                        key={project.id}
+                                        property={project}
+                                        isBookmarked={isBookmarked(project.id)}
+                                        onBookmarkChange={fetchData}
+                                    />
+                                ))}
+                            </div>
+                            {projectsVisible < filteredProjects.length && (
+                                <div className={styles.loadMoreContainer}>
+                                    <button
+                                        className={styles.loadMoreButton}
+                                        onClick={() => setProjectsVisible(prev => prev + 6)}
+                                    >
+                                        Load More Projects
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className={styles.emptyState}>
+                            <p className={styles.emptyText}>No projects found</p>
+                        </div>
+                    )}
+                </section>
+            )}
 
             {/* Section 2: PROPERTIES */}
             <section className={styles.section}>
                 <div className={styles.sectionHeader}>
                     <h2 className={styles.sectionTitle}>PROPERTIES</h2>
                 </div>
-                {allProperties.length > 0 ? (
+                {filteredPropertiesByStatus.length > 0 ? (
                     <>
                         <div className={styles.latestGrid}>
-                            {allProperties.slice(0, propertiesVisible).map((property) => (
+                            {filteredPropertiesByStatus.slice(0, propertiesVisible).map((property) => (
                                 <LatestPropertyCard
                                     key={property.id}
                                     property={property}
@@ -847,7 +854,7 @@ const Dashboard = () => {
                                 />
                             ))}
                         </div>
-                        {propertiesVisible < allProperties.length && (
+                        {propertiesVisible < filteredPropertiesByStatus.length && (
                             <div className={styles.loadMoreContainer}>
                                 <button
                                     className={styles.loadMoreButton}

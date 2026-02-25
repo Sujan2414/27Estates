@@ -395,17 +395,12 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                                 ) : null}
                             </div>
                         )}
-                        {property.property_type === 'Rent' && (
-                            <div style={{ marginTop: '12px', padding: '12px 16px', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', borderLeft: '4px solid #f59e0b', fontSize: '0.85rem', color: '#92400e' }}>
-                                <strong>Note:</strong> Rental terms such as maintenance charges and security deposits are subject to the final agreement between the landlord and the tenant.
-                            </div>
-                        )}
                     </div>
 
                     {/* Agent Info */}
                     {agent && (
                         <div className={styles.agentCard}>
-                            <div className={styles.agentImage}>
+                            <div className={styles.agentAvatar}>
                                 <img src={agent.image || '/placeholder-agent.jpg'} alt={agent.name} />
                             </div>
                             <div className={styles.agentInfo}>
@@ -718,7 +713,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                     </button>
                     <div className={styles.socialIconsMenu}>
                         <a
-                            href={`https://wa.me/?text=${encodeURIComponent(`Check out this property: *${property.title}*\nPrice: ${property.price_text}\nLocation: ${property.location}\n\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`}
+                            href={`https://wa.me/?text=${encodeURIComponent(`Check out this property: *${property.title}*\nPrice: ${displayPrice}\nLocation: ${property.location}\n\n${typeof window !== 'undefined' ? window.location.href : ''}`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="WhatsApp"
@@ -750,7 +745,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                         <div className={styles.modalHeader}>
                             <div className={styles.agentImageWrapper}>
                                 {agent?.image ? (
-                                    <img src={agent.image} alt={agent.name} className={styles.agentImage} />
+                                    <img src={agent.image} alt={agent.name} className={styles.modalAgentImg} />
                                 ) : (
                                     <UserCircle size={64} color="#94a3b8" strokeWidth={1} />
                                 )}

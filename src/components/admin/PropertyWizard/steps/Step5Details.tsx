@@ -31,7 +31,14 @@ interface StepProps {
     onBack: () => void
 }
 
+const COMMERCIAL_TYPES = ['Commercial', 'Office', 'Offices']
+
 export default function PropertyDetailsStep({ initialData, onNext, onBack }: StepProps) {
+    const category = initialData.property_type || ''
+    const isCommercial = COMMERCIAL_TYPES.includes(category)
+    const isWarehouse = category === 'Warehouse'
+    const isPlot = category === 'Plot'
+
     const defaultCommercial = {
         age_of_property: 'New Construction',
         possession_status: 'Ready To Move',
@@ -141,15 +148,17 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
 
             {/* General Details */}
             <div className={styles.grid2}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Age of Property</label>
-                    <select name="age_of_property" value={formData.age_of_property} onChange={handleChange} className={styles.select}>
-                        <option value="New Construction">New Construction</option>
-                        <option value="Less than 5 years">Less than 5 years</option>
-                        <option value="5 to 10 years">5 to 10 years</option>
-                        <option value="More than 10 years">More than 10 years</option>
-                    </select>
-                </div>
+                {!isPlot && (
+                    <div className={styles.field}>
+                        <label className={styles.label}>Age of Property</label>
+                        <select name="age_of_property" value={formData.age_of_property} onChange={handleChange} className={styles.select}>
+                            <option value="New Construction">New Construction</option>
+                            <option value="Less than 5 years">Less than 5 years</option>
+                            <option value="5 to 10 years">5 to 10 years</option>
+                            <option value="More than 10 years">More than 10 years</option>
+                        </select>
+                    </div>
+                )}
                 <div className={styles.field}>
                     <label className={styles.label}>Availability/Possession</label>
                     <div style={{ display: 'flex', gap: '10px' }}>
@@ -164,44 +173,47 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
                 </div>
             </div>
 
-            {/* Commercial Features */}
-            <h3 className={styles.stepTitle} style={{ fontSize: '1.1rem', textAlign: 'left', marginTop: '1rem' }}>Commercial Features</h3>
-            <div className={styles.grid2}>
-                <div className={styles.field} style={{ flexDirection: 'row', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                        <label className={styles.label}>Workstation</label>
-                        <input type="number" name="workstation" value={formData.workstation} onChange={handleChange} className={styles.input} placeholder="No." />
+            {/* Commercial Features — only for Commercial / Office */}
+            {isCommercial && (
+                <>
+                    <h3 className={styles.stepTitle} style={{ fontSize: '1.1rem', textAlign: 'left', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>Commercial Features</h3>
+                    <div className={styles.grid2}>
+                        <div className={styles.field} style={{ flexDirection: 'row', gap: '1rem' }}>
+                            <div style={{ flex: 1 }}>
+                                <label className={styles.label}>Workstation</label>
+                                <input type="number" name="workstation" value={formData.workstation} onChange={handleChange} className={styles.input} placeholder="No." />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label className={styles.label}>Cabins</label>
+                                <input type="number" name="cabin" value={formData.cabin} onChange={handleChange} className={styles.input} placeholder="No." />
+                            </div>
+                        </div>
+                        <div className={styles.field} style={{ flexDirection: 'row', gap: '1rem' }}>
+                            <div style={{ flex: 1 }}>
+                                <label className={styles.label}>Conference Room</label>
+                                <input type="number" name="conference_room" value={formData.conference_room} onChange={handleChange} className={styles.input} placeholder="No." />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label className={styles.label}>Reception</label>
+                                <input type="number" name="reception_area" value={formData.reception_area} onChange={handleChange} className={styles.input} placeholder="Area" />
+                            </div>
+                        </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                        <label className={styles.label}>Cabins</label>
-                        <input type="number" name="cabin" value={formData.cabin} onChange={handleChange} className={styles.input} placeholder="No." />
+                    <div className={styles.grid2}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Power (KVA)</label>
+                            <input type="number" name="power_kva" value={formData.power_kva} onChange={handleChange} className={styles.input} />
+                        </div>
+                        <div className={styles.field}>
+                            <label className={styles.label}>DB Backup</label>
+                            <input type="text" name="power_backup" value={formData.power_backup} onChange={handleChange} className={styles.input} />
+                        </div>
                     </div>
-                </div>
-                <div className={styles.field} style={{ flexDirection: 'row', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                        <label className={styles.label}>Conference Room</label>
-                        <input type="number" name="conference_room" value={formData.conference_room} onChange={handleChange} className={styles.input} placeholder="No." />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        <label className={styles.label}>Reception</label>
-                        <input type="number" name="reception_area" value={formData.reception_area} onChange={handleChange} className={styles.input} placeholder="Area" />
-                    </div>
-                </div>
-            </div>
-
-            <div className={styles.grid2}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Power (KVA)</label>
-                    <input type="number" name="power_kva" value={formData.power_kva} onChange={handleChange} className={styles.input} />
-                </div>
-                <div className={styles.field}>
-                    <label className={styles.label}>DB Backup</label>
-                    <input type="text" name="power_backup" value={formData.power_backup} onChange={handleChange} className={styles.input} />
-                </div>
-            </div>
+                </>
+            )}
 
             {/* Media URL */}
-            <div className={styles.field}>
+            <div className={styles.field} style={{ marginTop: '1rem' }}>
                 <label className={styles.label}>Video URL (YouTube/Vimeo)</label>
                 <input type="text" name="video_url" value={formData.video_url} onChange={handleChange} className={styles.input} placeholder="https://..." />
             </div>
@@ -211,61 +223,62 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
                 <input type="text" name="keyword" value={formData.keyword} onChange={handleChange} className={styles.input} />
             </div>
 
-            {/* Warehouse Features */}
-            <h3 className={styles.stepTitle} style={{ fontSize: '1.1rem', textAlign: 'left', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>Warehouse Features</h3>
-            <div className={styles.field}>
-                <label className={styles.label}>Pollution Zone</label>
-                <select name="pollution_zone" value={formData.pollution_zone} onChange={handleChange} className={styles.select}>
-                    <option value="Green">Green</option>
-                    <option value="Orange">Orange</option>
-                    <option value="Red">Red</option>
-                </select>
-            </div>
-
-            <div className={styles.grid2}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Racking Capacity (Tonnes)</label>
-                    <input type="number" name="racking_capacity_tonnes" value={formData.racking_capacity_tonnes} onChange={handleChange} className={styles.input} />
-                </div>
-                <div className={styles.field}>
-                    <label className={styles.label}>Floor Strength (Ton/m³)</label>
-                    <input type="number" name="floor_strength" value={formData.floor_strength} onChange={handleChange} className={styles.input} />
-                </div>
-            </div>
-            <div className={styles.grid2}>
-                <div className={styles.field}>
-                    <label className={styles.label}>STP/ETP Capacity (Liters)</label>
-                    <input type="number" name="stp_etp_capacity" value={formData.stp_etp_capacity} onChange={handleChange} className={styles.input} />
-                </div>
-                <div className={styles.field}>
-                    <label className={styles.label}>No. of Loading Bays</label>
-                    <input type="number" name="loading_bays" value={formData.loading_bays} onChange={handleChange} className={styles.input} />
-                </div>
-            </div>
-
-            <div className={styles.field}>
-                <label className={styles.label}>Canopy Details (Length - Width)</label>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <input type="number" name="canopy_length" value={formData.canopy_length} onChange={handleChange} className={styles.input} placeholder="Len" />
-                    <span style={{ alignSelf: 'center' }}>-</span>
-                    <input type="number" name="canopy_width" value={formData.canopy_width} onChange={handleChange} className={styles.input} placeholder="Wid" />
-                </div>
-            </div>
-
-            <div className={styles.grid3} style={{ marginTop: '1rem' }}>
-                <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <input type="checkbox" name="fire_noc" checked={formData.fire_noc} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
-                    <label style={{ marginBottom: 0 }}>Fire NOC</label>
-                </div>
-                <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <input type="checkbox" name="approval_plan" checked={formData.approval_plan} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
-                    <label style={{ marginBottom: 0 }}>Approval Plan</label>
-                </div>
-                <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <input type="checkbox" name="dock_levellers" checked={formData.dock_levellers} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
-                    <label style={{ marginBottom: 0 }}>Dock Levellers</label>
-                </div>
-            </div>
+            {/* Warehouse Features — only for Warehouse */}
+            {isWarehouse && (
+                <>
+                    <h3 className={styles.stepTitle} style={{ fontSize: '1.1rem', textAlign: 'left', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>Warehouse Features</h3>
+                    <div className={styles.field}>
+                        <label className={styles.label}>Pollution Zone</label>
+                        <select name="pollution_zone" value={formData.pollution_zone} onChange={handleChange} className={styles.select}>
+                            <option value="Green">Green</option>
+                            <option value="Orange">Orange</option>
+                            <option value="Red">Red</option>
+                        </select>
+                    </div>
+                    <div className={styles.grid2}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Racking Capacity (Tonnes)</label>
+                            <input type="number" name="racking_capacity_tonnes" value={formData.racking_capacity_tonnes} onChange={handleChange} className={styles.input} />
+                        </div>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Floor Strength (Ton/m³)</label>
+                            <input type="number" name="floor_strength" value={formData.floor_strength} onChange={handleChange} className={styles.input} />
+                        </div>
+                    </div>
+                    <div className={styles.grid2}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>STP/ETP Capacity (Liters)</label>
+                            <input type="number" name="stp_etp_capacity" value={formData.stp_etp_capacity} onChange={handleChange} className={styles.input} />
+                        </div>
+                        <div className={styles.field}>
+                            <label className={styles.label}>No. of Loading Bays</label>
+                            <input type="number" name="loading_bays" value={formData.loading_bays} onChange={handleChange} className={styles.input} />
+                        </div>
+                    </div>
+                    <div className={styles.field}>
+                        <label className={styles.label}>Canopy Details (Length - Width)</label>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <input type="number" name="canopy_length" value={formData.canopy_length} onChange={handleChange} className={styles.input} placeholder="Len" />
+                            <span style={{ alignSelf: 'center' }}>-</span>
+                            <input type="number" name="canopy_width" value={formData.canopy_width} onChange={handleChange} className={styles.input} placeholder="Wid" />
+                        </div>
+                    </div>
+                    <div className={styles.grid3} style={{ marginTop: '1rem' }}>
+                        <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <input type="checkbox" name="fire_noc" checked={formData.fire_noc} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
+                            <label style={{ marginBottom: 0 }}>Fire NOC</label>
+                        </div>
+                        <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <input type="checkbox" name="approval_plan" checked={formData.approval_plan} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
+                            <label style={{ marginBottom: 0 }}>Approval Plan</label>
+                        </div>
+                        <div className={styles.field} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <input type="checkbox" name="dock_levellers" checked={formData.dock_levellers} onChange={handleChange} style={{ width: '20px', height: '20px' }} />
+                            <label style={{ marginBottom: 0 }}>Dock Levellers</label>
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* Amenities */}
             <h3 className={styles.stepTitle} style={{ fontSize: '1.1rem', textAlign: 'left', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>Amenities</h3>

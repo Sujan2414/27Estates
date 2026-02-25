@@ -258,14 +258,15 @@
     border-bottom: 1px solid #e5e5e5;
 }
 
-.agentImage {
+.agentAvatar {
     width: 3.5rem;
     height: 3.5rem;
     border-radius: 50%;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
-.agentImage img {
+.agentAvatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -662,7 +663,7 @@
     justify-content: center;
 }
 
-.agentImage {
+.modalAgentImg {
     width: 100%;
     height: 100%;
     object-fit: cover;

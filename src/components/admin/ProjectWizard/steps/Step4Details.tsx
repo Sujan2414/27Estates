@@ -85,6 +85,22 @@ interface PlotConfig {
     status: string
 }
 
+interface CommercialFloor {
+    floor_name: string
+    total_units: string
+    unit_types: string
+    completion_date: string
+    status: string
+}
+
+interface CommercialUnit {
+    unit_type: string
+    area_range: string
+    price_range: string
+    rent_per_sqft: string
+    status: string
+}
+
 interface StepProps {
     initialData: any
     onNext: (data: any) => void
@@ -108,6 +124,8 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
     const [residentialUnits, setResidentialUnits] = useState<ResidentialUnit[]>(initialData.residentialUnits || [{ type: '', bhk: '', area: '', price_rate: '', basic_price: '', completion_date: '' }])
     const [villaTypes, setVillaTypes] = useState<VillaTypeConfig[]>(initialData.villaTypes || [{ villa_type: '', bhk: '', plot_area: '', built_up_area: '', floors: '', price_range: '', status: '' }])
     const [plotConfigs, setPlotConfigs] = useState<PlotConfig[]>(initialData.plotConfigs || [{ plot_type: '', dimensions: '', area_sqft: '', facing: '', price_per_sqft: '', total_price: '', status: '' }])
+    const [commercialFloors, setCommercialFloors] = useState<CommercialFloor[]>(initialData.commercialFloors || [{ floor_name: '', total_units: '', unit_types: '', completion_date: '', status: '' }])
+    const [commercialUnits, setCommercialUnits] = useState<CommercialUnit[]>(initialData.commercialUnits || [{ unit_type: '', area_range: '', price_range: '', rent_per_sqft: '', status: '' }])
 
     // Amenity handlers
     const toggleAmenity = (label: string) => {
@@ -193,6 +211,20 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
     const addPlotConfig = () => setPlotConfigs(prev => [...prev, { plot_type: '', dimensions: '', area_sqft: '', facing: '', price_per_sqft: '', total_price: '', status: '' }])
     const removePlotConfig = (index: number) => setPlotConfigs(prev => prev.filter((_, i) => i !== index))
 
+    // Commercial Floor handlers
+    const handleCommercialFloorChange = (index: number, field: keyof CommercialFloor, value: string) => {
+        setCommercialFloors(prev => prev.map((f, i) => i === index ? { ...f, [field]: value } : f))
+    }
+    const addCommercialFloor = () => setCommercialFloors(prev => [...prev, { floor_name: '', total_units: '', unit_types: '', completion_date: '', status: '' }])
+    const removeCommercialFloor = (index: number) => setCommercialFloors(prev => prev.filter((_, i) => i !== index))
+
+    // Commercial Unit handlers
+    const handleCommercialUnitChange = (index: number, field: keyof CommercialUnit, value: string) => {
+        setCommercialUnits(prev => prev.map((u, i) => i === index ? { ...u, [field]: value } : u))
+    }
+    const addCommercialUnit = () => setCommercialUnits(prev => [...prev, { unit_type: '', area_range: '', price_range: '', rent_per_sqft: '', status: '' }])
+    const removeCommercialUnit = (index: number) => setCommercialUnits(prev => prev.filter((_, i) => i !== index))
+
     const addBtnStyle: React.CSSProperties = {
         display: 'inline-flex', alignItems: 'center', gap: '6px',
         padding: '8px 16px', background: '#f1f5f9', border: '1px solid #e2e8f0',
@@ -225,6 +257,8 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
             residentialUnits,
             villaTypes,
             plotConfigs,
+            commercialFloors,
+            commercialUnits,
         })
     }
 
@@ -337,6 +371,63 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
                         </div>
                     ))}
                     <button type="button" onClick={addVillaType} style={addBtnStyle}><Plus size={16} /> Add Villa Type</button>
+                </>
+            )}
+
+            {category === 'Commercial' && (
+                <>
+                    <h3 style={sectionHeaderStyle}>Floor / Wing Details</h3>
+                    <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '12px' }}>
+                        Add floors or wings with unit types (e.g., Floor 1, Ground Floor, Tower A).
+                    </p>
+                    {commercialFloors.map((floor, index) => (
+                        <div key={index} style={rowStyle}>
+                            <div className={styles.grid3}>
+                                <input type="text" value={floor.floor_name} onChange={(e) => handleCommercialFloorChange(index, 'floor_name', e.target.value)} className={styles.input} placeholder="Floor / Wing Name" />
+                                <input type="text" value={floor.total_units} onChange={(e) => handleCommercialFloorChange(index, 'total_units', e.target.value)} className={styles.input} placeholder="Total Units" />
+                                <input type="text" value={floor.unit_types} onChange={(e) => handleCommercialFloorChange(index, 'unit_types', e.target.value)} className={styles.input} placeholder="Unit Types (Office, Retail...)" />
+                            </div>
+                            <div className={styles.grid3} style={{ marginTop: '0.5rem' }}>
+                                <input type="text" value={floor.completion_date} onChange={(e) => handleCommercialFloorChange(index, 'completion_date', e.target.value)} className={styles.input} placeholder="Completion Date" />
+                                <input type="text" value={floor.status} onChange={(e) => handleCommercialFloorChange(index, 'status', e.target.value)} className={styles.input} placeholder="Status" />
+                                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                    {commercialFloors.length > 1 && (
+                                        <button type="button" onClick={() => removeCommercialFloor(index)} style={removeBtnStyle}><X size={16} /></button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addCommercialFloor} style={addBtnStyle}><Plus size={16} /> Add Floor / Wing</button>
+
+                    <h3 style={sectionHeaderStyle}>Unit Configurations</h3>
+                    <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '12px' }}>
+                        Add commercial unit types with area, price, and rental details.
+                    </p>
+                    {/* Table Header */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 0.8fr 0.8fr 0.8fr 0.7fr 40px', gap: '8px', padding: '8px 16px', background: '#1e293b', borderRadius: '8px 8px 0 0', color: '#f1f5f9', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        <span>Unit Type</span>
+                        <span>Area Range</span>
+                        <span>Price Range</span>
+                        <span>Rent / Sqft</span>
+                        <span>Status</span>
+                        <span></span>
+                    </div>
+                    {commercialUnits.map((unit, index) => (
+                        <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 0.8fr 0.8fr 0.8fr 0.7fr 40px', gap: '8px', padding: '10px 16px', background: index % 2 === 0 ? '#f8fafc' : '#ffffff', border: '1px solid #e2e8f0', borderTop: 'none', alignItems: 'center' }}>
+                            <input type="text" value={unit.unit_type} onChange={(e) => handleCommercialUnitChange(index, 'unit_type', e.target.value)} className={styles.input} placeholder="e.g. Office Space" style={{ margin: 0 }} />
+                            <input type="text" value={unit.area_range} onChange={(e) => handleCommercialUnitChange(index, 'area_range', e.target.value)} className={styles.input} placeholder="500–2000 sqft" style={{ margin: 0 }} />
+                            <input type="text" value={unit.price_range} onChange={(e) => handleCommercialUnitChange(index, 'price_range', e.target.value)} className={styles.input} placeholder="₹50L–₹2Cr" style={{ margin: 0 }} />
+                            <input type="text" value={unit.rent_per_sqft} onChange={(e) => handleCommercialUnitChange(index, 'rent_per_sqft', e.target.value)} className={styles.input} placeholder="₹80/sqft" style={{ margin: 0 }} />
+                            <input type="text" value={unit.status} onChange={(e) => handleCommercialUnitChange(index, 'status', e.target.value)} className={styles.input} placeholder="Available" style={{ margin: 0 }} />
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                {commercialUnits.length > 1 && (
+                                    <button type="button" onClick={() => removeCommercialUnit(index)} style={removeBtnStyle}><X size={14} /></button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addCommercialUnit} style={addBtnStyle}><Plus size={16} /> Add Unit Config</button>
                 </>
             )}
 

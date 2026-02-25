@@ -121,6 +121,8 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                 towersData = (d.villaClusters || []).filter((c: any) => (c.cluster_name || '').trim() !== '')
             } else if (d.category === 'Plot') {
                 towersData = (d.plotPhases || []).filter((p: any) => (p.phase_name || '').trim() !== '')
+            } else if (d.category === 'Commercial') {
+                towersData = (d.commercialFloors || []).filter((f: any) => (f.floor_name || '').trim() !== '')
             }
 
             let planData: unknown[] = []
@@ -130,6 +132,8 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                 planData = (d.villaTypes || []).filter((v: any) => (v.villa_type || '').trim() !== '')
             } else if (d.category === 'Plot') {
                 planData = (d.plotConfigs || []).filter((p: any) => (p.plot_type || '').trim() !== '')
+            } else if (d.category === 'Commercial') {
+                planData = (d.commercialUnits || []).filter((u: any) => (u.unit_type || '').trim() !== '')
             }
 
             let specsData = {}

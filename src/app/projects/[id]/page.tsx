@@ -159,6 +159,22 @@ interface FloorPlan {
     area?: string;
 }
 
+interface CommercialFloor {
+    floor_name: string;
+    total_units: string;
+    unit_types: string;
+    completion_date: string;
+    status: string;
+}
+
+interface CommercialUnit {
+    unit_type: string;
+    area_range: string;
+    price_range: string;
+    rent_per_sqft: string;
+    status: string;
+}
+
 interface ConnectivityItem {
     type: string;
     name: string;
@@ -722,6 +738,74 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                             </div>
                         </div>
                     )}
+
+                    {/* Commercial: Unit Configurations */}
+                    {category === 'Commercial' && (plans as CommercialUnit[]).length > 0 && (
+                        <div>
+                            <h2 className={styles.sectionTitle}>UNIT CONFIGURATIONS</h2>
+                            <div className={styles.cardsGrid}>
+                                {(plans as CommercialUnit[]).map((unit, idx) => (
+                                    <div key={idx} className={styles.configCard}>
+                                        <h4 className={styles.configCardTitle}>{unit.unit_type}</h4>
+                                        <div className={styles.configCardRow}>
+                                            <span className={styles.configCardLabel}>Area Range</span>
+                                            <span className={styles.configCardValue}>{unit.area_range}</span>
+                                        </div>
+                                        <div className={styles.configCardRow}>
+                                            <span className={styles.configCardLabel}>Price Range</span>
+                                            <span className={styles.configCardValue}>{unit.price_range}</span>
+                                        </div>
+                                        {unit.rent_per_sqft && (
+                                            <div className={styles.configCardRow}>
+                                                <span className={styles.configCardLabel}>Rent / Sq.Ft</span>
+                                                <span className={styles.configCardValue}>{unit.rent_per_sqft}</span>
+                                            </div>
+                                        )}
+                                        {unit.status && (
+                                            <span className={`${styles.statusBadge} ${getStatusClass(unit.status)}`}>
+                                                {unit.status}
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Commercial: Floor / Wing Details */}
+                    {category === 'Commercial' && (towers as CommercialFloor[]).length > 0 && (
+                        <div>
+                            <h2 className={styles.sectionTitle}>FLOOR / WING DETAILS</h2>
+                            <div className={styles.cardsGrid}>
+                                {(towers as CommercialFloor[]).map((floor, idx) => (
+                                    <div key={idx} className={styles.configCard}>
+                                        <h4 className={styles.configCardTitle}>{floor.floor_name}</h4>
+                                        <div className={styles.configCardRow}>
+                                            <span className={styles.configCardLabel}>Total Units</span>
+                                            <span className={styles.configCardValue}>{floor.total_units}</span>
+                                        </div>
+                                        {floor.unit_types && (
+                                            <div className={styles.configCardRow}>
+                                                <span className={styles.configCardLabel}>Unit Types</span>
+                                                <span className={styles.configCardValue}>{floor.unit_types}</span>
+                                            </div>
+                                        )}
+                                        {floor.completion_date && (
+                                            <div className={styles.configCardRow}>
+                                                <span className={styles.configCardLabel}>Completion</span>
+                                                <span className={styles.configCardValue}>{floor.completion_date}</span>
+                                            </div>
+                                        )}
+                                        {floor.status && (
+                                            <span className={`${styles.statusBadge} ${getStatusClass(floor.status)}`}>
+                                                {floor.status}
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -846,6 +930,80 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                                                         <td style={{ padding: '12px 18px', color: '#0a0a0a', fontWeight: 500 }}>{unit.basic_price || '—'}</td>
                                                         <td style={{ padding: '12px 18px', color: '#737373' }}>{unit.completion_date || '—'}</td>
                                                         <td style={{ padding: '12px 18px', color: '#a3a3a3' }}>—</td>
+                                                    </tr>
+                                                );
+                                            });
+                                        }
+                                        return rows;
+                                    })()}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Commercial: Combined Floor & Unit Table */}
+                {category === 'Commercial' && ((plans as CommercialUnit[]).length > 0 || (towers as CommercialFloor[]).length > 0) && (
+                    <div className={styles.sectionContainer}>
+                        <h2 className={styles.sectionTitle}>COMMERCIAL UNIT DETAILS</h2>
+                        <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e5e5e5' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                                <thead>
+                                    <tr style={{ background: '#183C38', color: '#fafafa' }}>
+                                        <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Floor / Wing</th>
+                                        <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Units</th>
+                                        <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Unit Type</th>
+                                        <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Area Range</th>
+                                        <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Price Range</th>
+                                        <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Rent / Sq.Ft</th>
+                                        <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Completion</th>
+                                        <th style={{ padding: '14px 18px', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(() => {
+                                        const floorList = towers as CommercialFloor[];
+                                        const unitList = plans as CommercialUnit[];
+                                        const rows: React.ReactNode[] = [];
+
+                                        if (unitList.length > 0) {
+                                            unitList.forEach((unit, idx) => {
+                                                const floor = floorList[idx] || null;
+                                                rows.push(
+                                                    <tr key={idx} style={{ borderTop: '1px solid #e5e5e5', background: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                                                        <td style={{ padding: '12px 18px', color: '#0a0a0a', fontWeight: 600, borderRight: '1px solid #e5e5e5' }}>{floor?.floor_name || '—'}</td>
+                                                        <td style={{ padding: '12px 18px', color: '#525252', borderRight: '1px solid #e5e5e5' }}>{floor?.total_units || '—'}</td>
+                                                        <td style={{ padding: '12px 18px', color: '#0a0a0a' }}>{unit.unit_type || '—'}</td>
+                                                        <td style={{ padding: '12px 18px', color: '#0a0a0a' }}>{unit.area_range || '—'}</td>
+                                                        <td style={{ padding: '12px 18px', color: '#0a0a0a', fontWeight: 500 }}>{unit.price_range || '—'}</td>
+                                                        <td style={{ padding: '12px 18px', color: '#0a0a0a' }}>{unit.rent_per_sqft || '—'}</td>
+                                                        <td style={{ padding: '12px 18px', color: '#737373' }}>{floor?.completion_date || '—'}</td>
+                                                        <td style={{ padding: '12px 18px' }}>
+                                                            {unit.status && (
+                                                                <span className={`${styles.statusBadge} ${getStatusClass(unit.status)}`}>
+                                                                    {unit.status}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            });
+                                        } else if (floorList.length > 0) {
+                                            floorList.forEach((floor, idx) => {
+                                                rows.push(
+                                                    <tr key={idx} style={{ borderTop: '1px solid #e5e5e5', background: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                                                        <td style={{ padding: '12px 18px', color: '#0a0a0a', fontWeight: 600, borderRight: '1px solid #e5e5e5' }}>{floor.floor_name}</td>
+                                                        <td style={{ padding: '12px 18px', color: '#525252', borderRight: '1px solid #e5e5e5' }}>{floor.total_units}</td>
+                                                        <td style={{ padding: '12px 18px', color: '#0a0a0a' }}>{floor.unit_types || '—'}</td>
+                                                        <td colSpan={3} style={{ padding: '12px 18px', color: '#a3a3a3', textAlign: 'center' }}>—</td>
+                                                        <td style={{ padding: '12px 18px', color: '#737373' }}>{floor.completion_date || '—'}</td>
+                                                        <td style={{ padding: '12px 18px' }}>
+                                                            {floor.status && (
+                                                                <span className={`${styles.statusBadge} ${getStatusClass(floor.status)}`}>
+                                                                    {floor.status}
+                                                                </span>
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 );
                                             });

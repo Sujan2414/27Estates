@@ -12,6 +12,7 @@ import {
     exportProjectsToExcel,
     type ParsedProperty,
     type ParsedProject,
+    type ProjectCategory,
 } from '@/lib/admin/bulkUtils'
 
 interface BulkUploadModalProps {
@@ -30,12 +31,13 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
     const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0, failed: 0 })
     const [uploadErrors, setUploadErrors] = useState<{ row: number; message: string }[]>([])
     const [dragOver, setDragOver] = useState(false)
+    const [templateCategory, setTemplateCategory] = useState<ProjectCategory>('Residential')
     const fileRef = useRef<HTMLInputElement>(null)
     const supabase = createClient()
 
     const handleDownloadTemplate = () => {
         if (type === 'property') generatePropertyTemplate()
-        else generateProjectTemplate()
+        else generateProjectTemplate(templateCategory)
     }
 
     const handleDownloadExisting = async () => {
@@ -233,9 +235,21 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
 
                 {/* Actions Bar */}
                 <div style={actionsBarStyle}>
+                    {type === 'project' && (
+                        <select
+                            value={templateCategory}
+                            onChange={(e) => setTemplateCategory(e.target.value as ProjectCategory)}
+                            style={categorySelectorStyle}
+                        >
+                            <option value="Residential">Residential</option>
+                            <option value="Villa">Villa</option>
+                            <option value="Plot">Plot</option>
+                            <option value="Commercial">Commercial</option>
+                        </select>
+                    )}
                     <button onClick={handleDownloadTemplate} style={templateBtnStyle}>
                         <Download size={16} />
-                        Download Template
+                        {type === 'project' ? `${templateCategory} Template` : 'Download Template'}
                     </button>
                     <button onClick={handleDownloadExisting} style={exportBtnStyle}>
                         <FileSpreadsheet size={16} />
@@ -480,6 +494,19 @@ const actionsBarStyle: React.CSSProperties = {
     padding: '16px 24px',
     borderBottom: '1px solid #f3f4f6',
     flexWrap: 'wrap',
+    alignItems: 'center',
+}
+
+const categorySelectorStyle: React.CSSProperties = {
+    padding: '10px 14px',
+    border: '1px solid #d1d5db',
+    borderRadius: '10px',
+    fontSize: '0.9rem',
+    color: '#374151',
+    background: '#fff',
+    cursor: 'pointer',
+    fontWeight: 600,
+    outline: 'none',
 }
 
 const templateBtnStyle: React.CSSProperties = {

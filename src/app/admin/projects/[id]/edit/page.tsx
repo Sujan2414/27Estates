@@ -119,6 +119,24 @@ interface PlotConfig {
     status: string
 }
 
+// Commercial floor
+interface CommercialFloor {
+    floor_name: string
+    total_units: string
+    unit_types: string
+    completion_date: string
+    status: string
+}
+
+// Commercial unit
+interface CommercialUnit {
+    unit_type: string
+    area_range: string
+    price_range: string
+    rent_per_sqft: string
+    status: string
+}
+
 export default function EditProjectPage() {
     const router = useRouter()
     const params = useParams()
@@ -214,6 +232,8 @@ export default function EditProjectPage() {
     const [residentialUnits, setResidentialUnits] = useState<ResidentialUnit[]>([{ tower: '', type: '', bhk: '', carpet_area: '', built_up_area: '', price_range: '', status: '' }])
     const [villaTypes, setVillaTypes] = useState<VillaTypeConfig[]>([{ villa_type: '', bhk: '', plot_area: '', built_up_area: '', floors: '', price_range: '', status: '' }])
     const [plotConfigs, setPlotConfigs] = useState<PlotConfig[]>([{ plot_type: '', dimensions: '', area_sqft: '', facing: '', price_per_sqft: '', total_price: '', status: '' }])
+    const [commercialFloors, setCommercialFloors] = useState<CommercialFloor[]>([{ floor_name: '', total_units: '', unit_types: '', completion_date: '', status: '' }])
+    const [commercialUnits, setCommercialUnits] = useState<CommercialUnit[]>([{ unit_type: '', area_range: '', price_range: '', rent_per_sqft: '', status: '' }])
 
     // Specifications (JSON text for now - complex nested)
     const [specsJson, setSpecsJson] = useState('{}')
@@ -368,6 +388,17 @@ export default function EditProjectPage() {
                     ? (planData as PlotConfig[])
                     : [{ plot_type: '', dimensions: '', area_sqft: '', facing: '', price_per_sqft: '', total_price: '', status: '' }]
             )
+        } else if (cat === 'Commercial') {
+            setCommercialFloors(
+                towersData.length > 0
+                    ? (towersData as CommercialFloor[])
+                    : [{ floor_name: '', total_units: '', unit_types: '', completion_date: '', status: '' }]
+            )
+            setCommercialUnits(
+                planData.length > 0
+                    ? (planData as CommercialUnit[])
+                    : [{ unit_type: '', area_range: '', price_range: '', rent_per_sqft: '', status: '' }]
+            )
         }
 
         setLoading(false)
@@ -496,6 +527,20 @@ export default function EditProjectPage() {
     const addPlotConfig = () => setPlotConfigs(prev => [...prev, { plot_type: '', dimensions: '', area_sqft: '', facing: '', price_per_sqft: '', total_price: '', status: '' }])
     const removePlotConfig = (index: number) => setPlotConfigs(prev => prev.filter((_, i) => i !== index))
 
+    // Commercial Floor handlers
+    const handleCommercialFloorChange = (index: number, field: keyof CommercialFloor, value: string) => {
+        setCommercialFloors(prev => prev.map((f, i) => i === index ? { ...f, [field]: value } : f))
+    }
+    const addCommercialFloor = () => setCommercialFloors(prev => [...prev, { floor_name: '', total_units: '', unit_types: '', completion_date: '', status: '' }])
+    const removeCommercialFloor = (index: number) => setCommercialFloors(prev => prev.filter((_, i) => i !== index))
+
+    // Commercial Unit handlers
+    const handleCommercialUnitChange = (index: number, field: keyof CommercialUnit, value: string) => {
+        setCommercialUnits(prev => prev.map((u, i) => i === index ? { ...u, [field]: value } : u))
+    }
+    const addCommercialUnit = () => setCommercialUnits(prev => [...prev, { unit_type: '', area_range: '', price_range: '', rent_per_sqft: '', status: '' }])
+    const removeCommercialUnit = (index: number) => setCommercialUnits(prev => prev.filter((_, i) => i !== index))
+
     const handleAdToggle = async (checked: boolean) => {
         if (!checked) {
             setShowAdOnHome(false)
@@ -564,6 +609,8 @@ export default function EditProjectPage() {
                 towersData = (villaClusters || []).filter(c => (c?.cluster_name || '').trim() !== '')
             } else if (formData.category === 'Plot') {
                 towersData = (plotPhases || []).filter(p => (p?.phase_name || '').trim() !== '')
+            } else if (formData.category === 'Commercial') {
+                towersData = (commercialFloors || []).filter(f => (f?.floor_name || '').trim() !== '')
             }
 
             // Build project_plan based on category
@@ -574,6 +621,8 @@ export default function EditProjectPage() {
                 planData = (villaTypes || []).filter(v => (v?.villa_type || '').trim() !== '')
             } else if (formData.category === 'Plot') {
                 planData = (plotConfigs || []).filter(p => (p?.plot_type || '').trim() !== '')
+            } else if (formData.category === 'Commercial') {
+                planData = (commercialUnits || []).filter(u => (u?.unit_type || '').trim() !== '')
             }
 
             // Parse specifications
@@ -689,11 +738,12 @@ export default function EditProjectPage() {
         }
     }
 
-    const categories = ['Residential', 'Villa', 'Plot']
+    const categories = ['Residential', 'Villa', 'Plot', 'Commercial']
     const subCategories: Record<string, string[]> = {
         Residential: ['Apartment', 'Penthouse', 'Studio', 'Duplex'],
         Villa: ['Independent Villa', 'Row House', 'Twin Villa', 'Farm Villa'],
         Plot: ['Farm Plot', 'Residential Plot', 'Commercial Plot', 'NA Plot'],
+        Commercial: ['Office Space', 'Retail Shops', 'Co-Working Space', 'Showroom', 'Mixed Use', 'Business Park', 'Mall'],
     }
     const statusOptions = ['Under Construction', 'Ready to Move', 'Pre-Launch', 'Upcoming', 'Completed']
 
@@ -1081,6 +1131,59 @@ export default function EditProjectPage() {
                             </div>
                         ))}
                         <button type="button" onClick={addVillaType} className={formStyles.addImageBtn}><Plus size={16} /> Add Villa Type</button>
+                    </div>
+                )}
+
+                {/* Commercial: Floors & Unit Configurations */}
+                {formData.category === 'Commercial' && (
+                    <div className={formStyles.section}>
+                        <h2 className={formStyles.sectionTitle}>Floor / Wing Details & Unit Configurations</h2>
+
+                        <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#374151', marginBottom: '0.75rem' }}>Floors / Wings</h3>
+                        {commercialFloors.map((floor, index) => (
+                            <div key={index} className={formStyles.floorPlanRow}>
+                                <div className={formStyles.grid3}>
+                                    <input type="text" value={floor.floor_name} onChange={(e) => handleCommercialFloorChange(index, 'floor_name', e.target.value)} className={formStyles.input} placeholder="Floor / Wing Name" />
+                                    <input type="text" value={floor.total_units} onChange={(e) => handleCommercialFloorChange(index, 'total_units', e.target.value)} className={formStyles.input} placeholder="Total Units" />
+                                    <input type="text" value={floor.unit_types} onChange={(e) => handleCommercialFloorChange(index, 'unit_types', e.target.value)} className={formStyles.input} placeholder="Unit Types (Office, Retail...)" />
+                                </div>
+                                <div className={formStyles.grid3} style={{ marginTop: '0.5rem' }}>
+                                    <input type="text" value={floor.completion_date} onChange={(e) => handleCommercialFloorChange(index, 'completion_date', e.target.value)} className={formStyles.input} placeholder="Completion Date" />
+                                    <input type="text" value={floor.status} onChange={(e) => handleCommercialFloorChange(index, 'status', e.target.value)} className={formStyles.input} placeholder="Status" />
+                                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                        {commercialFloors.length > 1 && (
+                                            <button type="button" onClick={() => removeCommercialFloor(index)} className={formStyles.removeBtn}><X size={18} /></button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        <button type="button" onClick={addCommercialFloor} className={formStyles.addImageBtn}><Plus size={16} /> Add Floor / Wing</button>
+
+                        <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '1.5rem 0' }} />
+
+                        <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#374151', marginBottom: '0.75rem' }}>Unit Configurations</h3>
+                        {commercialUnits.map((unit, index) => (
+                            <div key={index} className={formStyles.floorPlanRow}>
+                                <div className={formStyles.grid4}>
+                                    <input type="text" value={unit.unit_type} onChange={(e) => handleCommercialUnitChange(index, 'unit_type', e.target.value)} className={formStyles.input} placeholder="Unit Type (Office Space...)" />
+                                    <input type="text" value={unit.area_range} onChange={(e) => handleCommercialUnitChange(index, 'area_range', e.target.value)} className={formStyles.input} placeholder="Area Range (500–2000 sqft)" />
+                                    <input type="text" value={unit.price_range} onChange={(e) => handleCommercialUnitChange(index, 'price_range', e.target.value)} className={formStyles.input} placeholder="Price Range (₹50L–₹2Cr)" />
+                                    <input type="text" value={unit.rent_per_sqft} onChange={(e) => handleCommercialUnitChange(index, 'rent_per_sqft', e.target.value)} className={formStyles.input} placeholder="Rent / sqft (₹80/sqft)" />
+                                </div>
+                                <div className={formStyles.grid4} style={{ marginTop: '0.5rem' }}>
+                                    <input type="text" value={unit.status} onChange={(e) => handleCommercialUnitChange(index, 'status', e.target.value)} className={formStyles.input} placeholder="Status" />
+                                    <div></div>
+                                    <div></div>
+                                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                        {commercialUnits.length > 1 && (
+                                            <button type="button" onClick={() => removeCommercialUnit(index)} className={formStyles.removeBtn}><X size={18} /></button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        <button type="button" onClick={addCommercialUnit} className={formStyles.addImageBtn}><Plus size={16} /> Add Unit Config</button>
                     </div>
                 )}
 

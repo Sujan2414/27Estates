@@ -71,6 +71,22 @@ export default function PropertyContactStep({ initialData, onNext }: StepProps) 
             return
         }
 
+        // Check for duplicates
+        if (newOwner.phone) {
+            const isPhoneDuplicate = owners.some(o => o.phone === newOwner.phone.trim())
+            if (isPhoneDuplicate) {
+                setCreateError('An owner with this phone number already exists.')
+                return
+            }
+        }
+        if (newOwner.email) {
+            const isEmailDuplicate = owners.some(o => o.email?.toLowerCase() === newOwner.email.trim().toLowerCase())
+            if (isEmailDuplicate) {
+                setCreateError('An owner with this email already exists.')
+                return
+            }
+        }
+
         setCreating(true)
         setCreateError(null)
 
@@ -135,22 +151,63 @@ export default function PropertyContactStep({ initialData, onNext }: StepProps) 
                         />
                     </div>
 
-                    {/* Dropdown */}
-                    <select
-                        className={styles.select}
-                        value={selectedOwner}
-                        onChange={(e) => setSelectedOwner(e.target.value)}
-                        required
-                        size={Math.min(filteredOwners.length + 1, 8)}
-                        style={{ height: 'auto', minHeight: '48px' }}
-                    >
-                        <option value="">-- Select an Owner --</option>
-                        {filteredOwners.map(owner => (
-                            <option key={owner.id} value={owner.id}>
-                                {owner.name}{owner.phone ? ` • ${owner.phone}` : ''}{owner.company ? ` • ${owner.company}` : ''}
-                            </option>
-                        ))}
-                    </select>
+                    {/* Custom Searchable Dropdown */}
+                    <div style={{ position: 'relative', marginTop: '0.5rem' }}>
+                        {!selectedOwnerData ? (
+                            <div style={{
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                background: '#ffffff',
+                                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                            }}>
+                                <div style={{
+                                    borderBottom: '1px solid #f1f5f9',
+                                    background: '#f8fafc',
+                                    padding: '10px 14px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    color: '#64748b',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em'
+                                }}>
+                                    Select from matches
+                                </div>
+                                <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+                                    {filteredOwners.length > 0 ? (
+                                        filteredOwners.map(owner => (
+                                            <div
+                                                key={owner.id}
+                                                onClick={() => setSelectedOwner(owner.id)}
+                                                style={{
+                                                    padding: '12px 14px',
+                                                    borderBottom: '1px solid #f1f5f9',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '4px'
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                <div style={{ fontWeight: 600, color: '#1e293b' }}>{owner.name}</div>
+                                                <div style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', gap: '12px' }}>
+                                                    {owner.phone && <span>📞 {owner.phone}</span>}
+                                                    {owner.email && <span>✉️ {owner.email}</span>}
+                                                    {owner.company && <span>🏢 {owner.company}</span>}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>
+                                            No owners found matching "{searchQuery}"
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
 
                 {/* Selected owner card */}
