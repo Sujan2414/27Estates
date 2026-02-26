@@ -52,6 +52,21 @@ export default function ProjectStep2Pricing({ initialData, onNext, onBack }: Ste
                 <div className={styles.field}>
                     <label className={styles.label}>Min Price (Display)</label>
                     <input type="text" name="min_price" value={formData.min_price} onChange={handleChange} className={styles.input} placeholder="₹45 L" />
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        {['Price on Request', 'Price TBD', 'Request for Details'].map(opt => (
+                            <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, min_price: opt }))}
+                                style={{
+                                    padding: '4px 10px', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer',
+                                    border: formData.min_price === opt ? '1px solid #183C38' : '1px solid #e2e8f0',
+                                    background: formData.min_price === opt ? '#f0fdf4' : '#f8fafc',
+                                    color: formData.min_price === opt ? '#183C38' : '#64748b', fontWeight: 500,
+                                }}
+                            >{opt}</button>
+                        ))}
+                    </div>
                 </div>
                 <div className={styles.field}>
                     <label className={styles.label}>Max Price (Display)</label>

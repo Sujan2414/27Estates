@@ -153,7 +153,7 @@ export default function ProjectsPage() {
 
                                 <div className={propertyStyles.footer}>
                                     <span className={propertyStyles.price}>
-                                        {project.min_price ? `${project.min_price}${project.max_price ? ` - ${project.max_price}` : ''}` : 'Price TBD'}
+                                        {project.min_price ? `${project.min_price}${project.max_price ? ` - ${project.max_price}` : ''}` : 'Request for Details'}
                                     </span>
                                     <div className={propertyStyles.actions}>
                                         <Link href={`/admin/projects/${project.id}/edit`} className={propertyStyles.actionBtn}>

@@ -116,7 +116,63 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
     const [amenitySearch, setAmenitySearch] = useState('')
     const [amenityDropdownOpen, setAmenityDropdownOpen] = useState(false)
     const amenityDropdownRef = useRef<HTMLDivElement>(null)
-    const [specsJson, setSpecsJson] = useState(initialData.specsJson || '{}')
+    // Specifications: structured key-value groups instead of raw JSON
+    interface SpecItem { key: string; value: string }
+    interface SpecGroup { groupName: string; items: SpecItem[] }
+
+    const parseSpecsFromJson = (jsonStr: string): SpecGroup[] => {
+        try {
+            const obj = JSON.parse(jsonStr || '{}')
+            if (!obj || typeof obj !== 'object' || Object.keys(obj).length === 0) {
+                return [{ groupName: '', items: [{ key: '', value: '' }] }]
+            }
+            const groups: SpecGroup[] = []
+            for (const [key, val] of Object.entries(obj)) {
+                if (typeof val === 'object' && val && !Array.isArray(val)) {
+                    // Nested group
+                    const items = Object.entries(val as Record<string, string>).map(([k, v]) => ({ key: k, value: String(v) }))
+                    groups.push({ groupName: key, items: items.length > 0 ? items : [{ key: '', value: '' }] })
+                } else {
+                    // Flat key-value — put in a group with empty name
+                    const existingFlat = groups.find(g => g.groupName === '')
+                    if (existingFlat) {
+                        existingFlat.items.push({ key, value: String(val) })
+                    } else {
+                        groups.push({ groupName: '', items: [{ key, value: String(val) }] })
+                    }
+                }
+            }
+            return groups.length > 0 ? groups : [{ groupName: '', items: [{ key: '', value: '' }] }]
+        } catch {
+            return [{ groupName: '', items: [{ key: '', value: '' }] }]
+        }
+    }
+
+    const buildSpecsObject = (groups: SpecGroup[]): Record<string, unknown> => {
+        const result: Record<string, unknown> = {}
+        for (const group of groups) {
+            const validItems = group.items.filter(i => i.key.trim() !== '')
+            if (validItems.length === 0) continue
+            if (group.groupName.trim() === '') {
+                // Flat items
+                for (const item of validItems) {
+                    result[item.key] = item.value
+                }
+            } else {
+                // Grouped items
+                const subObj: Record<string, string> = {}
+                for (const item of validItems) {
+                    subObj[item.key] = item.value
+                }
+                result[group.groupName] = subObj
+            }
+        }
+        return result
+    }
+
+    const [specGroups, setSpecGroups] = useState<SpecGroup[]>(() =>
+        parseSpecsFromJson(initialData.specsJson || '{}')
+    )
 
     const [residentialTowers, setResidentialTowers] = useState<ResidentialTower[]>(initialData.residentialTowers || [{ name: '', total_floors: '', total_units: '', completion_date: '', status: '' }])
     const [villaClusters, setVillaClusters] = useState<VillaCluster[]>(initialData.villaClusters || [{ cluster_name: '', total_villas: '', villa_types: '', completion_date: '', status: '' }])
@@ -225,6 +281,30 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
     const addCommercialUnit = () => setCommercialUnits(prev => [...prev, { unit_type: '', area_range: '', price_range: '', rent_per_sqft: '', status: '' }])
     const removeCommercialUnit = (index: number) => setCommercialUnits(prev => prev.filter((_, i) => i !== index))
 
+    // Spec group handlers
+    const handleSpecGroupNameChange = (groupIndex: number, value: string) => {
+        setSpecGroups(prev => prev.map((g, i) => i === groupIndex ? { ...g, groupName: value } : g))
+    }
+    const handleSpecItemChange = (groupIndex: number, itemIndex: number, field: 'key' | 'value', value: string) => {
+        setSpecGroups(prev => prev.map((g, gi) =>
+            gi === groupIndex
+                ? { ...g, items: g.items.map((item, ii) => ii === itemIndex ? { ...item, [field]: value } : item) }
+                : g
+        ))
+    }
+    const addSpecGroup = () => setSpecGroups(prev => [...prev, { groupName: '', items: [{ key: '', value: '' }] }])
+    const removeSpecGroup = (groupIndex: number) => setSpecGroups(prev => prev.filter((_, i) => i !== groupIndex))
+    const addSpecItem = (groupIndex: number) => {
+        setSpecGroups(prev => prev.map((g, i) =>
+            i === groupIndex ? { ...g, items: [...g.items, { key: '', value: '' }] } : g
+        ))
+    }
+    const removeSpecItem = (groupIndex: number, itemIndex: number) => {
+        setSpecGroups(prev => prev.map((g, gi) =>
+            gi === groupIndex ? { ...g, items: g.items.filter((_, ii) => ii !== itemIndex) } : g
+        ))
+    }
+
     const addBtnStyle: React.CSSProperties = {
         display: 'inline-flex', alignItems: 'center', gap: '6px',
         padding: '8px 16px', background: '#f1f5f9', border: '1px solid #e2e8f0',
@@ -246,11 +326,13 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        // Build specs object from groups and pass as JSON string for Step6Publish
+        const specsObj = buildSpecsObject(specGroups)
         onNext({
             connectivity,
             highlights,
             amenities: selectedAmenities,
-            specsJson,
+            specsJson: JSON.stringify(specsObj),
             residentialTowers,
             villaClusters,
             plotPhases,
@@ -601,18 +683,65 @@ export default function ProjectStep4Details({ initialData, onNext, onBack }: Ste
             {/* Specifications */}
             <h3 style={sectionHeaderStyle}>Specifications</h3>
             <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '12px' }}>
-                JSON format. For Residential/Villa: {`{ "structure": { ... }, "flooring": { ... } }`}.
-                For Plot: {`{ "road_width": "30 ft", "drainage": "Underground" }`}
+                {category === 'Plot'
+                    ? 'Add infrastructure specs like road width, drainage, etc.'
+                    : 'Add specification groups (e.g. Structure, Flooring) with their details.'}
             </p>
-            <div className={styles.field}>
-                <textarea
-                    value={specsJson}
-                    onChange={(e) => setSpecsJson(e.target.value)}
-                    className={styles.textarea}
-                    rows={8}
-                    style={{ fontFamily: 'monospace', fontSize: '0.8125rem' }}
-                />
-            </div>
+            {specGroups.map((group, gi) => (
+                <div key={gi} style={{ ...rowStyle, padding: '16px', marginBottom: '16px' }}>
+                    {/* Group header */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+                        {category !== 'Plot' && (
+                            <input
+                                type="text"
+                                value={group.groupName}
+                                onChange={(e) => handleSpecGroupNameChange(gi, e.target.value)}
+                                className={styles.input}
+                                placeholder="Group Name (e.g. Structure, Flooring)"
+                                style={{ flex: 1, fontWeight: 600, margin: 0 }}
+                            />
+                        )}
+                        {category === 'Plot' && (
+                            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Infrastructure Specs</span>
+                        )}
+                        {specGroups.length > 1 && (
+                            <button type="button" onClick={() => removeSpecGroup(gi)} style={removeBtnStyle}><X size={16} /></button>
+                        )}
+                    </div>
+                    {/* Items */}
+                    {group.items.map((item, ii) => (
+                        <div key={ii} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                            <input
+                                type="text"
+                                value={item.key}
+                                onChange={(e) => handleSpecItemChange(gi, ii, 'key', e.target.value)}
+                                className={styles.input}
+                                placeholder="Label (e.g. Wall, Road Width)"
+                                style={{ flex: 1, margin: 0 }}
+                            />
+                            <input
+                                type="text"
+                                value={item.value}
+                                onChange={(e) => handleSpecItemChange(gi, ii, 'value', e.target.value)}
+                                className={styles.input}
+                                placeholder="Value (e.g. RCC Frame, 30 ft)"
+                                style={{ flex: 1, margin: 0 }}
+                            />
+                            {group.items.length > 1 && (
+                                <button type="button" onClick={() => removeSpecItem(gi, ii)} style={removeBtnStyle}><X size={14} /></button>
+                            )}
+                        </div>
+                    ))}
+                    <button type="button" onClick={() => addSpecItem(gi)} style={{ ...addBtnStyle, marginTop: '4px' }}>
+                        <Plus size={14} /> Add Row
+                    </button>
+                </div>
+            ))}
+            {category !== 'Plot' && (
+                <button type="button" onClick={addSpecGroup} style={addBtnStyle}>
+                    <Plus size={16} /> Add Specification Group
+                </button>
+            )}
 
             <div className={styles.actions}>
                 <button type="button" onClick={onBack} className={`${styles.btn} ${styles.secondaryBtn}`}>

@@ -4,13 +4,19 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useTransform, motion, useScroll } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { MapPin } from 'lucide-react';
 
 interface ProjectCardData {
     id: string;
     title: string;
     image: string;
     linkTo: string;
+    location?: string;
+    city?: string;
+    developer_name?: string;
+    min_price?: string;
+    max_price?: string;
+    status?: string;
 }
 
 // CTA Button styles matching ContactCTA
@@ -41,6 +47,7 @@ interface CardProps {
 const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const { checkAuthAndNavigate } = useAuth();
+    const [hovered, setHovered] = useState(false);
 
     const { scrollYProgress } = useScroll({
         target: cardRef,
@@ -49,6 +56,13 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
 
     const imageScale = useTransform(scrollYProgress, [0, 1], [1.2, 1]);
     const scale = useTransform(progress, range, [1, targetScale]);
+
+    const locationDisplay = project.location || project.city || null;
+    const priceDisplay = project.min_price
+        ? project.max_price
+            ? `${project.min_price} – ${project.max_price}`
+            : `From ${project.min_price}`
+        : null;
 
     return (
         <div
@@ -63,22 +77,105 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
                 }}
                 className="relative -top-[25%] w-[92%] max-w-[1200px] h-[45vh] md:h-[70vh] rounded-xl overflow-hidden shadow-2xl origin-top"
                 onClick={() => checkAuthAndNavigate(project.linkTo)}
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
             >
                 {/* Full Background Image */}
                 <motion.div
-                    className="absolute inset-0 bg-white flex items-center justify-center p-2 md:p-4"
+                    className="absolute inset-0"
                     style={{ scale: imageScale }}
                 >
                     <img
                         src={project.image}
                         alt={project.title}
-                        className="max-w-full max-h-full object-contain"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                 </motion.div>
+
+                {/* Gradient overlay */}
+                <div style={{
+                    position: 'absolute', inset: 0, zIndex: 1,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 45%, rgba(0,0,0,0.08) 70%, transparent 100%)',
+                    transition: 'opacity 0.3s ease',
+                }} />
+
+                {/* Top-left: Featured Project */}
+                <div style={{
+                    position: 'absolute', top: '1rem', left: '1rem', zIndex: 2,
+                }}>
+                    <span style={{
+                        padding: '6px 14px', borderRadius: '2rem',
+                        background: 'linear-gradient(135deg, #BFA270, #d4b886)',
+                        color: '#1a1a1a', fontSize: '0.75rem', fontWeight: 700,
+                        letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+                        boxShadow: '0 2px 8px rgba(191,162,112,0.4)',
+                        display: 'inline-block'
+                    }}>
+                        ✦ Featured Project
+                    </span>
+                </div>
+
+                {/* Top-right: Location */}
+                {locationDisplay && (
+                    <div style={{
+                        position: 'absolute', top: '1rem', right: '1rem', zIndex: 2,
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        padding: '4px 10px', borderRadius: '2rem',
+                        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
+                        color: '#fff', fontSize: '0.75rem', fontWeight: 500,
+                    }}>
+                        <MapPin size={11} />
+                        {locationDisplay}
+                    </div>
+                )}
+
+                {/* Bottom content — project name + hover details */}
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
+                    padding: '2rem',
+                }}>
+                    <h3 style={{
+                        margin: '0 0 0.75rem', color: '#fff',
+                        fontFamily: 'var(--font-heading)',
+                        fontSize: 'clamp(1.25rem, 3vw, 2rem)', fontWeight: 600,
+                        lineHeight: 1.2, textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                    }}>
+                        {project.title}
+                    </h3>
+
+                    {/* Hover-reveal details */}
+                    <div style={{
+                        display: 'flex', gap: '1.5rem', flexWrap: 'wrap',
+                        transform: hovered ? 'translateY(0)' : 'translateY(12px)',
+                        opacity: hovered ? 1 : 0,
+                        transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                        pointerEvents: hovered ? 'auto' : 'none',
+                    }}>
+                        {priceDisplay && (
+                            <div>
+                                <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '3px' }}>Price Range</div>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{priceDisplay}</div>
+                            </div>
+                        )}
+                        {project.status && (
+                            <div>
+                                <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '3px' }}>Status</div>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{project.status}</div>
+                            </div>
+                        )}
+                        {project.developer_name && (
+                            <div>
+                                <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '3px' }}>Developer</div>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{project.developer_name}</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </motion.div>
         </div>
     );
 };
+
 
 // Inner component - only rendered after mount
 function StackingCardsContent({
@@ -210,7 +307,7 @@ export function StackingCards({ showHeader = true }: StackingCardsProps) {
                 // First try: projects with ad cards enabled for homepage
                 const { data: adProjects } = await supabase
                     .from('projects')
-                    .select('id, project_name, ad_card_image')
+                    .select('id, project_name, ad_card_image, location, city, developer_name, min_price, max_price, status')
                     .eq('show_ad_on_home', true)
                     .not('ad_card_image', 'is', null)
                     .order('created_at', { ascending: false })
@@ -222,6 +319,12 @@ export function StackingCards({ showHeader = true }: StackingCardsProps) {
                         title: p.project_name,
                         image: p.ad_card_image!,
                         linkTo: `/projects/${p.id}`,
+                        location: p.location || undefined,
+                        city: p.city || undefined,
+                        developer_name: p.developer_name || undefined,
+                        min_price: p.min_price || undefined,
+                        max_price: p.max_price || undefined,
+                        status: p.status || undefined,
                     }));
                     setProjects(formatted);
                     return;
@@ -230,7 +333,7 @@ export function StackingCards({ showHeader = true }: StackingCardsProps) {
                 // Fallback: featured projects
                 const { data: featuredProjects } = await supabase
                     .from('projects')
-                    .select('id, project_name, images, location, city')
+                    .select('id, project_name, images, location, city, developer_name, min_price, max_price, status')
                     .eq('is_featured', true)
                     .limit(5);
 
@@ -240,6 +343,12 @@ export function StackingCards({ showHeader = true }: StackingCardsProps) {
                         title: p.project_name,
                         image: p.images?.[0] || fallbackProjects[index % fallbackProjects.length].image,
                         linkTo: `/projects/${p.id}`,
+                        location: p.location || undefined,
+                        city: p.city || undefined,
+                        developer_name: p.developer_name || undefined,
+                        min_price: p.min_price || undefined,
+                        max_price: p.max_price || undefined,
+                        status: p.status || undefined,
                     }));
                     setProjects(formatted);
                 } else {

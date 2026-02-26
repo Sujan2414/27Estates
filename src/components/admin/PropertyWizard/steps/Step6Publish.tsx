@@ -204,6 +204,8 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                 // Status & meta
                 status: 'Available',
                 is_featured: d.is_featured || false,
+                is_rera_approved: d.is_rera_approved || false,
+                is_oc_approved: d.is_oc_approved || false,
                 source: d.source || null,
                 channel: d.channel || null,
                 branch: d.branch || null,

@@ -701,6 +701,7 @@ const ProjectsSearchPage = () => {
                                         status={project.status}
                                         developer_name={project.developer_name}
                                         is_rera_approved={project.is_rera_approved}
+                                        category={project.category}
                                         isBookmarked={bookmarks.includes(project.id)}
                                         onBookmarkChange={fetchBookmarks}
                                     />

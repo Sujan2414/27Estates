@@ -41,6 +41,7 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
         bhk_options: initialData.bhk_options || '',
         is_featured: initialData.is_featured || false,
         is_rera_approved: initialData.is_rera_approved || false,
+        is_oc_approved: initialData.is_oc_approved || false,
     })
 
     useEffect(() => {
@@ -294,6 +295,12 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                     <label>RERA Approved</label>
                 </div>
             </div>
+            {formData.category === 'Commercial' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '0.75rem' }}>
+                    <input type="checkbox" name="is_oc_approved" checked={formData.is_oc_approved} onChange={handleChange} />
+                    <label>OC Certificate</label>
+                </div>
+            )}
 
             <div className={styles.actions}>
                 <button type="submit" className={`${styles.btn} ${styles.primaryBtn}`}>

@@ -77,6 +77,8 @@ export default function EditPropertyPage() {
         category: 'House',
         status: 'Available',
         is_featured: false,
+        is_rera_approved: false,
+        is_oc_approved: false,
         agent_id: '',
         owner_id: '',
         video_url: '',
@@ -163,6 +165,8 @@ export default function EditPropertyPage() {
             category: data.category || 'House',
             status: data.status || 'Available',
             is_featured: data.is_featured || false,
+            is_rera_approved: data.is_rera_approved || false,
+            is_oc_approved: data.is_oc_approved || false,
             agent_id: data.agent_id || '',
             owner_id: data.owner_id || '',
             video_url: data.video_url || '',
@@ -331,6 +335,8 @@ export default function EditPropertyPage() {
                 category: formData.category,
                 status: formData.status,
                 is_featured: formData.is_featured,
+                is_rera_approved: formData.is_rera_approved,
+                is_oc_approved: formData.is_oc_approved,
                 agent_id: formData.agent_id || null,
                 owner_id: formData.owner_id || null,
                 video_url: formData.video_url || null,
@@ -515,6 +521,19 @@ export default function EditPropertyPage() {
                         <input type="checkbox" name="is_featured" checked={formData.is_featured} onChange={handleChange} />
                         <label>Featured Property</label>
                     </div>
+
+                    {['Commercial', 'Office', 'Offices'].includes(formData.category) && (
+                        <div className={formStyles.grid2} style={{ marginTop: '0.75rem' }}>
+                            <div className={formStyles.checkboxField}>
+                                <input type="checkbox" name="is_rera_approved" checked={formData.is_rera_approved} onChange={handleChange} />
+                                <label>RERA Approved</label>
+                            </div>
+                            <div className={formStyles.checkboxField}>
+                                <input type="checkbox" name="is_oc_approved" checked={formData.is_oc_approved} onChange={handleChange} />
+                                <label>OC Certificate</label>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Property Details */}

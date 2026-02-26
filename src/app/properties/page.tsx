@@ -93,7 +93,7 @@ const normalizeProject = (p: RawProject): Property => ({
     description: p.description,
     images: p.images || [],
     price: p.min_price_numeric || 0,
-    price_text: p.min_price && p.max_price ? `${p.min_price} - ${p.max_price}` : (p.min_price || 'Price on Request'),
+    price_text: p.min_price && p.max_price ? `${p.min_price} - ${p.max_price}` : (p.min_price || 'Request for Details'),
     price_per_sqft: null,
     location: p.location || '',
     address: p.address || null,

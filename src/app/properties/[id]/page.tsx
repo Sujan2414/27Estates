@@ -6,7 +6,8 @@ import PropertyCard from "@/components/emergent/PropertyCard";
 import {
     MapPin, BedDouble, Bath, Maximize,
     Heart, UserCircle, Map as MapIcon,
-    Share2, Facebook, Link as LinkIcon
+    Share2, Facebook, Link as LinkIcon,
+    Building2, Layers, ParkingCircle
 } from "lucide-react";
 import { FaWhatsapp, FaXTwitter } from "react-icons/fa6";
 import dynamic from "next/dynamic";
@@ -326,18 +327,39 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                 <div className={styles.rightColumn}>
                     {/* Header Info */}
                     <div>
-                        <div className={styles.badges}>
-                            <span className={styles.badge}>{property.category}</span>
-                            <span className={styles.badge}>{property.property_type}</span>
-                            <span className={styles.badge}>{property.location}</span>
+                        <div className={styles.badges} style={{ flexWrap: 'wrap' }}>
+                            <span className={styles.badge} style={{ background: '#f0fdf4', borderColor: '#86efac', color: '#166534', fontWeight: 600 }}>
+                                {property.category}
+                            </span>
+                            <span className={styles.badge} style={{
+                                background: property.property_type === 'Rent' ? '#fffbeb' : '#eff6ff',
+                                borderColor: property.property_type === 'Rent' ? '#fcd34d' : '#93c5fd',
+                                color: property.property_type === 'Rent' ? '#92400e' : '#1e40af',
+                                fontWeight: 600,
+                            }}>
+                                {property.property_type}
+                            </span>
+                            {property.sub_category && (
+                                <span className={styles.badge}>{property.sub_category}</span>
+                            )}
                             {property.furnishing && (
                                 <span className={styles.badge}>{property.furnishing}</span>
                             )}
                         </div>
 
-                        <div className={styles.titleRow}>
+                        <div>
                             <h1 className={styles.title}>{property.title}</h1>
-                            <div className={styles.price}>{displayPrice}</div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '0.5rem', marginBottom: '0.25rem' }}>
+                                <div className={styles.price}>{displayPrice}</div>
+                                {property.property_type === 'Rent' && (
+                                    <span style={{ fontSize: '1rem', fontWeight: 500, color: '#64748b' }}>/month</span>
+                                )}
+                            </div>
+                            {property.price_per_sqft && property.property_type === 'Rent' && (
+                                <div style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>
+                                    ₹{property.price_per_sqft.toLocaleString()} per sqft / month
+                                </div>
+                            )}
                         </div>
 
                         <div className={styles.locationRow}>
@@ -349,18 +371,47 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                         </div>
 
                         <div className={styles.statsRow}>
-                            <div className={styles.statItem}>
-                                <BedDouble size={20} />
-                                <span>{property.rooms || property.bedrooms} Rooms</span>
-                            </div>
-                            <div className={styles.statItem}>
-                                <Bath size={20} />
-                                <span>{property.bathrooms} Bathrooms</span>
-                            </div>
-                            <div className={styles.statItem}>
-                                <Maximize size={20} />
-                                <span>{property.sqft} ft²</span>
-                            </div>
+                            {(property.category === 'Commercial' || property.category === 'Office') ? (
+                                <>
+                                    <div className={styles.statItem}>
+                                        <Maximize size={20} />
+                                        <span>{property.sqft.toLocaleString()} sqft</span>
+                                    </div>
+                                    {property.floors ? (
+                                        <div className={styles.statItem}>
+                                            <Layers size={20} />
+                                            <span>{property.floors} {property.floors === 1 ? 'Floor' : 'Floors'}</span>
+                                        </div>
+                                    ) : null}
+                                    {property.carpet_area ? (
+                                        <div className={styles.statItem}>
+                                            <Building2 size={20} />
+                                            <span>{property.carpet_area.toLocaleString()} sqft carpet</span>
+                                        </div>
+                                    ) : null}
+                                    {property.parking_count ? (
+                                        <div className={styles.statItem}>
+                                            <ParkingCircle size={20} />
+                                            <span>{property.parking_count} Parking</span>
+                                        </div>
+                                    ) : null}
+                                </>
+                            ) : (
+                                <>
+                                    <div className={styles.statItem}>
+                                        <BedDouble size={20} />
+                                        <span>{property.rooms || property.bedrooms} Rooms</span>
+                                    </div>
+                                    <div className={styles.statItem}>
+                                        <Bath size={20} />
+                                        <span>{property.bathrooms} Bathrooms</span>
+                                    </div>
+                                    <div className={styles.statItem}>
+                                        <Maximize size={20} />
+                                        <span>{property.sqft} ft²</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* RENT SPECIFIC PRICING CARDS */}

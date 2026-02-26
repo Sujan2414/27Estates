@@ -32,11 +32,18 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
         floor_number: initialData.floor_number || '',
         total_floors: initialData.total_floors || '',
         plot_sub_type: initialData.plot_sub_type || '',
+        // RERA / OC approvals
+        is_rera_approved: initialData.is_rera_approved || false,
+        is_oc_approved: initialData.is_oc_approved || false,
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target
-        setFormData(prev => ({ ...prev, [name]: value }))
+        const { name, value, type } = e.target
+        if (type === 'checkbox') {
+            setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }))
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }))
+        }
     }
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -239,6 +246,20 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
                 <label className={styles.label}>Remark</label>
                 <input type="text" name="remarks" value={formData.remarks} onChange={handleChange} className={styles.input} />
             </div>
+
+            {/* RERA / OC — shown only for commercial property types */}
+            {isCommercial && (
+                <div className={styles.grid2} style={{ marginTop: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="checkbox" name="is_rera_approved" checked={formData.is_rera_approved} onChange={handleChange} />
+                        <label>RERA Approved</label>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="checkbox" name="is_oc_approved" checked={formData.is_oc_approved} onChange={handleChange} />
+                        <label>OC Certificate</label>
+                    </div>
+                </div>
+            )}
 
             <div className={styles.actions}>
                 <button type="button" className={`${styles.btn} ${styles.secondaryBtn}`} onClick={onBack}>

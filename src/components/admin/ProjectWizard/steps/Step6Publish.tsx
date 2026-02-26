@@ -186,6 +186,7 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                 master_plan_image: master_plan_image || null,
                 is_featured: d.is_featured || false,
                 is_rera_approved: d.is_rera_approved || false,
+                is_oc_approved: d.is_oc_approved || false,
                 employee_name: d.employee_name || null,
                 employee_phone: d.employee_phone || null,
                 employee_email: d.employee_email || null,

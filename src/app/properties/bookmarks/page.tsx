@@ -138,6 +138,7 @@ const Bookmarks = () => {
                                         status={project.status || 'Upcoming'}
                                         developer_name={project.developer_name}
                                         is_rera_approved={project.is_rera_approved}
+                                        category={project.category}
                                         isBookmarked={true}
                                         onBookmarkChange={fetchBookmarks}
                                     />

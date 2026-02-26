@@ -18,10 +18,10 @@ const Logo = () => {
                     />
                 </Link>
             </div>
-            {/* Desktop: full logo with primary color rectangle bg */}
-            <div className="hidden lg:block">
+            {/* Desktop: full logo, centered */}
+            <div className="hidden lg:block" style={{ textAlign: 'center' }}>
                 <Link href="/" style={{
-                    display: 'block',
+                    display: 'inline-block',
                     position: 'relative',
                     width: '320px',
                     height: '160px',
@@ -30,7 +30,7 @@ const Logo = () => {
                         src="/logo without bg (1).png"
                         alt="27 Estates"
                         fill
-                        style={{ objectFit: 'contain', objectPosition: 'left' }}
+                        style={{ objectFit: 'contain' }}
                         priority
                     />
                 </Link>

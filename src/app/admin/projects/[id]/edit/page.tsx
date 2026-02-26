@@ -186,6 +186,7 @@ export default function EditProjectPage() {
         // Flags
         is_featured: false,
         is_rera_approved: false,
+        is_oc_approved: false,
         // Contact
         employee_name: '',
         employee_phone: '',
@@ -235,8 +236,52 @@ export default function EditProjectPage() {
     const [commercialFloors, setCommercialFloors] = useState<CommercialFloor[]>([{ floor_name: '', total_units: '', unit_types: '', completion_date: '', status: '' }])
     const [commercialUnits, setCommercialUnits] = useState<CommercialUnit[]>([{ unit_type: '', area_range: '', price_range: '', rent_per_sqft: '', status: '' }])
 
-    // Specifications (JSON text for now - complex nested)
-    const [specsJson, setSpecsJson] = useState('{}')
+    // Specifications: structured key-value groups
+    interface SpecItem { key: string; value: string }
+    interface SpecGroup { groupName: string; items: SpecItem[] }
+
+    const parseSpecsFromObject = (obj: unknown): SpecGroup[] => {
+        if (!obj || typeof obj !== 'object' || Object.keys(obj as object).length === 0) {
+            return [{ groupName: '', items: [{ key: '', value: '' }] }]
+        }
+        const groups: SpecGroup[] = []
+        for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+            if (typeof val === 'object' && val && !Array.isArray(val)) {
+                const items = Object.entries(val as Record<string, string>).map(([k, v]) => ({ key: k, value: String(v) }))
+                groups.push({ groupName: key, items: items.length > 0 ? items : [{ key: '', value: '' }] })
+            } else {
+                const existingFlat = groups.find(g => g.groupName === '')
+                if (existingFlat) {
+                    existingFlat.items.push({ key, value: String(val) })
+                } else {
+                    groups.push({ groupName: '', items: [{ key, value: String(val) }] })
+                }
+            }
+        }
+        return groups.length > 0 ? groups : [{ groupName: '', items: [{ key: '', value: '' }] }]
+    }
+
+    const buildSpecsObject = (groups: SpecGroup[]): Record<string, unknown> => {
+        const result: Record<string, unknown> = {}
+        for (const group of groups) {
+            const validItems = group.items.filter(i => i.key.trim() !== '')
+            if (validItems.length === 0) continue
+            if (group.groupName.trim() === '') {
+                for (const item of validItems) {
+                    result[item.key] = item.value
+                }
+            } else {
+                const subObj: Record<string, string> = {}
+                for (const item of validItems) {
+                    subObj[item.key] = item.value
+                }
+                result[group.groupName] = subObj
+            }
+        }
+        return result
+    }
+
+    const [specGroups, setSpecGroups] = useState<SpecGroup[]>([{ groupName: '', items: [{ key: '', value: '' }] }])
 
     // Ad Card
     const [adCardImage, setAdCardImage] = useState('')
@@ -305,6 +350,7 @@ export default function EditProjectPage() {
             master_plan_image: (data as Record<string, unknown>).master_plan_image as string || '',
             is_featured: data.is_featured || false,
             is_rera_approved: data.is_rera_approved || false,
+            is_oc_approved: data.is_oc_approved || false,
             employee_name: data.employee_name || '',
             employee_phone: data.employee_phone || '',
             employee_email: data.employee_email || '',
@@ -344,7 +390,7 @@ export default function EditProjectPage() {
         setSelectedAmenities(flattenAmenities(data.amenities))
 
         // Specifications
-        setSpecsJson(JSON.stringify(data.specifications_complex || {}, null, 2))
+        setSpecGroups(parseSpecsFromObject(data.specifications_complex))
 
         // Ad Card
         setAdCardImage((data as Record<string, unknown>).ad_card_image as string || '')
@@ -541,6 +587,30 @@ export default function EditProjectPage() {
     const addCommercialUnit = () => setCommercialUnits(prev => [...prev, { unit_type: '', area_range: '', price_range: '', rent_per_sqft: '', status: '' }])
     const removeCommercialUnit = (index: number) => setCommercialUnits(prev => prev.filter((_, i) => i !== index))
 
+    // Spec group handlers
+    const handleSpecGroupNameChange = (groupIndex: number, value: string) => {
+        setSpecGroups(prev => prev.map((g, i) => i === groupIndex ? { ...g, groupName: value } : g))
+    }
+    const handleSpecItemChange = (groupIndex: number, itemIndex: number, field: 'key' | 'value', value: string) => {
+        setSpecGroups(prev => prev.map((g, gi) =>
+            gi === groupIndex
+                ? { ...g, items: g.items.map((item, ii) => ii === itemIndex ? { ...item, [field]: value } : item) }
+                : g
+        ))
+    }
+    const addSpecGroup = () => setSpecGroups(prev => [...prev, { groupName: '', items: [{ key: '', value: '' }] }])
+    const removeSpecGroup = (groupIndex: number) => setSpecGroups(prev => prev.filter((_, i) => i !== groupIndex))
+    const addSpecItem = (groupIndex: number) => {
+        setSpecGroups(prev => prev.map((g, i) =>
+            i === groupIndex ? { ...g, items: [...g.items, { key: '', value: '' }] } : g
+        ))
+    }
+    const removeSpecItem = (groupIndex: number, itemIndex: number) => {
+        setSpecGroups(prev => prev.map((g, gi) =>
+            gi === groupIndex ? { ...g, items: g.items.filter((_, ii) => ii !== itemIndex) } : g
+        ))
+    }
+
     const handleAdToggle = async (checked: boolean) => {
         if (!checked) {
             setShowAdOnHome(false)
@@ -625,13 +695,8 @@ export default function EditProjectPage() {
                 planData = (commercialUnits || []).filter(u => (u?.unit_type || '').trim() !== '')
             }
 
-            // Parse specifications
-            let specsData = {}
-            try {
-                specsData = JSON.parse(specsJson)
-            } catch {
-                // keep empty
-            }
+            // Build specifications from groups
+            const specsData = buildSpecsObject(specGroups)
 
             const projectData: Record<string, unknown> = {
                 project_id: formData.project_id,
@@ -681,6 +746,7 @@ export default function EditProjectPage() {
                 // Flags
                 is_featured: formData.is_featured,
                 is_rera_approved: formData.is_rera_approved,
+                is_oc_approved: formData.is_oc_approved,
                 // Contact
                 employee_name: formData.employee_name || null,
                 employee_phone: formData.employee_phone || null,
@@ -882,6 +948,14 @@ export default function EditProjectPage() {
                             <label>RERA Approved</label>
                         </div>
                     </div>
+                    {formData.category === 'Commercial' && (
+                        <div className={formStyles.grid2} style={{ marginTop: '0.75rem' }}>
+                            <div className={formStyles.checkboxField}>
+                                <input type="checkbox" name="is_oc_approved" checked={formData.is_oc_approved} onChange={handleChange} />
+                                <label>OC Certificate</label>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Pricing */}
@@ -892,6 +966,21 @@ export default function EditProjectPage() {
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Min Price (Display)</label>
                             <input type="text" name="min_price" value={formData.min_price} onChange={handleChange} className={formStyles.input} placeholder="₹45 L" />
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                                {['Price on Request', 'Price TBD', 'Request for Details'].map(opt => (
+                                    <button
+                                        key={opt}
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, min_price: opt }))}
+                                        style={{
+                                            padding: '4px 10px', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer',
+                                            border: formData.min_price === opt ? '1px solid #183C38' : '1px solid #e2e8f0',
+                                            background: formData.min_price === opt ? '#f0fdf4' : '#f8fafc',
+                                            color: formData.min_price === opt ? '#183C38' : '#64748b', fontWeight: 500,
+                                        }}
+                                    >{opt}</button>
+                                ))}
+                            </div>
                         </div>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Max Price (Display)</label>
@@ -1434,22 +1523,69 @@ export default function EditProjectPage() {
                     </button>
                 </div>
 
-                {/* Specifications (JSON) */}
+                {/* Specifications */}
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Specifications</h2>
                     <p className={formStyles.sectionHelp}>
-                        JSON format. For Residential/Villa: {`{ "structure": { ... }, "flooring": { ... } }`}.
-                        For Plot: {`{ "road_width": "30 ft", "drainage": "Underground" }`}
+                        {formData.category === 'Plot'
+                            ? 'Add infrastructure specs like road width, drainage, etc.'
+                            : 'Add specification groups (e.g. Structure, Flooring) with their details.'}
                     </p>
-                    <div className={formStyles.field}>
-                        <textarea
-                            value={specsJson}
-                            onChange={(e) => setSpecsJson(e.target.value)}
-                            className={formStyles.textarea}
-                            rows={8}
-                            style={{ fontFamily: 'monospace', fontSize: '0.8125rem' }}
-                        />
-                    </div>
+                    {specGroups.map((group, gi) => (
+                        <div key={gi} style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
+                            {/* Group header */}
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+                                {formData.category !== 'Plot' && (
+                                    <input
+                                        type="text"
+                                        value={group.groupName}
+                                        onChange={(e) => handleSpecGroupNameChange(gi, e.target.value)}
+                                        className={formStyles.input}
+                                        placeholder="Group Name (e.g. Structure, Flooring)"
+                                        style={{ flex: 1, fontWeight: 600 }}
+                                    />
+                                )}
+                                {formData.category === 'Plot' && (
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Infrastructure Specs</span>
+                                )}
+                                {specGroups.length > 1 && (
+                                    <button type="button" onClick={() => removeSpecGroup(gi)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', flexShrink: 0 }}><X size={16} /></button>
+                                )}
+                            </div>
+                            {/* Items */}
+                            {group.items.map((item, ii) => (
+                                <div key={ii} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                                    <input
+                                        type="text"
+                                        value={item.key}
+                                        onChange={(e) => handleSpecItemChange(gi, ii, 'key', e.target.value)}
+                                        className={formStyles.input}
+                                        placeholder="Label (e.g. Wall, Road Width)"
+                                        style={{ flex: 1 }}
+                                    />
+                                    <input
+                                        type="text"
+                                        value={item.value}
+                                        onChange={(e) => handleSpecItemChange(gi, ii, 'value', e.target.value)}
+                                        className={formStyles.input}
+                                        placeholder="Value (e.g. RCC Frame, 30 ft)"
+                                        style={{ flex: 1 }}
+                                    />
+                                    {group.items.length > 1 && (
+                                        <button type="button" onClick={() => removeSpecItem(gi, ii)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', flexShrink: 0 }}><X size={14} /></button>
+                                    )}
+                                </div>
+                            ))}
+                            <button type="button" onClick={() => addSpecItem(gi)} className={formStyles.addImageBtn} style={{ marginTop: '4px' }}>
+                                <Plus size={14} /> Add Row
+                            </button>
+                        </div>
+                    ))}
+                    {formData.category !== 'Plot' && (
+                        <button type="button" onClick={addSpecGroup} className={formStyles.addImageBtn}>
+                            <Plus size={16} /> Add Specification Group
+                        </button>
+                    )}
                 </div>
 
                 {/* Ad Card for Homepage */}

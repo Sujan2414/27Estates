@@ -398,7 +398,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
         ? project.max_price
             ? `${project.min_price} - ${project.max_price}`
             : project.min_price
-        : 'Price on Request';
+        : 'Request for Details';
 
     // Default highlights if none set
     const displayHighlights: { label: string; value: string }[] = highlights.length > 0
@@ -407,7 +407,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
             { label: 'Configuration', value: project.bhk_options?.join(', ') || 'N/A' },
             { label: 'Area Range', value: project.min_area && project.max_area ? `${project.min_area} - ${project.max_area} Sq.Ft` : 'N/A' },
             { label: 'Possession', value: project.possession_date || 'Soon' },
-            { label: 'RERA', value: project.is_rera_approved ? 'Approved' : 'Pending' },
+            { label: category === 'Commercial' ? 'OC Certificate' : 'RERA', value: project.is_rera_approved ? (category === 'Commercial' ? 'Received' : 'Approved') : 'Pending' },
         ];
 
     const getStatusClass = (status: string) => {
@@ -468,7 +468,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                             {category && <span className={styles.badge}>{category}</span>}
                             <span className={styles.badge}>{project.status}</span>
                             {project.sub_category && <span className={styles.badge}>{project.sub_category}</span>}
-                            {project.is_rera_approved && <span className={styles.badge}>RERA Approved</span>}
+                            {project.is_rera_approved && <span className={styles.badge}>{category === 'Commercial' ? 'OC Certificate' : 'RERA Approved'}</span>}
                         </div>
 
                         <div className={styles.titleRow}>

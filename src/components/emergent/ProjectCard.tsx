@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { MapPin, ArrowRight, Building2, Heart } from 'lucide-react';
+import { MapPin, Building2, Heart } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import styles from './ProjectCard.module.css';
 
@@ -17,6 +17,7 @@ interface ProjectCardProps {
     status: string;
     developer_name?: string | null;
     is_rera_approved?: boolean;
+    category?: string | null;
     isBookmarked?: boolean;
     onBookmarkChange?: () => void;
 }
@@ -32,6 +33,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     status,
     developer_name,
     is_rera_approved,
+    category,
     isBookmarked = false,
     onBookmarkChange,
 }) => {
@@ -53,7 +55,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) {
-                // Guest mode: use sessionStorage
                 const key = 'guest_bookmarks';
                 const stored = JSON.parse(sessionStorage.getItem(key) || '[]') as string[];
                 if (bookmarked) {
@@ -69,7 +70,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 return;
             }
 
-            // Logged in user: use Supabase
             if (bookmarked) {
                 const { error } = await supabase
                     .from('user_bookmarks')
@@ -93,66 +93,65 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
     const priceDisplay = min_price
         ? max_price
-            ? `${min_price} - ${max_price}`
+            ? `${min_price} – ${max_price}`
             : `From ${min_price}`
-        : 'Price on Request';
+        : 'Request for Details';
 
     return (
-        <div className={styles.cardWrapper} style={{ position: 'relative', height: '100%' }}>
+        <div className={styles.cardWrapper}>
             <Link href={`/projects/${id}`} className={styles.card}>
-                {/* Image Section */}
+                {/* Image */}
                 <div className={styles.imageContainer}>
                     <img
                         src={image || '/placeholder-project.jpg'}
                         alt={project_name}
                         className={styles.image}
                     />
+
+                    {/* Status / RERA badges — top-left */}
                     <div className={styles.badgeOverlay}>
                         <span className={styles.statusBadge}>{status}</span>
                         {is_rera_approved && (
-                            <span className={styles.reraBadge}>RERA</span>
+                            <span className={styles.reraBadge}>
+                                {category === 'Commercial' ? 'OC' : 'RERA'}
+                            </span>
                         )}
                     </div>
-                </div>
 
-                {/* Content */}
-                <div className={styles.content}>
-                    <h3 className={styles.projectName}>{project_name}</h3>
-
-                    <div className={styles.locationRow}>
-                        <MapPin size={14} className={styles.locationIcon} />
-                        <span className={styles.location}>{location}</span>
-                    </div>
-
-                    {developer_name && (
-                        <div className={styles.developerRow}>
-                            <Building2 size={12} className={styles.developerIcon} />
-                            <span className={styles.developerName}>{developer_name}</span>
-                        </div>
-                    )}
-
-                    <div className={styles.detailsGrid}>
-                        <div className={styles.detailGroup}>
-                            <div className={styles.detailLabel}>Price Range</div>
-                            <div className={styles.detailValue}>{priceDisplay}</div>
-                        </div>
-                        <div className={styles.detailGroup}>
-                            <div className={styles.detailLabel}>Config</div>
-                            <div className={styles.configValue}>
-                                {bhk_options?.join(', ') || 'Various'}
+                    {/* Hover reveal panel — slides up from image bottom */}
+                    <div className={styles.hoverPanel}>
+                        {developer_name && (
+                            <div className={styles.hoverDeveloper}>
+                                <Building2 size={11} className={styles.hoverDeveloperIcon} />
+                                <span className={styles.hoverDeveloperName}>{developer_name}</span>
+                            </div>
+                        )}
+                        <div className={styles.hoverDetailsGrid}>
+                            <div className={styles.hoverDetailGroup}>
+                                <div className={styles.hoverDetailLabel}>Price Range</div>
+                                <div className={styles.hoverDetailValue}>{priceDisplay}</div>
+                            </div>
+                            <div className={styles.hoverDetailGroup}>
+                                <div className={styles.hoverDetailLabel}>Config</div>
+                                <div className={styles.hoverConfigValue}>
+                                    {bhk_options?.join(', ') || 'Various'}
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div className={styles.footer}>
-                        <span className={styles.viewDetails}>View Project</span>
-                        <span className={styles.arrowIcon}>
-                            <ArrowRight size={14} />
-                        </span>
+                {/* Static info below image — always visible */}
+                <div className={styles.content}>
+                    <h3 className={styles.projectName}>{project_name}</h3>
+                    <div className={styles.locationRow}>
+                        <MapPin size={13} className={styles.locationIcon} />
+                        <span className={styles.location}>{location}</span>
                     </div>
                 </div>
             </Link>
 
+            {/* Bookmark button */}
             <button
                 className={styles.bookmarkBtn}
                 onClick={handleBookmark}
