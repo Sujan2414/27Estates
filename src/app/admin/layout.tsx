@@ -14,6 +14,7 @@ import {
     Upload,
     Users,
     Contact,
+    Briefcase,
     LogOut,
     Menu,
     X
@@ -77,6 +78,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: 'Properties', href: '/admin/properties', icon: Building2, roles: ['admin', 'super_admin', 'agent'] },
         { name: 'Projects', href: '/admin/projects', icon: FolderKanban, roles: ['admin', 'super_admin', 'agent'] },
         { name: 'Blog Posts', href: '/admin/blogs', icon: FileText, roles: ['admin', 'super_admin', 'agent'] },
+        { name: 'Careers', href: '/admin/careers', icon: Briefcase, roles: ['admin', 'super_admin', 'agent'] },
         { name: 'Inquiries', href: '/admin/inquiries', icon: MessageSquare, roles: ['admin', 'super_admin', 'agent'] },
         { name: 'Submissions', href: '/admin/submissions', icon: Upload, roles: ['admin', 'super_admin', 'agent'] },
         { name: 'Agents', href: '/admin/agents', icon: Users, roles: ['admin', 'super_admin'] },

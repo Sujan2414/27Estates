@@ -45,6 +45,7 @@ const Footer: React.FC = () => {
                                 </button>
                             </li>
                             <li><Link href="/blog">Insights</Link></li>
+                            <li><Link href="/careers">Careers</Link></li>
                             <li><Link href="#calculator">EMI Calculator</Link></li>
                         </ul>
                     </div>

@@ -24,7 +24,7 @@ export async function PATCH(
         const supabaseAdmin = createAdminClient();
 
         // Check if current user is admin
-        const { data: requesterProfile } = await supabaseAdmin
+        const { data: requesterProfile } = await (supabaseAdmin as any)
             .from('profiles')
             .select('role')
             .eq('id', currentUser.id)
@@ -35,7 +35,7 @@ export async function PATCH(
         }
 
         // Update profile role
-        const { error } = await supabaseAdmin
+        const { error } = await (supabaseAdmin as any)
             .from('profiles')
             .update({ role })
             .eq('id', id);
@@ -68,7 +68,7 @@ export async function DELETE(
         const supabaseAdmin = createAdminClient();
 
         // Check if current user is admin
-        const { data: requesterProfile } = await supabaseAdmin
+        const { data: requesterProfile } = await (supabaseAdmin as any)
             .from('profiles')
             .select('role')
             .eq('id', currentUser.id)
@@ -83,7 +83,7 @@ export async function DELETE(
         if (authError) throw authError;
 
         // Delete from profiles (if not cascaded)
-        const { error: profileError } = await supabaseAdmin
+        const { error: profileError } = await (supabaseAdmin as any)
             .from('profiles')
             .delete()
             .eq('id', id);

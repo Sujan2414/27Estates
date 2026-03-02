@@ -26,7 +26,7 @@ const PROPERTY_EXAMPLE = {
     lot_size: '',
     floors: '1',
     rooms: '6',
-    property_type: 'Sales',
+    property_type: 'Sale',
     category: 'Apartment',
     is_featured: 'false',
     video_url: '',
@@ -283,6 +283,25 @@ function buildInstructionsSheet(category: ProjectCategory): XLSX.WorkSheet {
 
 export function generatePropertyTemplate(): void {
     const wb = XLSX.utils.book_new()
+
+    // Instructions sheet
+    const instrRows: unknown[][] = [
+        ['21 Estates – Property Bulk Import Instructions'],
+        [],
+        ['FIELD', 'VALID VALUES / FORMAT', 'NOTES'],
+        ['property_type', 'Sale | Rent', 'Required'],
+        ['category', 'Apartment | House | Villa | Bungalow | Row Villa | Plot | Commercial | Farmhouse | Penthouse | Studio | Duplex | Office | Offices | Warehouse | Other', 'Required'],
+        ['price', 'Number in rupees (e.g., 15000000)', 'Required'],
+        ['location', 'Area name (e.g., Whitefield)', 'Required'],
+        ['is_featured', 'true | false', ''],
+        ['images', 'Comma-separated URLs', ''],
+        ['amenities_interior / outdoor / utilities / other', 'Comma-separated values (e.g., Gym, Pool)', ''],
+        ['floor_plans', 'JSON: [{"name":"Ground Floor","image":"url"}]', 'Optional'],
+    ]
+    const instrWs = XLSX.utils.aoa_to_sheet(instrRows)
+    instrWs['!cols'] = [{ wch: 40 }, { wch: 80 }, { wch: 20 }]
+    XLSX.utils.book_append_sheet(wb, instrWs, 'Instructions')
+
     const data = [PROPERTY_COLUMNS, PROPERTY_COLUMNS.map(col => PROPERTY_EXAMPLE[col as keyof typeof PROPERTY_EXAMPLE] ?? '')]
     const ws = XLSX.utils.aoa_to_sheet(data)
     ws['!cols'] = PROPERTY_COLUMNS.map(col => ({ wch: Math.max(col.length, 20) }))
@@ -492,6 +511,10 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
             if (!title) { errors.push({ row: rowNum, message: 'Title is required' }); return }
             if (price === null) { errors.push({ row: rowNum, message: 'Price is required' }); return }
             if (!location) { errors.push({ row: rowNum, message: 'Location is required' }); return }
+            const rawType = safeStr(row['property_type'])
+            if (rawType && rawType !== 'Sale' && rawType !== 'Rent') {
+                errors.push({ row: rowNum, message: `Invalid property_type "${rawType}" — must be "Sale" or "Rent"` }); return
+            }
 
             valid.push({
                 property_id: safeStr(row['property_id']),
@@ -506,7 +529,7 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
                 lot_size: safeInt(row['lot_size']),
                 floors: safeInt(row['floors']),
                 rooms: safeInt(row['rooms']),
-                property_type: safeStr(row['property_type']) || 'Sales',
+                property_type: safeStr(row['property_type']) || 'Sale',
                 category: safeStr(row['category']) || 'Apartment',
                 is_featured: safeBool(row['is_featured']),
                 video_url: safeStr(row['video_url']) || null,
@@ -603,7 +626,6 @@ export async function parseProjectExcel(file: File): Promise<ParseResult<ParsedP
             const location = safeStr(row['location'])
 
             if (!project_name) { errors.push({ row: rowNum, message: 'Project name is required' }); return }
-            if (!location) { errors.push({ row: rowNum, message: 'Location is required' }); return }
 
             const category = safeStr(row['category']) || 'Residential'
             const flat = isFlatFormat(row)

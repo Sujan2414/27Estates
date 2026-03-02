@@ -507,7 +507,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                         <div className={styles.developerCard}>
                             <div className={styles.developerLogo}>
                                 {developer?.logo || project.developer_image ? (
-                                    <img src={developer?.logo || project.developer_image || ''} alt={developer?.name || project.developer_name} style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+                                    <img src={developer?.logo || project.developer_image || ''} alt={developer?.name || project.developer_name || undefined} style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
                                 ) : (
                                     <Building2 size={24} color="#a3a3a3" />
                                 )}
@@ -740,11 +740,11 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     )}
 
                     {/* Commercial: Unit Configurations */}
-                    {category === 'Commercial' && (plans as CommercialUnit[]).length > 0 && (
+                    {category === 'Commercial' && (plans as unknown as CommercialUnit[]).length > 0 && (
                         <div>
                             <h2 className={styles.sectionTitle}>UNIT CONFIGURATIONS</h2>
                             <div className={styles.cardsGrid}>
-                                {(plans as CommercialUnit[]).map((unit, idx) => (
+                                {(plans as unknown as CommercialUnit[]).map((unit, idx) => (
                                     <div key={idx} className={styles.configCard}>
                                         <h4 className={styles.configCardTitle}>{unit.unit_type}</h4>
                                         <div className={styles.configCardRow}>
@@ -773,11 +773,11 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     )}
 
                     {/* Commercial: Floor / Wing Details */}
-                    {category === 'Commercial' && (towers as CommercialFloor[]).length > 0 && (
+                    {category === 'Commercial' && (towers as unknown as CommercialFloor[]).length > 0 && (
                         <div>
                             <h2 className={styles.sectionTitle}>FLOOR / WING DETAILS</h2>
                             <div className={styles.cardsGrid}>
-                                {(towers as CommercialFloor[]).map((floor, idx) => (
+                                {(towers as unknown as CommercialFloor[]).map((floor, idx) => (
                                     <div key={idx} className={styles.configCard}>
                                         <h4 className={styles.configCardTitle}>{floor.floor_name}</h4>
                                         <div className={styles.configCardRow}>
@@ -943,7 +943,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                 )}
 
                 {/* Commercial: Combined Floor & Unit Table */}
-                {category === 'Commercial' && ((plans as CommercialUnit[]).length > 0 || (towers as CommercialFloor[]).length > 0) && (
+                {category === 'Commercial' && ((plans as unknown as CommercialUnit[]).length > 0 || (towers as unknown as CommercialFloor[]).length > 0) && (
                     <div className={styles.sectionContainer}>
                         <h2 className={styles.sectionTitle}>COMMERCIAL UNIT DETAILS</h2>
                         <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e5e5e5' }}>
@@ -962,8 +962,8 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                                 </thead>
                                 <tbody>
                                     {(() => {
-                                        const floorList = towers as CommercialFloor[];
-                                        const unitList = plans as CommercialUnit[];
+                                        const floorList = towers as unknown as CommercialFloor[];
+                                        const unitList = plans as unknown as CommercialUnit[];
                                         const rows: React.ReactNode[] = [];
 
                                         if (unitList.length > 0) {
@@ -1161,11 +1161,13 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
 
 
 
-            {/* Group Buy Section */}
-            <GroupBuySection
-                projectName={project.project_name}
-                agentPhone={agent?.phone || project?.employee_phone || undefined}
-            />
+            {/* Group Buy Section — only for non-commercial projects */}
+            {category !== 'Commercial' && (
+                <GroupBuySection
+                    projectName={project.project_name}
+                    agentPhone={agent?.phone || project?.employee_phone || undefined}
+                />
+            )}
 
             {/* Similar Projects */}
             {similarProjects.length > 0 && (
@@ -1274,7 +1276,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
 
                         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
                             {developer?.logo || project.developer_image ? (
-                                <img src={developer?.logo || project.developer_image || ''} alt={developer?.name || project.developer_name} style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '8px' }} />
+                                <img src={developer?.logo || project.developer_image || ''} alt={developer?.name || project.developer_name || undefined} style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '8px' }} />
                             ) : (
                                 <Building2 size={48} color="#a3a3a3" />
                             )}

@@ -170,6 +170,7 @@ export default function BookSlider({ pdfUrl }: BookSliderProps) {
                             startPage={0}
                             className="flip-book shadow-2xl"
                             ref={flipBookRef}
+                            // @ts-expect-error react-pageflip types are missing onFlip
                             onFlip={onFlip}
                         >
                             {Array.from(new Array(numPages), (_, index) => (

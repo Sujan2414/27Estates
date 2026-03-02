@@ -1,0 +1,442 @@
+.jobsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.jobCard {
+    background: #ffffff;
+    border: 1px solid #e8e5e0;
+    border-radius: 16px;
+    padding: 2rem;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    min-height: 200px;
+}
+
+.jobCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #BFA270, #d4b88a);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+}
+
+.jobCard:hover {
+    border-color: #BFA270;
+    box-shadow: 0 8px 30px rgba(191, 162, 112, 0.12);
+    transform: translateY(-4px);
+}
+
+.jobCard:hover::before {
+    transform: scaleX(1);
+}
+
+.jobCardHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.jobTitle {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #183C38;
+    line-height: 1.3;
+    margin: 0;
+}
+
+.jobArrow {
+    flex-shrink: 0;
+    color: #BFA270;
+    transition: transform 0.3s ease;
+}
+
+.jobCard:hover .jobArrow {
+    transform: translate(3px, -3px);
+}
+
+.jobMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.jobMetaItem {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.jobMetaItem svg {
+    color: #BFA270;
+    flex-shrink: 0;
+}
+
+.jobType {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background: rgba(191, 162, 112, 0.1);
+    color: #BFA270;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    align-self: flex-start;
+}
+
+/* ---- Job Detail Page ---- */
+
+.detailContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+}
+
+.detailTwoCol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+.detailLeft {
+    position: sticky;
+    top: 2rem;
+}
+
+.detailRight {
+    min-width: 0;
+}
+
+.detailBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.detailBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    background: #f3f1ec;
+    color: #555;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 20px;
+}
+
+.detailBadge svg {
+    color: #BFA270;
+}
+
+.detailTitle {
+    font-family: var(--font-heading);
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 600;
+    color: #183C38;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.sectionHeading {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #183C38;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f0ede8;
+}
+
+.descriptionText {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #4a4a4a;
+    white-space: pre-line;
+}
+
+.bulletList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.bulletItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #4a4a4a;
+}
+
+.bulletIcon {
+    flex-shrink: 0;
+    margin-top: 0.3rem;
+    color: #BFA270;
+}
+
+/* ---- Application Form ---- */
+
+.formSection {
+    margin-top: 3rem;
+    padding: 2.5rem;
+    background: #faf9f7;
+    border-radius: 20px;
+    border: 1px solid #e8e5e0;
+}
+
+.formTitle {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #183C38;
+    margin-bottom: 0.5rem;
+}
+
+.formSubtitle {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 2rem;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.formGroupFull {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    grid-column: 1 / -1;
+}
+
+.formLabel {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #183C38;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.formRequired {
+    color: #e54d4d;
+}
+
+.formInput {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d4d0c9;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: #183C38;
+    background: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: var(--font-sans);
+}
+
+.formInput:focus {
+    outline: none;
+    border-color: #BFA270;
+    box-shadow: 0 0 0 3px rgba(191, 162, 112, 0.15);
+}
+
+.formTextarea {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d4d0c9;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: #183C38;
+    background: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: var(--font-sans);
+    min-height: 120px;
+    resize: vertical;
+}
+
+.formFileLabel {
+    padding: 0.75rem 1rem;
+    border: 1px solid #d4d0c9;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: #6b7280;
+    background: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-style: dashed;
+    text-align: center;
+    padding: 1.25rem;
+}
+
+.formFileLabel:hover {
+    border-color: #BFA270;
+    color: #BFA270;
+}
+
+.formFileLabel svg {
+    flex-shrink: 0;
+}
+
+.formFileName {
+    font-size: 0.85rem;
+    color: #BFA270;
+    font-weight: 500;
+}
+
+.submitBtn {
+    grid-column: 1 / -1;
+    padding: 0.9rem 2.5rem;
+    background: #183C38;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-sans);
+    letter-spacing: 0.02em;
+    margin-top: 0.5rem;
+}
+
+.submitBtn:hover {
+    background: #BFA270;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(191, 162, 112, 0.3);
+}
+
+.submitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.successMessage {
+    text-align: center;
+    padding: 2rem;
+}
+
+.successIcon {
+    color: #22c55e;
+    margin-bottom: 1rem;
+}
+
+.successTitle {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #183C38;
+    margin-bottom: 0.5rem;
+}
+
+.successText {
+    font-size: 0.95rem;
+    color: #6b7280;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: #6b7280;
+}
+
+.emptyStateTitle {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #183C38;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.emptyStateText {
+    font-size: 0.95rem;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #BFA270;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    margin-bottom: 2rem;
+    transition: gap 0.2s;
+}
+
+.backLink:hover {
+    gap: 0.6rem;
+}
+
+@media (max-width: 768px) {
+    .jobsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .detailTwoCol {
+        grid-template-columns: 1fr;
+    }
+
+    .detailLeft {
+        position: static;
+        order: 2;
+    }
+
+    .detailRight {
+        order: 1;
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .formSection {
+        padding: 1.5rem;
+    }
+
+    .detailContainer {
+        padding: 2rem 1rem 4rem;
+    }
+}

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
         // Role check
         const supabaseAdmin = createAdminClient();
-        const { data: profile } = await supabaseAdmin
+        const { data: profile } = await (supabaseAdmin as any)
             .from('profiles')
             .select('role')
             .eq('id', user.id)
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Fetch all user profiles
-        const { data: profiles, error } = await supabaseAdmin
+        const { data: profiles, error } = await (supabaseAdmin as any)
             .from('profiles')
             .select('*')
             .order('created_at', { ascending: false });
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         const supabaseAdmin = createAdminClient();
 
         // Check if current user is admin
-        const { data: requesterProfile } = await supabaseAdmin
+        const { data: requesterProfile } = await (supabaseAdmin as any)
             .from('profiles')
             .select('role')
             .eq('id', currentUser.id)
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
         // Wait a brief moment for trigger if it exists, or just upsert.
         // Let's upsert to be safe and ensure the role is set.
-        const { error: profileError } = await supabaseAdmin
+        const { error: profileError } = await (supabaseAdmin as any)
             .from('profiles')
             .upsert({
                 id: authData.user.id,

@@ -108,7 +108,7 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
             for (let i = 0; i < parsedProperties.length; i++) {
                 const p = parsedProperties[i]
                 const { error } = await supabase.from('properties').insert({
-                    property_id: p.property_id,
+                    property_id: p.property_id || `PROP-${Date.now()}-${i}`,
                     title: p.title,
                     description: p.description || null,
                     price: p.price,
@@ -125,7 +125,13 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     is_featured: p.is_featured,
                     video_url: p.video_url,
                     images: p.images,
-                    address: p.address,
+                    address: p.address.street || null,
+                    street: p.address.street || null,
+                    area: p.address.area || null,
+                    city: p.address.city || null,
+                    state: p.address.state || null,
+                    pincode: p.address.zip || null,
+                    country: p.address.country || 'India',
                     amenities: p.amenities,
                     floor_plans: p.floor_plans && p.floor_plans.length > 0 ? p.floor_plans : null,
                 })
@@ -145,21 +151,8 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
             for (let i = 0; i < parsedProjects.length; i++) {
                 const p = parsedProjects[i]
 
-                // Build address object
-                const addressObj = {
-                    address: p.address,
-                    location: p.location,
-                    city: p.city,
-                    state: p.state,
-                    landmark: p.landmark,
-                    pincode: p.pincode,
-                    country: 'India',
-                    latitude: null,
-                    longitude: null,
-                }
-
                 const { error } = await supabase.from('projects').insert({
-                    project_id: p.project_id,
+                    project_id: p.project_id || `PRJ-${Date.now()}-${i}`,
                     project_name: p.project_name,
                     title: p.title || p.project_name,
                     description: p.description || null,
@@ -189,17 +182,19 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     employee_name: p.employee_name,
                     employee_phone: p.employee_phone,
                     employee_email: p.employee_email,
-                    address: addressObj,
+                    address: p.address || null,
                     location: p.location,
                     city: p.city,
                     state: p.state,
+                    landmark: p.landmark,
+                    pincode: p.pincode,
+                    country: 'India',
                     images: p.images,
                     amenities: Object.keys(p.amenities).length > 0 ? p.amenities : null,
                     floor_plans: p.floor_plans,
                     connectivity: p.connectivity,
                     highlights: p.highlights,
                     towers_data: p.towers_data,
-                    unit_configs: p.unit_configs,
                 })
 
                 if (error) {

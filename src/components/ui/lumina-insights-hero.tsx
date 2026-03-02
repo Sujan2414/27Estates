@@ -21,6 +21,11 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
         progressInterval: NodeJS.Timeout | null;
         autoSlideTimeout: NodeJS.Timeout | null;
         renderer: any;
+        scene: any;
+        geometry: any;
+        material: any;
+        mesh: any;
+        textures: any[];
         isActive: boolean;
         effectId: number;
         handleVisibility: (() => void) | null;
@@ -29,6 +34,11 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
         progressInterval: null,
         autoSlideTimeout: null,
         renderer: null,
+        scene: null,
+        geometry: null,
+        material: null,
+        mesh: null,
+        textures: [],
         isActive: true,
         effectId: 0,
         handleVisibility: null,
@@ -383,12 +393,27 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
 
                 scene = new THREE.Scene();
                 camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-                renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false });
+
+                try {
+                    renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'low-power' });
+                } catch (e) {
+                    console.error('Failed to create WebGL renderer:', e);
+                    return;
+                }
+
+                // Check if context was actually obtained
+                if (!renderer.getContext()) {
+                    console.error('WebGL context not available');
+                    renderer.dispose();
+                    return;
+                }
+
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
                 cleanupRef.current.renderer = renderer;
 
+                const planeGeometry = new THREE.PlaneGeometry(2, 2);
                 shaderMaterial = new THREE.ShaderMaterial({
                     uniforms: {
                         uTexture1: { value: null }, uTexture2: { value: null }, uProgress: { value: 0 },
@@ -399,7 +424,14 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                     },
                     vertexShader, fragmentShader
                 });
-                scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), shaderMaterial));
+                const mesh = new THREE.Mesh(planeGeometry, shaderMaterial);
+                scene.add(mesh);
+
+                // Store references for proper disposal
+                cleanupRef.current.scene = scene;
+                cleanupRef.current.geometry = planeGeometry;
+                cleanupRef.current.material = shaderMaterial;
+                cleanupRef.current.mesh = mesh;
 
                 for (const post of posts) {
                     if (isStale()) return;
@@ -411,6 +443,9 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                 }
 
                 if (isStale()) return;
+
+                // Store textures for cleanup
+                cleanupRef.current.textures = slideTextures;
 
                 // Both textures start with the SAME first image
                 if (slideTextures.length >= 1) {
@@ -518,12 +553,35 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
                 clearTimeout(cleanupRef.current.autoSlideTimeout);
                 cleanupRef.current.autoSlideTimeout = null;
             }
+
+            // Dispose all Three.js resources BEFORE disposing renderer
+            // This frees GPU memory and prevents WebGL context exhaustion
+            if (cleanupRef.current.textures) {
+                cleanupRef.current.textures.forEach((t: any) => {
+                    try { t.dispose(); } catch (e) { /* ignore */ }
+                });
+                cleanupRef.current.textures = [];
+            }
+            if (cleanupRef.current.material) {
+                try { cleanupRef.current.material.dispose(); } catch (e) { /* ignore */ }
+                cleanupRef.current.material = null;
+            }
+            if (cleanupRef.current.geometry) {
+                try { cleanupRef.current.geometry.dispose(); } catch (e) { /* ignore */ }
+                cleanupRef.current.geometry = null;
+            }
+            if (cleanupRef.current.scene && cleanupRef.current.mesh) {
+                try { cleanupRef.current.scene.remove(cleanupRef.current.mesh); } catch (e) { /* ignore */ }
+                cleanupRef.current.scene = null;
+                cleanupRef.current.mesh = null;
+            }
             if (cleanupRef.current.renderer) {
-                // Force-release the WebGL context so new one can be created on re-navigation
+                // Dispose renderer - do NOT call forceContextLoss() as it
+                // marks the context as permanently lost and prevents reuse.
+                // dispose() alone properly releases GPU resources.
                 try {
-                    cleanupRef.current.renderer.forceContextLoss();
+                    cleanupRef.current.renderer.dispose();
                 } catch (e) { /* ignore */ }
-                cleanupRef.current.renderer.dispose();
                 cleanupRef.current.renderer = null;
             }
 
@@ -539,12 +597,9 @@ export function LuminaInsightsHero({ posts }: LuminaInsightsHeroProps) {
 
             // Kill any remaining GSAP tweens
             if (typeof gsap !== 'undefined') {
-                const tEl = containerRef.current?.querySelector('#insightsTitle') as HTMLElement | null;
-                const dEl = containerRef.current?.querySelector('#insightsDesc') as HTMLElement | null;
-                const cEl = containerRef.current?.querySelector('#insightsCategory') as HTMLElement | null;
-                if (tEl?.children) gsap.killTweensOf(tEl.children);
-                if (dEl) gsap.killTweensOf(dEl);
-                if (cEl) gsap.killTweensOf(cEl);
+                try {
+                    gsap.killTweensOf('*');
+                } catch (e) { /* ignore */ }
             }
         };
     }, [posts]);

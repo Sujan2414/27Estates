@@ -65,6 +65,7 @@ const Navigation: React.FC<NavigationProps> = ({ alwaysScrolled = false }) => {
         { href: '/properties', label: 'Properties', target: undefined },
         { href: '/blog', label: 'Insights', target: undefined },
         { href: '/mortgage-calculator', label: 'Mortgage Calculator', target: undefined },
+        { href: '/careers', label: 'Careers', target: undefined },
     ];
 
     const handleNavClick = (e: React.MouseEvent, href: string) => {

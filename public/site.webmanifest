@@ -1,11 +1,11 @@
 {
     "name": "27 Estates",
     "short_name": "27 Estates",
-    "description": "Discover premium properties that redefine luxury living. 27 Estates - your trusted partner for extraordinary real estate in Bangalore.",
+    "description": "Discover premium properties that redefine luxury living. 27 Estates - your trusted partner for extraordinary real estate in India's most prime locations.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#1a3a32",
-    "theme_color": "#1a3a32",
+    "background_color": "#ffffff",
+    "theme_color": "#ffffff",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
