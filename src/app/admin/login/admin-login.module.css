@@ -108,9 +108,7 @@
 }
 
 .input::-ms-reveal,
-.input::-ms-clear,
-[type="password"]::-ms-reveal,
-[type="password"]::-ms-clear {
+.input::-ms-clear {
     display: none !important;
 }
 
