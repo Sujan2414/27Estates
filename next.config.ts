@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
   experimental: {
     viewTransition: true,
   },
-  turbopack: {},
   images: {
     remotePatterns: [
       {
