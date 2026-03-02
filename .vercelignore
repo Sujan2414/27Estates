@@ -8,3 +8,11 @@ seed-*.txt
 cols.txt
 nul
 /supabase
+/Data
+*.code-workspace
+build_log*.txt
+PROJECT_DOCS.md
+SUPABASE_AUTH_SETUP.md
+README.md
+_ul
+.claude
