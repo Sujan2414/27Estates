@@ -315,10 +315,13 @@ export default function EditProjectPage() {
             const match = developers.find(d => d.name.toLowerCase().trim() === formData.developer_name.toLowerCase().trim())
             if (match) {
                 setDevMode('existing')
-                // Also sync developer_id if missing
-                if (!formData.developer_id && match.id) {
-                    setFormData(prev => ({ ...prev, developer_id: match.id }))
-                }
+                // Sync developer_id, image, and description from matched developer
+                setFormData(prev => ({
+                    ...prev,
+                    developer_id: prev.developer_id || match.id || '',
+                    developer_image: prev.developer_image || match.image || '',
+                    developer_description: prev.developer_description || match.description || '',
+                }))
             } else {
                 setDevMode('new')
             }
