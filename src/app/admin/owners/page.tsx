@@ -67,7 +67,39 @@ export default function OwnersPage() {
             supabase.from('developers').select('*').order('name')
         ])
         if (ownersRes.data) setOwners(ownersRes.data)
-        if (devsRes.data) setDevelopers(devsRes.data)
+
+        // Auto-sync: pull developer names from projects table and insert any missing ones
+        const existingDevs = devsRes.data || []
+        const existingDevNames = new Set(existingDevs.map(d => d.name.toLowerCase().trim()))
+
+        const { data: projDevs } = await supabase
+            .from('projects')
+            .select('developer_name')
+            .not('developer_name', 'is', null)
+
+        if (projDevs) {
+            const missingDevNames = new Map<string, string>()
+            for (const p of projDevs) {
+                if (p.developer_name && p.developer_name.trim() !== '') {
+                    const key = p.developer_name.toLowerCase().trim()
+                    if (!existingDevNames.has(key) && !missingDevNames.has(key)) {
+                        missingDevNames.set(key, p.developer_name.trim())
+                    }
+                }
+            }
+
+            if (missingDevNames.size > 0) {
+                const toInsert = Array.from(missingDevNames.values()).map(name => ({ name }))
+                await supabase.from('developers').insert(toInsert)
+                // Re-fetch developers after sync
+                const { data: refreshedDevs } = await supabase.from('developers').select('*').order('name')
+                if (refreshedDevs) setDevelopers(refreshedDevs)
+            } else {
+                setDevelopers(existingDevs)
+            }
+        } else {
+            setDevelopers(existingDevs)
+        }
         setLoading(false)
     }
 

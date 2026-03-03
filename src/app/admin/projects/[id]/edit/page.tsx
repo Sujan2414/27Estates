@@ -17,6 +17,8 @@ import { Check, Search } from 'lucide-react'
 interface Developer {
     id: string
     name: string
+    image: string
+    description: string
 }
 
 interface Agent {
@@ -146,6 +148,7 @@ export default function EditProjectPage() {
     const [success, setSuccess] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [developers, setDevelopers] = useState<Developer[]>([])
+    const [devMode, setDevMode] = useState<'existing' | 'new'>('existing')
     const [agents, setAgents] = useState<Agent[]>([])
 
     // Basic Info
@@ -305,6 +308,25 @@ export default function EditProjectPage() {
         return () => document.removeEventListener('mousedown', handler)
     }, [])
 
+    // Auto-detect developer mode when project data and developers are loaded
+    useEffect(() => {
+        if (developers.length === 0 || loading) return
+        if (formData.developer_name) {
+            const match = developers.find(d => d.name.toLowerCase().trim() === formData.developer_name.toLowerCase().trim())
+            if (match) {
+                setDevMode('existing')
+                // Also sync developer_id if missing
+                if (!formData.developer_id && match.id) {
+                    setFormData(prev => ({ ...prev, developer_id: match.id }))
+                }
+            } else {
+                setDevMode('new')
+            }
+        } else {
+            setDevMode('existing')
+        }
+    }, [developers, loading])
+
     const fetchProject = async () => {
         if (!params?.id) return
         const { data, error: fetchError } = await supabase
@@ -451,8 +473,48 @@ export default function EditProjectPage() {
     }
 
     const fetchDevelopers = async () => {
-        const { data } = await supabase.from('developers').select('id, name')
-        if (data) setDevelopers(data)
+        const { data: dbDevs } = await supabase.from('developers').select('id, name, logo, description')
+        const { data: projDevs } = await supabase
+            .from('projects')
+            .select('developer_name, developer_image, developer_description')
+            .not('developer_name', 'is', null)
+
+        const devMap = new Map<string, Developer>()
+
+        if (dbDevs) {
+            dbDevs.forEach(d => {
+                devMap.set(d.name.toLowerCase().trim(), {
+                    id: d.id,
+                    name: d.name,
+                    image: d.logo || '',
+                    description: d.description || ''
+                })
+            })
+        }
+
+        if (projDevs) {
+            projDevs.forEach(p => {
+                if (p.developer_name) {
+                    const key = p.developer_name.toLowerCase().trim()
+                    if (!devMap.has(key)) {
+                        devMap.set(key, {
+                            id: '',
+                            name: p.developer_name,
+                            image: p.developer_image || '',
+                            description: p.developer_description || ''
+                        })
+                    } else {
+                        const existing = devMap.get(key)!
+                        if (!existing.image && p.developer_image) existing.image = p.developer_image
+                        if (!existing.description && p.developer_description) existing.description = p.developer_description
+                        devMap.set(key, existing)
+                    }
+                }
+            })
+        }
+
+        const finalDevs = Array.from(devMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+        setDevelopers(finalDevs)
     }
 
     const fetchAgents = async () => {
@@ -897,11 +959,57 @@ export default function EditProjectPage() {
                 {/* Developer Information */}
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Developer Info</h2>
+                    <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '12px' }}>Select an existing developer to auto-fill details, or add a new one.</p>
                     <div className={formStyles.grid2}>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>Developer Name</label>
-                            <input type="text" name="developer_name" value={formData.developer_name} onChange={handleChange} className={formStyles.input} />
+                            <label className={formStyles.label}>Action</label>
+                            <select
+                                className={formStyles.select}
+                                value={devMode}
+                                onChange={(e) => {
+                                    setDevMode(e.target.value as 'existing' | 'new')
+                                    if (e.target.value === 'new') {
+                                        setFormData(prev => ({ ...prev, developer_id: '', developer_name: '', developer_image: '', developer_description: '' }))
+                                    }
+                                }}
+                            >
+                                <option value="existing">Select Existing Developer</option>
+                                <option value="new">Add New Developer</option>
+                            </select>
                         </div>
+                        {devMode === 'existing' ? (
+                            <div className={formStyles.field}>
+                                <label className={formStyles.label}>Choose Developer</label>
+                                <select
+                                    className={formStyles.select}
+                                    value={formData.developer_name}
+                                    onChange={(e) => {
+                                        const selected = developers.find(d => d.name === e.target.value)
+                                        if (selected) {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                developer_id: selected.id,
+                                                developer_name: selected.name,
+                                                developer_image: selected.image,
+                                                developer_description: selected.description
+                                            }))
+                                        } else {
+                                            setFormData(prev => ({ ...prev, developer_id: '', developer_name: '', developer_image: '', developer_description: '' }))
+                                        }
+                                    }}
+                                >
+                                    <option value="">Select...</option>
+                                    {developers.map(d => (
+                                        <option key={d.name} value={d.name}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : (
+                            <div className={formStyles.field}>
+                                <label className={formStyles.label}>Developer Name</label>
+                                <input type="text" name="developer_name" value={formData.developer_name} onChange={handleChange} className={formStyles.input} />
+                            </div>
+                        )}
                     </div>
                     <div className={formStyles.grid2}>
                         <div className={formStyles.field}>
