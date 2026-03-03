@@ -261,6 +261,15 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     .eq('id', projectData.developer_id)
                     .single();
                 setDeveloper(devData || null);
+            } else if (projectData.developer_name) {
+                // Fallback: match by name for bulk-imported projects
+                const { data: devData } = await supabase
+                    .from('developers')
+                    .select('*')
+                    .ilike('name', projectData.developer_name.trim())
+                    .limit(1)
+                    .single();
+                setDeveloper(devData || null);
             }
 
             // Get agent
