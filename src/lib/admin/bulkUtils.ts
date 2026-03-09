@@ -4,30 +4,37 @@ export type ProjectCategory = 'Residential' | 'Villa' | 'Plot' | 'Commercial'
 
 // ─── Property Columns ─────────────────────────────────────────
 
-const PROPERTY_COLUMNS = [
-    'property_id', 'title', 'description', 'price', 'price_per_sqft',
-    'location', 'bedrooms', 'bathrooms', 'sqft', 'lot_size', 'floors',
-    'rooms', 'property_type', 'category', 'is_featured', 'video_url',
+const PROPERTY_SHARED_COLUMNS = [
+    'property_id', 'title', 'description', 'remarks', 'price',
+    'location', 'property_type', 'category', 'transaction_type', 'is_featured', 'video_url',
     'images', 'address_street', 'address_area', 'address_city', 'address_state',
-    'address_zip', 'address_country', 'amenities_interior', 'amenities_outdoor',
-    'amenities_utilities', 'amenities_other', 'floor_plans',
+    'address_zip', 'address_country',
+    'built_up_area', 'carpet_area', 'property_age', 'possession_status',
+    'unique_feature', 'source', 'channel', 'visibility',
+    'is_rera_approved', 'amenities', 'floor_plans',
 ]
 
-const PROPERTY_EXAMPLE = {
+const PROPERTY_RESIDENTIAL_COLS = [
+    'bedrooms', 'bathrooms', 'balconies', 'parking_count',
+    'furnishing', 'ownership', 'suitable_for', 'floor_number', 'total_floors'
+]
+const PROPERTY_COMMERCIAL_COLS = [
+    'bathrooms', 'parking_count', 'furnishing', 'ownership', 'suitable_for',
+    'floor_number', 'total_floors', 'is_oc_approved',
+    'workstation', 'cabin', 'conference_room', 'reception_area', 'power_kva', 'power_backup'
+]
+const PROPERTY_PLOT_COLS = ['plot_size', 'ownership', 'plot_sub_type']
+
+const PROPERTY_SHARED_EXAMPLE: Record<string, string> = {
     property_id: 'PROP-001',
-    title: 'Luxury 3BHK in Whitefield',
-    description: 'Spacious apartment with garden view',
+    title: 'Luxury Property in Whitefield',
+    description: 'Spacious property with great view',
+    remarks: 'Immediate registration possible',
     price: '15000000',
-    price_per_sqft: '8500',
     location: 'Whitefield',
-    bedrooms: '3',
-    bathrooms: '2',
-    sqft: '1800',
-    lot_size: '',
-    floors: '1',
-    rooms: '6',
     property_type: 'Sale',
     category: 'Apartment',
+    transaction_type: 'New Property',
     is_featured: 'false',
     video_url: '',
     images: 'https://example.com/img1.jpg, https://example.com/img2.jpg',
@@ -37,11 +44,51 @@ const PROPERTY_EXAMPLE = {
     address_state: 'Karnataka',
     address_zip: '560066',
     address_country: 'India',
-    amenities_interior: 'Modular Kitchen, Wooden Flooring, Walk-in Closet',
-    amenities_outdoor: 'Swimming Pool, Garden',
-    amenities_utilities: 'Power Backup, Water Supply',
-    amenities_other: 'Parking, Gym',
+    built_up_area: '1500',
+    carpet_area: '1350',
+    property_age: 'New Construction',
+    possession_status: 'Ready To Move',
+    unique_feature: 'Corner Unit',
+    source: 'Website',
+    channel: 'Direct',
+    visibility: 'Public',
+    is_rera_approved: 'true',
+    amenities: '{"interior":["Modular Kitchen"],"outdoor":["Swimming Pool"]}',
     floor_plans: '[{"name":"Ground Floor","image":"https://example.com/fp.jpg"}]',
+}
+
+const PROPERTY_CATEGORY_EXAMPLE_EXTRAS: Record<ProjectCategory, Record<string, string>> = {
+    Residential: {
+        category: 'Apartment',
+        bedrooms: '3', bathrooms: '2', balconies: '2', parking_count: '1',
+        furnishing: 'Semi-Furnished', ownership: 'Freehold', suitable_for: 'Family, Bachelor',
+        floor_number: '5', total_floors: '20'
+    },
+    Villa: {
+        category: 'Villa',
+        bedrooms: '4', bathrooms: '4', balconies: '3', parking_count: '2',
+        furnishing: 'Unfurnished', ownership: 'Freehold', suitable_for: 'Family',
+        floor_number: '1', total_floors: '2'
+    },
+    Plot: {
+        category: 'Plot',
+        plot_size: '2400', ownership: 'Freehold', plot_sub_type: 'Residential'
+    },
+    Commercial: {
+        category: 'Commercial',
+        bathrooms: '2', parking_count: '5', furnishing: 'Bareshell', ownership: 'Leasehold',
+        suitable_for: 'Company, Startup', floor_number: '3', total_floors: '10',
+        is_oc_approved: 'true',
+        workstation: '50', cabin: '5', conference_room: '2', reception_area: '1', power_kva: '10', power_backup: 'true'
+    },
+}
+
+function getPropertyCategoryColumns(category: ProjectCategory): string[] {
+    const base = [...PROPERTY_SHARED_COLUMNS]
+    if (category === 'Residential' || category === 'Villa') return [...base, ...PROPERTY_RESIDENTIAL_COLS]
+    if (category === 'Plot') return [...base, ...PROPERTY_PLOT_COLS]
+    if (category === 'Commercial') return [...base, ...PROPERTY_COMMERCIAL_COLS]
+    return base
 }
 
 // ─── Project Shared Columns ───────────────────────────────────
@@ -281,8 +328,14 @@ function buildInstructionsSheet(category: ProjectCategory): XLSX.WorkSheet {
 
 // ─── Template Generation ──────────────────────────────────────
 
-export function generatePropertyTemplate(): void {
+export function generatePropertyTemplate(category?: ProjectCategory): void {
     const wb = XLSX.utils.book_new()
+
+    const cols = category ? getPropertyCategoryColumns(category) : PROPERTY_SHARED_COLUMNS
+    const example = category
+        ? { ...PROPERTY_SHARED_EXAMPLE, ...PROPERTY_CATEGORY_EXAMPLE_EXTRAS[category] }
+        : PROPERTY_SHARED_EXAMPLE
+    const exampleRow = cols.map(col => example[col] ?? '')
 
     // Instructions sheet
     const instrRows: unknown[][] = [
@@ -294,19 +347,21 @@ export function generatePropertyTemplate(): void {
         ['price', 'Number in rupees (e.g., 15000000)', 'Required'],
         ['location', 'Area name (e.g., Whitefield)', 'Required'],
         ['is_featured', 'true | false', ''],
+        ['is_rera_approved', 'true | false', 'Applies to all property types'],
+        ['is_oc_approved', 'true | false', 'Only valid for Commercial properties'],
         ['images', 'Comma-separated URLs', ''],
-        ['amenities_interior / outdoor / utilities / other', 'Comma-separated values (e.g., Gym, Pool)', ''],
+        ['amenities', 'JSON format: {"interior":["Gym"],"outdoor":["Pool"]}', 'Optional'],
         ['floor_plans', 'JSON: [{"name":"Ground Floor","image":"url"}]', 'Optional'],
     ]
     const instrWs = XLSX.utils.aoa_to_sheet(instrRows)
     instrWs['!cols'] = [{ wch: 40 }, { wch: 80 }, { wch: 20 }]
     XLSX.utils.book_append_sheet(wb, instrWs, 'Instructions')
 
-    const data = [PROPERTY_COLUMNS, PROPERTY_COLUMNS.map(col => PROPERTY_EXAMPLE[col as keyof typeof PROPERTY_EXAMPLE] ?? '')]
-    const ws = XLSX.utils.aoa_to_sheet(data)
-    ws['!cols'] = PROPERTY_COLUMNS.map(col => ({ wch: Math.max(col.length, 20) }))
-    XLSX.utils.book_append_sheet(wb, ws, 'Properties')
-    XLSX.writeFile(wb, 'property_template.xlsx')
+    const ws = XLSX.utils.aoa_to_sheet([cols, exampleRow])
+    ws['!cols'] = cols.map(col => ({ wch: Math.max(col.length, 20) }))
+    const sheetName = category ? `Properties_${category}` : 'Properties'
+    XLSX.utils.book_append_sheet(wb, ws, sheetName)
+    XLSX.writeFile(wb, `property_template_${category ? category.toLowerCase() : 'generic'}.xlsx`)
 }
 
 export function generateProjectTemplate(category?: ProjectCategory): void {
@@ -691,6 +746,9 @@ export async function parseProjectExcel(file: File): Promise<ParseResult<ParsedP
 // ─── Bulk Export ──────────────────────────────────────────────
 
 export function exportPropertiesToExcel(properties: Record<string, unknown>[]): void {
+    const ALL_COLS = [...PROPERTY_SHARED_COLUMNS, ...PROPERTY_RESIDENTIAL_COLS, ...PROPERTY_COMMERCIAL_COLS, ...PROPERTY_PLOT_COLS]
+    const UNIQUE_COLS = Array.from(new Set(ALL_COLS))
+
     const rows = properties.map(p => {
         const addr = (p.address as Record<string, unknown>) || {}
         const am = (p.amenities as Record<string, string[]>) || {}
@@ -727,8 +785,8 @@ export function exportPropertiesToExcel(properties: Record<string, unknown>[]): 
     })
 
     const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(rows)
-    ws['!cols'] = PROPERTY_COLUMNS.map(col => ({ wch: Math.max(col.length, 20) }))
+    const ws = XLSX.utils.json_to_sheet(rows, { header: UNIQUE_COLS })
+    ws['!cols'] = UNIQUE_COLS.map(col => ({ wch: Math.max(col.length, 20) }))
     XLSX.utils.book_append_sheet(wb, ws, 'Properties')
     XLSX.writeFile(wb, `properties_export_${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
