@@ -107,31 +107,43 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
 
             for (let i = 0; i < parsedProperties.length; i++) {
                 const p = parsedProperties[i]
+                // Build insert object — always include NOT NULL columns with defaults
+                // DB NOT NULL columns: property_id, title, price, location, property_type, category, bedrooms(def 0), bathrooms(def 0), sqft(def 0)
                 const insertData: Record<string, unknown> = {
                     property_id: p.property_id || `PROP-${Date.now()}-${i}`,
                     title: p.title,
-                    description: p.description || null,
-                    remarks: p.remarks || null,
-                    price: p.price,
-                    price_text: p.price_text || null,
-                    price_per_sqft: p.price_per_sqft,
+                    price: p.price ?? 0,
                     location: p.location,
                     property_type: p.property_type,
                     category: p.category,
-                    transaction_type: p.transaction_type || null,
-                    is_featured: p.is_featured,
-                    video_url: p.video_url,
-                    images: p.images,
-                    address: p.address.street || null,
-                    street: p.address.street || null,
-                    area: p.address.area || null,
-                    city: p.address.city || null,
-                    state: p.address.state || null,
-                    pincode: p.address.zip || null,
+                    // NOT NULL with defaults — always send
+                    bedrooms: p.bedrooms ?? 0,
+                    bathrooms: p.bathrooms ?? 0,
+                    sqft: p.sqft ?? 0,
+                    // Nullable fields — only include if they have values
+                    status: 'Available',
+                    visibility: p.visibility || 'Public',
+                    is_featured: p.is_featured ?? false,
+                    is_rera_approved: p.is_rera_approved ?? false,
+                    is_oc_approved: p.is_oc_approved ?? false,
                     country: p.address.country || 'India',
-                    amenities: p.amenities,
-                    floor_plans: p.floor_plans && p.floor_plans.length > 0 ? p.floor_plans : null,
-                    // Shared extra fields
+                    images: p.images,
+                }
+
+                // Optional fields — only add if they have actual values
+                const optionalFields: Record<string, unknown> = {
+                    description: p.description,
+                    remarks: p.remarks,
+                    price_text: p.price_text,
+                    price_per_sqft: p.price_per_sqft,
+                    transaction_type: p.transaction_type,
+                    video_url: p.video_url,
+                    address: p.address.street,
+                    street: p.address.street,
+                    area: p.address.area,
+                    city: p.address.city,
+                    state: p.address.state,
+                    pincode: p.address.zip,
                     built_up_area: p.built_up_area,
                     carpet_area: p.carpet_area,
                     property_age: p.property_age,
@@ -139,37 +151,37 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     unique_feature: p.unique_feature,
                     source: p.source,
                     channel: p.channel,
-                    visibility: p.visibility,
-                    is_rera_approved: p.is_rera_approved,
-                    // Shared detail fields
                     parking_count: p.parking_count,
                     furnishing: p.furnishing,
                     ownership: p.ownership,
-                    suitable_for: p.suitable_for,
+                    suitable_for: p.suitable_for ? p.suitable_for.split(',').map(s => s.trim()).filter(Boolean) : null,
                     floor_number: p.floor_number,
                     total_floors: p.total_floors,
-                    is_oc_approved: p.is_oc_approved || false,
+                    balconies: p.balconies,
+                    lot_size: p.lot_size,
+                    floors: p.floors,
+                    rooms: p.rooms,
+                    plot_size: p.plot_size,
                 }
 
-                // Only add residential fields if not commercial/plot
-                const isCommercial = p.category === 'Commercial' || p.category === 'Office' || p.category === 'Offices' || p.category === 'Warehouse'
-                if (!isCommercial) {
-                    insertData.bedrooms = p.bedrooms
-                    insertData.bathrooms = p.bathrooms
-                    insertData.balconies = p.balconies
-                    insertData.sqft = p.sqft
-                    insertData.lot_size = p.lot_size
-                    insertData.floors = p.floors
-                    insertData.rooms = p.rooms
-                    insertData.plot_size = p.plot_size
-                } else {
-                    insertData.bathrooms = p.bathrooms
-                    insertData.commercial_details = p.commercial_details || null
+                for (const [key, val] of Object.entries(optionalFields)) {
+                    if (val !== null && val !== undefined && val !== '' && val !== 0) insertData[key] = val
                 }
 
-                // Strip null/undefined values to avoid sending non-existent columns
-                for (const key of Object.keys(insertData)) {
-                    if (insertData[key] === null || insertData[key] === undefined) delete insertData[key]
+                // Amenities — only include if non-empty
+                const am = p.amenities
+                if (am && typeof am === 'object' && Object.keys(am).length > 0) {
+                    insertData.amenities = am
+                }
+
+                // Floor plans
+                if (p.floor_plans && p.floor_plans.length > 0) {
+                    insertData.floor_plans = p.floor_plans
+                }
+
+                // Commercial details JSONB
+                if (p.commercial_details) {
+                    insertData.commercial_details = p.commercial_details
                 }
 
                 const { error } = await supabase.from('properties').insert(insertData)
