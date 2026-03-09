@@ -5,7 +5,7 @@ export type ProjectCategory = 'Residential' | 'Villa' | 'Plot' | 'Commercial'
 // ─── Property Columns ─────────────────────────────────────────
 
 const PROPERTY_SHARED_COLUMNS = [
-    'property_id', 'title', 'description', 'remarks', 'price',
+    'property_id', 'title', 'description', 'remarks', 'price', 'price_text',
     'location', 'property_type', 'category', 'transaction_type', 'is_featured', 'video_url',
     'images', 'address_street', 'address_area', 'address_city', 'address_state',
     'address_zip', 'address_country',
@@ -344,7 +344,8 @@ export function generatePropertyTemplate(category?: ProjectCategory): void {
         ['FIELD', 'VALID VALUES / FORMAT', 'NOTES'],
         ['property_type', 'Sale | Rent', 'Required'],
         ['category', 'Apartment | House | Villa | Bungalow | Row Villa | Plot | Commercial | Farmhouse | Penthouse | Studio | Duplex | Office | Offices | Warehouse | Other', 'Required'],
-        ['price', 'Number in rupees (e.g., 15000000)', 'Required'],
+        ['price', 'Number in rupees (e.g., 15000000) or leave blank', 'Optional — blank = Price on Request'],
+        ['price_text', 'Price on Request | Price TBD | Request for Details', 'Optional — auto-set if price is blank'],
         ['location', 'Area name (e.g., Whitefield)', 'Required'],
         ['is_featured', 'true | false', ''],
         ['is_rera_approved', 'true | false', 'Applies to all property types'],
@@ -520,7 +521,8 @@ export interface ParsedProperty {
     property_id: string
     title: string
     description: string
-    price: number
+    price: number | null
+    price_text: string | null
     price_per_sqft: number | null
     location: string
     bedrooms: number
@@ -562,11 +564,14 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
         try {
             const title = safeStr(row['title'])
             const price = safeNum(row['price'])
+            const priceTextRaw = safeStr(row['price_text'])
             const location = safeStr(row['location'])
 
             if (!title) { errors.push({ row: rowNum, message: 'Title is required' }); return }
-            if (price === null) { errors.push({ row: rowNum, message: 'Price is required' }); return }
             if (!location) { errors.push({ row: rowNum, message: 'Location is required' }); return }
+
+            // Determine price_text: use explicit value, or default to "Price on Request" when price is blank
+            const priceText = priceTextRaw || (price === null ? 'Price on Request' : null)
             const rawType = safeStr(row['property_type'])
             if (rawType && rawType !== 'Sale' && rawType !== 'Rent') {
                 errors.push({ row: rowNum, message: `Invalid property_type "${rawType}" — must be "Sale" or "Rent"` }); return
@@ -576,7 +581,8 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
                 property_id: safeStr(row['property_id']),
                 title,
                 description: safeStr(row['description']),
-                price,
+                price: price ?? 0,
+                price_text: priceText,
                 price_per_sqft: safeNum(row['price_per_sqft']),
                 location,
                 bedrooms: safeInt(row['bedrooms']) ?? 0,
@@ -758,6 +764,7 @@ export function exportPropertiesToExcel(properties: Record<string, unknown>[]): 
             title: p.title || '',
             description: p.description || '',
             price: p.price || '',
+            price_text: p.price_text || '',
             price_per_sqft: p.price_per_sqft || '',
             location: p.location || '',
             bedrooms: p.bedrooms || '',

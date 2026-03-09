@@ -36,7 +36,7 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
     const supabase = createClient()
 
     const handleDownloadTemplate = () => {
-        if (type === 'property') generatePropertyTemplate()
+        if (type === 'property') generatePropertyTemplate(templateCategory)
         else generateProjectTemplate(templateCategory)
     }
 
@@ -112,6 +112,7 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     title: p.title,
                     description: p.description || null,
                     price: p.price,
+                    price_text: p.price_text || null,
                     price_per_sqft: p.price_per_sqft,
                     location: p.location,
                     bedrooms: p.bedrooms,
@@ -230,21 +231,20 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
 
                 {/* Actions Bar */}
                 <div style={actionsBarStyle}>
-                    {type === 'project' && (
-                        <select
-                            value={templateCategory}
-                            onChange={(e) => setTemplateCategory(e.target.value as ProjectCategory)}
-                            style={categorySelectorStyle}
-                        >
-                            <option value="Residential">Residential</option>
-                            <option value="Villa">Villa</option>
-                            <option value="Plot">Plot</option>
-                            <option value="Commercial">Commercial</option>
-                        </select>
-                    )}
+                    <select
+                        value={templateCategory}
+                        onChange={(e) => setTemplateCategory(e.target.value as ProjectCategory)}
+                        style={categorySelectorStyle}
+                    >
+                        <option value="Residential">Residential</option>
+                        <option value="Villa">Villa</option>
+                        <option value="Plot">Plot</option>
+                        <option value="Commercial">Commercial</option>
+                    </select>
+
                     <button onClick={handleDownloadTemplate} style={templateBtnStyle}>
                         <Download size={16} />
-                        {type === 'project' ? `${templateCategory} Template` : 'Download Template'}
+                        {templateCategory} Template
                     </button>
                     <button onClick={handleDownloadExisting} style={exportBtnStyle}>
                         <FileSpreadsheet size={16} />
@@ -346,7 +346,7 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                                                 <td style={tdStyle}>{i + 1}</td>
                                                 <td style={tdStyle}>{p.property_id}</td>
                                                 <td style={tdStyle}>{p.title}</td>
-                                                <td style={tdStyle}>₹{p.price.toLocaleString('en-IN')}</td>
+                                                <td style={tdStyle}>{p.price_text || `₹${p.price.toLocaleString('en-IN')}`}</td>
                                                 <td style={tdStyle}>{p.location}</td>
                                                 <td style={tdStyle}>{p.category}</td>
                                                 <td style={tdStyle}>{p.bedrooms}</td>
