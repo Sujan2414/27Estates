@@ -550,7 +550,8 @@ export interface ParseResult<T> {
 export async function parsePropertyExcel(file: File): Promise<ParseResult<ParsedProperty>> {
     const data = await file.arrayBuffer()
     const wb = XLSX.read(data)
-    const ws = wb.Sheets[wb.SheetNames[0]]
+    const dataSheetName = wb.SheetNames.find(n => n !== 'Instructions') ?? wb.SheetNames[0]
+    const ws = wb.Sheets[dataSheetName]
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' })
 
     const valid: ParsedProperty[] = []
