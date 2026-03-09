@@ -65,6 +65,7 @@ export default function EditPropertyPage() {
         title: '',
         description: '',
         price: '',
+        price_text: '',
         price_per_sqft: '',
         location: '',
         bedrooms: '',
@@ -152,6 +153,7 @@ export default function EditPropertyPage() {
             title: data.title || '',
             description: data.description || '',
             price: data.price?.toString() || '',
+            price_text: data.price_text || '',
             price_per_sqft: data.price_per_sqft?.toString() || '',
             location: data.location || '',
             bedrooms: data.bedrooms?.toString() || '',
@@ -301,8 +303,12 @@ export default function EditPropertyPage() {
             const sqftNum = parseInt(formData.sqft)
 
             // Compute human-readable price text (matches wizard logic)
+            // If user selected a special price text like "Price on Request", keep it
+            const specialPriceTexts = ['Price on Request', 'Price TBD', 'Request for Details']
             let priceText = ''
-            if (!isNaN(priceNum) && priceNum > 0) {
+            if (specialPriceTexts.includes(formData.price_text)) {
+                priceText = formData.price_text
+            } else if (!isNaN(priceNum) && priceNum > 0) {
                 if (priceNum >= 10000000) priceText = `₹ ${(priceNum / 10000000).toFixed(2)} Cr`
                 else if (priceNum >= 100000) priceText = `₹ ${(priceNum / 100000).toFixed(2)} L`
                 else priceText = `₹ ${priceNum.toLocaleString('en-IN')}`
@@ -429,8 +435,23 @@ export default function EditPropertyPage() {
 
                     <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>Price (₹) *</label>
-                            <input type="number" name="price" value={formData.price} onChange={handleChange} className={formStyles.input} required />
+                            <label className={formStyles.label}>Price (₹)</label>
+                            <input type="number" name="price" value={formData.price} onChange={(e) => { handleChange(e); setFormData(prev => ({ ...prev, price_text: '' })) }} className={formStyles.input} />
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                                {['Price on Request', 'Price TBD', 'Request for Details'].map(opt => (
+                                    <button
+                                        key={opt}
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, price_text: prev.price_text === opt ? '' : opt }))}
+                                        style={{
+                                            padding: '4px 10px', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer',
+                                            border: formData.price_text === opt ? '1px solid #183C38' : '1px solid #e2e8f0',
+                                            background: formData.price_text === opt ? '#f0fdf4' : '#f8fafc',
+                                            color: formData.price_text === opt ? '#183C38' : '#64748b', fontWeight: 500,
+                                        }}
+                                    >{opt}</button>
+                                ))}
+                            </div>
                         </div>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Price per Sqft</label>
@@ -540,35 +561,70 @@ export default function EditPropertyPage() {
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Property Details</h2>
 
-                    <div className={formStyles.grid3}>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Bedrooms *</label>
-                            <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleChange} className={formStyles.input} required />
+                    {!['Commercial', 'Office', 'Offices', 'Warehouse', 'Plot'].includes(formData.category) ? (
+                        <>
+                            <div className={formStyles.grid3}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Bedrooms *</label>
+                                    <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleChange} className={formStyles.input} required />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Bathrooms *</label>
+                                    <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={formStyles.input} required />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Total Rooms</label>
+                                    <input type="number" name="rooms" value={formData.rooms} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                            </div>
+                            <div className={formStyles.grid3}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Sqft *</label>
+                                    <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={formStyles.input} required />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Lot Size (sqft)</label>
+                                    <input type="number" name="lot_size" value={formData.lot_size} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Floors</label>
+                                    <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                            </div>
+                        </>
+                    ) : formData.category === 'Plot' ? (
+                        <div className={formStyles.grid3}>
+                            <div className={formStyles.field}>
+                                <label className={formStyles.label}>Plot Size (sqft)</label>
+                                <input type="number" name="lot_size" value={formData.lot_size} onChange={handleChange} className={formStyles.input} />
+                            </div>
+                            <div className={formStyles.field}>
+                                <label className={formStyles.label}>Sqft</label>
+                                <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={formStyles.input} />
+                            </div>
+                            <div className={formStyles.field}>
+                                <label className={formStyles.label}>Floors</label>
+                                <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={formStyles.input} />
+                            </div>
                         </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Bathrooms *</label>
-                            <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={formStyles.input} required />
-                        </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Total Rooms</label>
-                            <input type="number" name="rooms" value={formData.rooms} onChange={handleChange} className={formStyles.input} />
-                        </div>
-                    </div>
-
-                    <div className={formStyles.grid3}>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Sqft *</label>
-                            <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={formStyles.input} required />
-                        </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Lot Size (sqft)</label>
-                            <input type="number" name="lot_size" value={formData.lot_size} onChange={handleChange} className={formStyles.input} />
-                        </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Floors</label>
-                            <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={formStyles.input} />
-                        </div>
-                    </div>
+                    ) : (
+                        <>
+                            <div className={formStyles.grid3}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Bathrooms</label>
+                                    <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Sqft / Built-up Area</label>
+                                    <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Floors</label>
+                                    <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Address */}

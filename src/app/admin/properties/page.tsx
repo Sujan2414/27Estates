@@ -155,9 +155,20 @@ export default function PropertiesPage() {
                                 <p className={propertyStyles.location}>{property.location}</p>
 
                                 <div className={propertyStyles.details}>
-                                    <span>{property.bedrooms} Beds</span>
-                                    <span>{property.bathrooms} Baths</span>
-                                    <span>{property.sqft.toLocaleString()} sqft</span>
+                                    {!['Commercial', 'Office', 'Offices', 'Warehouse', 'Plot'].includes(property.category) ? (
+                                        <>
+                                            <span>{property.bedrooms} Beds</span>
+                                            <span>{property.bathrooms} Baths</span>
+                                            <span>{property.sqft.toLocaleString()} sqft</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {property.bathrooms > 0 && <span>{property.bathrooms} Baths</span>}
+                                            {property.sqft > 0 && <span>{property.sqft.toLocaleString()} sqft</span>}
+                                            {property.furnishing && <span>{property.furnishing}</span>}
+                                            {!property.furnishing && (property as Record<string, unknown>).ownership && <span>{String((property as Record<string, unknown>).ownership)}</span>}
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className={propertyStyles.footer}>

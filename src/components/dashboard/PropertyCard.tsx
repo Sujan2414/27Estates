@@ -103,18 +103,38 @@ const PropertyCard = ({ property, isOwner = false, isBookmarked = false, onToggl
 
                 {/* Stats */}
                 <div className="flex items-center justify-between text-sm text-gray-500 py-2 border-b border-gray-100">
-                    <div className="flex items-center gap-1.5">
-                        <BedDouble size={16} className="text-gray-400" />
-                        <span>{property.rooms} Beds</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <Bath size={16} className="text-gray-400" />
-                        <span>{property.bathrooms} Baths</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <Maximize size={16} className="text-gray-400" />
-                        <span>{property.sqft} ft²</span>
-                    </div>
+                    {!['Commercial', 'Office', 'Offices', 'Warehouse', 'Plot'].includes(property.category) ? (
+                        <>
+                            <div className="flex items-center gap-1.5">
+                                <BedDouble size={16} className="text-gray-400" />
+                                <span>{property.rooms} Beds</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <Bath size={16} className="text-gray-400" />
+                                <span>{property.bathrooms} Baths</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <Maximize size={16} className="text-gray-400" />
+                                <span>{property.sqft} ft²</span>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            {property.bathrooms > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                    <Bath size={16} className="text-gray-400" />
+                                    <span>{property.bathrooms} Baths</span>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-1.5">
+                                <Maximize size={16} className="text-gray-400" />
+                                <span>{property.sqft} ft²</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                                <span>{property.category}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Price */}

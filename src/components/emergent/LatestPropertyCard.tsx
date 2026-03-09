@@ -1,7 +1,8 @@
-import { MapPin, BedDouble, Bath, Maximize, MessageSquare, Heart } from "lucide-react";
+import { MapPin, BedDouble, Bath, Maximize, MessageSquare, Heart, Building2, Armchair, ParkingCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { proxyUrl } from "@/lib/proxy-url";
 import styles from "./LatestPropertyCard.module.css";
 
 // Property type matching Supabase V2 schema
@@ -55,7 +56,8 @@ const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookm
         setBookmarked(initialBookmarked);
     }, [initialBookmarked]);
 
-    const mainImage = property.images?.[0] || '/placeholder-property.jpg';
+    const mainImage = proxyUrl(property.images?.[0]) || '/placeholder-property.jpg';
+    const isCommercialOrPlot = ['Commercial', 'Office', 'Offices', 'Warehouse', 'Plot'].includes(property.category);
 
     const handleCardClick = () => {
         if ((property as any).is_project) {
@@ -176,33 +178,71 @@ const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookm
                         {property.location}
                         {property.city && `, ${property.city}`}
                     </span>
-                    <span className={styles.dot}></span>
-                    <MessageSquare size={14} className={styles.locationIcon} />
-                    <span className={styles.roomsInfo}>{String(property.bedrooms).padStart(2, '0')}</span>
+                    {!isCommercialOrPlot && (
+                        <>
+                            <span className={styles.dot}></span>
+                            <MessageSquare size={14} className={styles.locationIcon} />
+                            <span className={styles.roomsInfo}>{String(property.bedrooms).padStart(2, '0')}</span>
+                        </>
+                    )}
                 </div>
 
                 <p className={styles.description}>{property.description || ''}</p>
 
-                <div className={styles.detailsRow}>
-                    <div className={styles.detail}>
-                        <BedDouble size={16} className={styles.detailIcon} />
-                        <span>{property.bedrooms} Room{property.bedrooms > 1 ? 's' : ''}</span>
-                    </div>
-                    <div className={styles.detail}>
-                        <Bath size={16} className={styles.detailIcon} />
-                        <span>{property.bathrooms} Bathroom</span>
-                    </div>
-                </div>
-
-                <div className={styles.areaRow}>
-                    <div className={styles.area}>
-                        <Maximize size={16} className={styles.detailIcon} />
-                        <span>{property.sqft} ft²</span>
-                    </div>
-                    {property.furnishing && (
-                        <span className={styles.furnishing}>{property.furnishing}</span>
-                    )}
-                </div>
+                {isCommercialOrPlot ? (
+                    <>
+                        <div className={styles.detailsRow}>
+                            {property.bathrooms > 0 && (
+                                <div className={styles.detail}>
+                                    <Bath size={16} className={styles.detailIcon} />
+                                    <span>{property.bathrooms} Bath</span>
+                                </div>
+                            )}
+                            {(property as Record<string, unknown>).parking_count && (
+                                <div className={styles.detail}>
+                                    <ParkingCircle size={16} className={styles.detailIcon} />
+                                    <span>{String((property as Record<string, unknown>).parking_count)} Parking</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className={styles.areaRow}>
+                            {(property.sqft > 0 || (property as Record<string, unknown>).built_up_area) && (
+                                <div className={styles.area}>
+                                    <Maximize size={16} className={styles.detailIcon} />
+                                    <span>{(property as Record<string, unknown>).built_up_area || property.sqft} ft²</span>
+                                </div>
+                            )}
+                            {property.furnishing && (
+                                <span className={styles.furnishing}>{property.furnishing}</span>
+                            )}
+                            {(property as Record<string, unknown>).ownership && (
+                                <span className={styles.furnishing}>{String((property as Record<string, unknown>).ownership)}</span>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className={styles.detailsRow}>
+                            <div className={styles.detail}>
+                                <BedDouble size={16} className={styles.detailIcon} />
+                                <span>{property.bedrooms} Room{property.bedrooms > 1 ? 's' : ''}</span>
+                            </div>
+                            <div className={styles.detail}>
+                                <Bath size={16} className={styles.detailIcon} />
+                                <span>{property.bathrooms} Bathroom</span>
+                            </div>
+                        </div>
+                        <div className={styles.areaRow}>
+                            <div className={styles.area}>
+                                <Maximize size={16} className={styles.detailIcon} />
+                                <span>{property.sqft} ft²</span>
+                            </div>
+                            {property.furnishing && (
+                                <span className={styles.furnishing}>{property.furnishing}</span>
+                            )}
+                        </div>
+                    </>
+                )}
 
                 <p className={styles.price}>{displayPrice}</p>
             </div>
