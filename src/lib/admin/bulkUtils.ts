@@ -23,7 +23,7 @@ const PROPERTY_COMMERCIAL_COLS = [
     'floor_number', 'total_floors', 'is_oc_approved',
     'workstation', 'cabin', 'conference_room', 'reception_area', 'power_kva', 'power_backup'
 ]
-const PROPERTY_PLOT_COLS = ['plot_size', 'ownership', 'plot_sub_type']
+const PROPERTY_PLOT_COLS = ['plot_size', 'ownership']
 
 const PROPERTY_SHARED_EXAMPLE: Record<string, string> = {
     property_id: 'PROP-001',
@@ -72,7 +72,7 @@ const PROPERTY_CATEGORY_EXAMPLE_EXTRAS: Record<ProjectCategory, Record<string, s
     },
     Plot: {
         category: 'Plot',
-        plot_size: '2400', ownership: 'Freehold', plot_sub_type: 'Residential'
+        plot_size: '2400', ownership: 'Freehold'
     },
     Commercial: {
         category: 'Commercial',
@@ -574,7 +574,6 @@ export interface ParsedProperty {
     } | null
     // Plot-specific fields
     plot_size: number | null
-    plot_sub_type: string | null
 }
 
 export interface ParseResult<T> {
@@ -699,7 +698,6 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
                 } : null,
                 // Plot fields
                 plot_size: safeInt(row['plot_size']),
-                plot_sub_type: safeStr(row['plot_sub_type']) || null,
             })
         } catch (err) {
             errors.push({ row: rowNum, message: err instanceof Error ? err.message : 'Unknown error' })
@@ -904,7 +902,6 @@ export function exportPropertiesToExcel(properties: Record<string, unknown>[]): 
             power_backup: cd.power_backup || '',
             // Plot
             plot_size: p.plot_size || '',
-            plot_sub_type: p.plot_sub_type || '',
         }
     })
 

@@ -116,12 +116,6 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     price_text: p.price_text || null,
                     price_per_sqft: p.price_per_sqft,
                     location: p.location,
-                    bedrooms: p.bedrooms,
-                    bathrooms: p.bathrooms,
-                    sqft: p.sqft,
-                    lot_size: p.lot_size,
-                    floors: p.floors,
-                    rooms: p.rooms,
                     property_type: p.property_type,
                     category: p.category,
                     transaction_type: p.transaction_type || null,
@@ -147,21 +141,37 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     channel: p.channel,
                     visibility: p.visibility,
                     is_rera_approved: p.is_rera_approved,
-                    // Residential / shared detail fields
-                    balconies: p.balconies,
+                    // Shared detail fields
                     parking_count: p.parking_count,
                     furnishing: p.furnishing,
                     ownership: p.ownership,
                     suitable_for: p.suitable_for,
                     floor_number: p.floor_number,
                     total_floors: p.total_floors,
-                    // Commercial
                     is_oc_approved: p.is_oc_approved || false,
-                    commercial_details: p.commercial_details || null,
-                    // Plot
-                    plot_size: p.plot_size,
-                    plot_sub_type: p.plot_sub_type,
                 }
+
+                // Only add residential fields if not commercial/plot
+                const isCommercial = p.category === 'Commercial' || p.category === 'Office' || p.category === 'Offices' || p.category === 'Warehouse'
+                if (!isCommercial) {
+                    insertData.bedrooms = p.bedrooms
+                    insertData.bathrooms = p.bathrooms
+                    insertData.balconies = p.balconies
+                    insertData.sqft = p.sqft
+                    insertData.lot_size = p.lot_size
+                    insertData.floors = p.floors
+                    insertData.rooms = p.rooms
+                    insertData.plot_size = p.plot_size
+                } else {
+                    insertData.bathrooms = p.bathrooms
+                    insertData.commercial_details = p.commercial_details || null
+                }
+
+                // Strip null/undefined values to avoid sending non-existent columns
+                for (const key of Object.keys(insertData)) {
+                    if (insertData[key] === null || insertData[key] === undefined) delete insertData[key]
+                }
+
                 const { error } = await supabase.from('properties').insert(insertData)
 
                 if (error) {
@@ -346,14 +356,15 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                                             <th style={thStyle}>#</th>
                                             {type === 'property' ? (
                                                 <>
-                                                    <th style={thStyle}>ID</th>
                                                     <th style={thStyle}>Title</th>
                                                     <th style={thStyle}>Price</th>
                                                     <th style={thStyle}>Location</th>
                                                     <th style={thStyle}>Category</th>
                                                     <th style={thStyle}>Type</th>
                                                     <th style={thStyle}>Ownership</th>
-                                                    <th style={thStyle}>Images</th>
+                                                    <th style={thStyle}>Furnishing</th>
+                                                    <th style={thStyle}>Possession</th>
+                                                    <th style={thStyle}>Imgs</th>
                                                 </>
                                             ) : (
                                                 <>
@@ -372,13 +383,14 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                                         {type === 'property' ? parsedProperties.slice(0, 50).map((p, i) => (
                                             <tr key={i}>
                                                 <td style={tdStyle}>{i + 1}</td>
-                                                <td style={tdStyle}>{p.property_id}</td>
                                                 <td style={tdStyle}>{p.title}</td>
                                                 <td style={tdStyle}>{p.price_text || (p.price ? `₹${p.price.toLocaleString('en-IN')}` : '-')}</td>
                                                 <td style={tdStyle}>{p.location}</td>
                                                 <td style={tdStyle}>{p.category}</td>
                                                 <td style={tdStyle}>{p.property_type}</td>
                                                 <td style={tdStyle}>{p.ownership || '-'}</td>
+                                                <td style={tdStyle}>{p.furnishing || '-'}</td>
+                                                <td style={tdStyle}>{p.possession_status || '-'}</td>
                                                 <td style={tdStyle}>{p.images.length}</td>
                                             </tr>
                                         )) : parsedProjects.slice(0, 50).map((p, i) => (
