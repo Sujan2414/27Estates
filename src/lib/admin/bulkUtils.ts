@@ -521,6 +521,7 @@ export interface ParsedProperty {
     property_id: string
     title: string
     description: string
+    remarks: string | null
     price: number | null
     price_text: string | null
     price_per_sqft: number | null
@@ -533,6 +534,7 @@ export interface ParsedProperty {
     rooms: number | null
     property_type: string
     category: string
+    transaction_type: string | null
     is_featured: boolean
     video_url: string | null
     images: string[]
@@ -540,8 +542,39 @@ export interface ParsedProperty {
         street: string; area: string; city: string; state: string
         zip: string; country: string; coordinates: { lat: number; lng: number }
     }
-    amenities: { interior: string[]; outdoor: string[]; utilities: string[]; other: string[] }
+    amenities: Record<string, unknown> | { interior: string[]; outdoor: string[]; utilities: string[]; other: string[] }
     floor_plans: { name: string; image: string }[] | null
+    // Shared extra fields
+    built_up_area: number | null
+    carpet_area: number | null
+    property_age: string | null
+    possession_status: string | null
+    unique_feature: string | null
+    source: string | null
+    channel: string | null
+    visibility: string | null
+    is_rera_approved: boolean
+    // Residential / Villa fields
+    balconies: number | null
+    parking_count: number | null
+    furnishing: string | null
+    ownership: string | null
+    suitable_for: string | null
+    floor_number: string | null
+    total_floors: string | null
+    // Commercial-specific fields
+    is_oc_approved: boolean
+    commercial_details: {
+        workstation: number | null
+        cabin: number | null
+        conference_room: number | null
+        reception_area: number | null
+        power_kva: number | null
+        power_backup: string | null
+    } | null
+    // Plot-specific fields
+    plot_size: number | null
+    plot_sub_type: string | null
 }
 
 export interface ParseResult<T> {
@@ -562,6 +595,10 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
     rows.forEach((row, i) => {
         const rowNum = i + 2
         try {
+            const propId = safeStr(row['property_id'])
+            // Skip example/sample row from the template
+            if (propId === 'PROP-001' || safeStr(row['title']) === 'Luxury Property in Whitefield') return
+
             const title = safeStr(row['title'])
             const price = safeNum(row['price'])
             const priceTextRaw = safeStr(row['price_text'])
@@ -577,10 +614,34 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
                 errors.push({ row: rowNum, message: `Invalid property_type "${rawType}" — must be "Sale" or "Rent"` }); return
             }
 
+            const category = safeStr(row['category']) || 'Apartment'
+            const isCommercial = category === 'Commercial' || category === 'Office' || category === 'Offices' || category === 'Warehouse'
+
+            // Parse amenities — support JSON string or comma-separated sub-fields
+            const rawAmenities = safeStr(row['amenities'])
+            let amenities: Record<string, unknown> | { interior: string[]; outdoor: string[]; utilities: string[]; other: string[] }
+            if (rawAmenities) {
+                const parsed = safeJsonParse<Record<string, unknown>>(row['amenities'], null)
+                amenities = parsed ?? {
+                    interior: parseCommaSeparated(row['amenities_interior']),
+                    outdoor: parseCommaSeparated(row['amenities_outdoor']),
+                    utilities: parseCommaSeparated(row['amenities_utilities']),
+                    other: parseCommaSeparated(row['amenities_other']),
+                }
+            } else {
+                amenities = {
+                    interior: parseCommaSeparated(row['amenities_interior']),
+                    outdoor: parseCommaSeparated(row['amenities_outdoor']),
+                    utilities: parseCommaSeparated(row['amenities_utilities']),
+                    other: parseCommaSeparated(row['amenities_other']),
+                }
+            }
+
             valid.push({
-                property_id: safeStr(row['property_id']),
+                property_id: propId,
                 title,
                 description: safeStr(row['description']),
+                remarks: safeStr(row['remarks']) || null,
                 price: price ?? 0,
                 price_text: priceText,
                 price_per_sqft: safeNum(row['price_per_sqft']),
@@ -592,7 +653,8 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
                 floors: safeInt(row['floors']),
                 rooms: safeInt(row['rooms']),
                 property_type: safeStr(row['property_type']) || 'Sale',
-                category: safeStr(row['category']) || 'Apartment',
+                category,
+                transaction_type: safeStr(row['transaction_type']) || null,
                 is_featured: safeBool(row['is_featured']),
                 video_url: safeStr(row['video_url']) || null,
                 images: parseCommaSeparated(row['images']),
@@ -605,13 +667,39 @@ export async function parsePropertyExcel(file: File): Promise<ParseResult<Parsed
                     country: safeStr(row['address_country']) || 'India',
                     coordinates: { lat: 0, lng: 0 },
                 },
-                amenities: {
-                    interior: parseCommaSeparated(row['amenities_interior']),
-                    outdoor: parseCommaSeparated(row['amenities_outdoor']),
-                    utilities: parseCommaSeparated(row['amenities_utilities']),
-                    other: parseCommaSeparated(row['amenities_other']),
-                },
+                amenities,
                 floor_plans: safeJsonParse<{ name: string; image: string }[]>(row['floor_plans'], []),
+                // Shared extra fields
+                built_up_area: safeInt(row['built_up_area']),
+                carpet_area: safeInt(row['carpet_area']),
+                property_age: safeStr(row['property_age']) || null,
+                possession_status: safeStr(row['possession_status']) || null,
+                unique_feature: safeStr(row['unique_feature']) || null,
+                source: safeStr(row['source']) || null,
+                channel: safeStr(row['channel']) || null,
+                visibility: safeStr(row['visibility']) || null,
+                is_rera_approved: safeBool(row['is_rera_approved']),
+                // Residential fields
+                balconies: safeInt(row['balconies']),
+                parking_count: safeInt(row['parking_count']),
+                furnishing: safeStr(row['furnishing']) || null,
+                ownership: safeStr(row['ownership']) || null,
+                suitable_for: safeStr(row['suitable_for']) || null,
+                floor_number: safeStr(row['floor_number']) || null,
+                total_floors: safeStr(row['total_floors']) || null,
+                // Commercial fields
+                is_oc_approved: safeBool(row['is_oc_approved']),
+                commercial_details: isCommercial ? {
+                    workstation: safeInt(row['workstation']),
+                    cabin: safeInt(row['cabin']),
+                    conference_room: safeInt(row['conference_room']),
+                    reception_area: safeInt(row['reception_area']),
+                    power_kva: safeInt(row['power_kva']),
+                    power_backup: safeStr(row['power_backup']) || null,
+                } : null,
+                // Plot fields
+                plot_size: safeInt(row['plot_size']),
+                plot_sub_type: safeStr(row['plot_sub_type']) || null,
             })
         } catch (err) {
             errors.push({ row: rowNum, message: err instanceof Error ? err.message : 'Unknown error' })
@@ -759,36 +847,64 @@ export function exportPropertiesToExcel(properties: Record<string, unknown>[]): 
     const rows = properties.map(p => {
         const addr = (p.address as Record<string, unknown>) || {}
         const am = (p.amenities as Record<string, string[]>) || {}
+        const cd = (p.commercial_details as Record<string, unknown>) || {}
         return {
             property_id: p.property_id || '',
             title: p.title || '',
             description: p.description || '',
+            remarks: p.remarks || '',
             price: p.price || '',
             price_text: p.price_text || '',
             price_per_sqft: p.price_per_sqft || '',
             location: p.location || '',
+            property_type: p.property_type || '',
+            category: p.category || '',
+            transaction_type: p.transaction_type || '',
+            is_featured: p.is_featured ? 'true' : 'false',
+            video_url: p.video_url || '',
+            images: Array.isArray(p.images) ? (p.images as string[]).join(', ') : '',
+            address_street: addr.street || p.street || '',
+            address_area: addr.area || p.area || '',
+            address_city: addr.city || p.city || '',
+            address_state: addr.state || p.state || '',
+            address_zip: addr.zip || p.pincode || '',
+            address_country: addr.country || 'India',
+            built_up_area: p.built_up_area || '',
+            carpet_area: p.carpet_area || '',
+            property_age: p.property_age || '',
+            possession_status: p.possession_status || '',
+            unique_feature: p.unique_feature || '',
+            source: p.source || '',
+            channel: p.channel || '',
+            visibility: p.visibility || '',
+            is_rera_approved: p.is_rera_approved ? 'true' : 'false',
+            amenities: p.amenities ? JSON.stringify(p.amenities) : '',
+            floor_plans: p.floor_plans ? JSON.stringify(p.floor_plans) : '',
+            // Residential
             bedrooms: p.bedrooms || '',
             bathrooms: p.bathrooms || '',
+            balconies: p.balconies || '',
+            parking_count: p.parking_count || '',
+            furnishing: p.furnishing || '',
+            ownership: p.ownership || '',
+            suitable_for: p.suitable_for || '',
+            floor_number: p.floor_number || '',
+            total_floors: p.total_floors || '',
             sqft: p.sqft || '',
             lot_size: p.lot_size || '',
             floors: p.floors || '',
             rooms: p.rooms || '',
-            property_type: p.property_type || '',
-            category: p.category || '',
-            is_featured: p.is_featured ? 'true' : 'false',
-            video_url: p.video_url || '',
-            images: Array.isArray(p.images) ? (p.images as string[]).join(', ') : '',
-            address_street: addr.street || '',
-            address_area: addr.area || '',
-            address_city: addr.city || '',
-            address_state: addr.state || '',
-            address_zip: addr.zip || '',
-            address_country: addr.country || 'India',
-            amenities_interior: (am.interior || []).join(', '),
-            amenities_outdoor: (am.outdoor || []).join(', '),
-            amenities_utilities: (am.utilities || []).join(', '),
-            amenities_other: (am.other || []).join(', '),
-            floor_plans: p.floor_plans ? JSON.stringify(p.floor_plans) : '',
+            // Commercial
+            is_oc_approved: p.is_oc_approved ? 'true' : 'false',
+            workstation: cd.workstation || '',
+            cabin: cd.cabin || '',
+            conference_room: cd.conference_room || '',
+            reception_area: cd.reception_area || '',
+            power_kva: cd.power_kva || '',
+            power_backup: cd.power_backup || '',
+            // Plot
+            plot_size: p.plot_size || '',
+            plot_sub_type: p.plot_sub_type || '',
         }
     })
 

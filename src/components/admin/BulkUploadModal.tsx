@@ -107,10 +107,11 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
 
             for (let i = 0; i < parsedProperties.length; i++) {
                 const p = parsedProperties[i]
-                const { error } = await supabase.from('properties').insert({
+                const insertData: Record<string, unknown> = {
                     property_id: p.property_id || `PROP-${Date.now()}-${i}`,
                     title: p.title,
                     description: p.description || null,
+                    remarks: p.remarks || null,
                     price: p.price,
                     price_text: p.price_text || null,
                     price_per_sqft: p.price_per_sqft,
@@ -123,6 +124,7 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     rooms: p.rooms,
                     property_type: p.property_type,
                     category: p.category,
+                    transaction_type: p.transaction_type || null,
                     is_featured: p.is_featured,
                     video_url: p.video_url,
                     images: p.images,
@@ -135,7 +137,32 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     country: p.address.country || 'India',
                     amenities: p.amenities,
                     floor_plans: p.floor_plans && p.floor_plans.length > 0 ? p.floor_plans : null,
-                })
+                    // Shared extra fields
+                    built_up_area: p.built_up_area,
+                    carpet_area: p.carpet_area,
+                    property_age: p.property_age,
+                    possession_status: p.possession_status,
+                    unique_feature: p.unique_feature,
+                    source: p.source,
+                    channel: p.channel,
+                    visibility: p.visibility,
+                    is_rera_approved: p.is_rera_approved,
+                    // Residential / shared detail fields
+                    balconies: p.balconies,
+                    parking_count: p.parking_count,
+                    furnishing: p.furnishing,
+                    ownership: p.ownership,
+                    suitable_for: p.suitable_for,
+                    floor_number: p.floor_number,
+                    total_floors: p.total_floors,
+                    // Commercial
+                    is_oc_approved: p.is_oc_approved || false,
+                    commercial_details: p.commercial_details || null,
+                    // Plot
+                    plot_size: p.plot_size,
+                    plot_sub_type: p.plot_sub_type,
+                }
+                const { error } = await supabase.from('properties').insert(insertData)
 
                 if (error) {
                     failed++
@@ -324,7 +351,8 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                                                     <th style={thStyle}>Price</th>
                                                     <th style={thStyle}>Location</th>
                                                     <th style={thStyle}>Category</th>
-                                                    <th style={thStyle}>Beds</th>
+                                                    <th style={thStyle}>Type</th>
+                                                    <th style={thStyle}>Ownership</th>
                                                     <th style={thStyle}>Images</th>
                                                 </>
                                             ) : (
@@ -346,10 +374,11 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                                                 <td style={tdStyle}>{i + 1}</td>
                                                 <td style={tdStyle}>{p.property_id}</td>
                                                 <td style={tdStyle}>{p.title}</td>
-                                                <td style={tdStyle}>{p.price_text || `₹${p.price.toLocaleString('en-IN')}`}</td>
+                                                <td style={tdStyle}>{p.price_text || (p.price ? `₹${p.price.toLocaleString('en-IN')}` : '-')}</td>
                                                 <td style={tdStyle}>{p.location}</td>
                                                 <td style={tdStyle}>{p.category}</td>
-                                                <td style={tdStyle}>{p.bedrooms}</td>
+                                                <td style={tdStyle}>{p.property_type}</td>
+                                                <td style={tdStyle}>{p.ownership || '-'}</td>
                                                 <td style={tdStyle}>{p.images.length}</td>
                                             </tr>
                                         )) : parsedProjects.slice(0, 50).map((p, i) => (
