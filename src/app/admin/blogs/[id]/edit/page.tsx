@@ -95,22 +95,21 @@ export default function EditBlogPage() {
                 published_at: publish ? new Date().toISOString() : formData.published_at,
             }
 
-            let { error: updateError } = await supabase
+            // Always save without category first (safe for all DB states),
+            // then attempt to save category separately if column exists
+            const { category, ...blogDataWithoutCategory } = blogData
+
+            const { error: updateError } = await supabase
                 .from('blogs')
-                .update(blogData)
+                .update(blogDataWithoutCategory)
                 .eq('id', params?.id as string)
 
-            // If category column doesn't exist yet, retry without it
-            if (updateError?.message?.includes('category')) {
-                const { category: _cat, ...blogDataWithoutCategory } = blogData
-                const { error: retryError } = await supabase
-                    .from('blogs')
-                    .update(blogDataWithoutCategory)
-                    .eq('id', params?.id as string)
-                updateError = retryError
-            }
-
             if (updateError) throw updateError
+
+            // Try saving category separately — silently skip if column missing
+            if (category) {
+                await supabase.from('blogs').update({ category }).eq('id', params?.id as string)
+            }
 
             router.push('/admin/blogs')
         } catch (err) {

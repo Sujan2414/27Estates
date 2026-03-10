@@ -63,17 +63,25 @@ export default function NewBlogPage() {
         setError(null)
 
         try {
+            const { category, ...formDataWithoutCategory } = formData
             const blogData = {
-                ...formData,
+                ...formDataWithoutCategory,
                 tags,
                 published_at: publish ? new Date().toISOString() : null,
             }
 
-            const { error: insertError } = await supabase
+            const { data: inserted, error: insertError } = await supabase
                 .from('blogs')
                 .insert([blogData])
+                .select('id')
+                .single()
 
             if (insertError) throw insertError
+
+            // Try saving category separately — silently skip if column missing
+            if (category && inserted?.id) {
+                await supabase.from('blogs').update({ category }).eq('id', inserted.id)
+            }
 
             router.push('/admin/blogs')
         } catch (err) {
