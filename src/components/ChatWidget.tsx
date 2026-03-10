@@ -230,10 +230,9 @@ export default function ChatWidget() {
         handleSend(text)
     }
 
-    // Only show on home page and properties listing pages (not detail pages, admin, crm, etc.)
-    const isHome = pathname === '/'
-    const isPropertiesListing = pathname?.startsWith('/properties') && !/^\/properties\/[^/]+$/.test(pathname || '')
-    if (!isHome && !isPropertiesListing) return null
+    // Hide on admin, crm, auth, dashboard pages only
+    const isHidden = pathname?.startsWith('/admin') || pathname?.startsWith('/crm') || pathname?.startsWith('/auth') || pathname?.startsWith('/dashboard')
+    if (isHidden) return null
     if (!ready) return null
 
     // Get the last assistant message's suggestions
