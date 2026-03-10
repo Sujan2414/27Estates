@@ -85,7 +85,9 @@ export default function PropertiesPage() {
         property.property_id.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    const formatPrice = (price: number) => {
+    const formatPrice = (price: number, priceText: string | null) => {
+        if (priceText) return priceText
+        if (price <= 0) return 'Price on Request'
         if (price >= 10000000) {
             return `₹${(price / 10000000).toFixed(2)} Cr`
         } else if (price >= 100000) {
@@ -172,7 +174,7 @@ export default function PropertiesPage() {
                                 </div>
 
                                 <div className={propertyStyles.footer}>
-                                    <span className={propertyStyles.price}>{formatPrice(property.price)}</span>
+                                    <span className={propertyStyles.price}>{formatPrice(property.price, property.price_text)}</span>
                                     <div className={propertyStyles.actions}>
                                         <Link href={`/admin/properties/${property.id}/edit`} className={propertyStyles.actionBtn}>
                                             <Pencil size={16} />
