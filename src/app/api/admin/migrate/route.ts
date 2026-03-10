@@ -19,13 +19,13 @@ const MIGRATIONS: { id: string; sql: string }[] = [
 ]
 
 async function runSQL(sql: string): Promise<{ ok: boolean; error?: string }> {
-    // Try Supabase pg-meta endpoint (available on self-hosted / JioBase)
-    const res = await fetch(`${SUPABASE_URL}/pg/query`, {
+    // Supabase hosted: use the REST RPC endpoint
+    const projectRef = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '')
+    const res = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-            'apikey': SERVICE_ROLE_KEY,
         },
         body: JSON.stringify({ query: sql }),
     })
