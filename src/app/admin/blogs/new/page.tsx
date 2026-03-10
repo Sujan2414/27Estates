@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import ImageUpload from '@/components/admin/ImageUpload'
@@ -12,7 +11,6 @@ import formStyles from '../../properties/form.module.css'
 
 export default function NewBlogPage() {
     const router = useRouter()
-    const supabase = createClient()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
@@ -70,11 +68,15 @@ export default function NewBlogPage() {
                 published_at: publish ? new Date().toISOString() : null,
             }
 
-            const { error: insertError } = await supabase
-                .from('blogs')
-                .insert([blogData])
-
-            if (insertError) throw insertError
+            const res = await fetch('/api/admin/blogs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(blogData),
+            })
+            if (!res.ok) {
+                const { error } = await res.json()
+                throw new Error(error || 'Failed to create blog post')
+            }
 
             setSuccess('Blog post created successfully!')
             setTimeout(() => router.push('/admin/blogs'), 1500)

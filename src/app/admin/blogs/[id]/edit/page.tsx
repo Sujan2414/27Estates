@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import ImageUpload from '@/components/admin/ImageUpload'
@@ -13,7 +12,6 @@ import formStyles from '../../../properties/form.module.css'
 export default function EditBlogPage() {
     const router = useRouter()
     const params = useParams()
-    const supabase = createClient()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -40,17 +38,13 @@ export default function EditBlogPage() {
     }, [])
 
     const fetchBlog = async () => {
-        const { data, error } = await supabase
-            .from('blogs')
-            .select('*')
-            .eq('id', params?.id as string)
-            .single()
-
-        if (error || !data) {
+        const res = await fetch(`/api/admin/blogs/${params?.id}`)
+        if (!res.ok) {
             setError('Blog post not found')
             setLoading(false)
             return
         }
+        const data = await res.json()
 
         setFormData({
             title: data.title || '',
@@ -96,12 +90,15 @@ export default function EditBlogPage() {
                 published_at: publish ? new Date().toISOString() : formData.published_at,
             }
 
-            const { error: updateError } = await supabase
-                .from('blogs')
-                .update(blogData)
-                .eq('id', params?.id as string)
-
-            if (updateError) throw updateError
+            const res = await fetch(`/api/admin/blogs/${params?.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(blogData),
+            })
+            if (!res.ok) {
+                const { error } = await res.json()
+                throw new Error(error || 'Failed to update blog post')
+            }
 
             setSuccess('Blog post updated successfully!')
             setTimeout(() => router.push('/admin/blogs'), 1500)
