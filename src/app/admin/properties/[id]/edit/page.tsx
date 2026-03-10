@@ -33,6 +33,12 @@ interface FloorPlan {
     description?: string
 }
 
+interface FloorDetail {
+    floor: number
+    bathrooms: string
+    sqft: string
+}
+
 interface ConnectivityItem {
     type: string
     name: string
@@ -78,6 +84,7 @@ export default function EditPropertyPage() {
         lot_size: '',
         floors: '',
         rooms: '',
+        parking_count: '',
         property_type: 'Sale',
         category: 'House',
         status: 'Available',
@@ -119,6 +126,9 @@ export default function EditPropertyPage() {
     const [images, setImages] = useState<string[]>([''])
     const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([{ name: '', image: '', bedrooms: '', bathrooms: '', area: '', description: '' }])
 
+    // Floor Details (commercial floor-wise breakdown)
+    const [floorDetails, setFloorDetails] = useState<FloorDetail[]>([])
+
     // Connectivity
     const [connectivity, setConnectivity] = useState<ConnectivityItem[]>([{ type: '', name: '', distance: '', icon: '' }])
 
@@ -127,6 +137,21 @@ export default function EditPropertyPage() {
         fetchAgents()
         fetchOwners()
     }, [])
+
+    // Sync floorDetails rows when floors count changes for commercial categories
+    useEffect(() => {
+        const commercialCategories = ['Commercial', 'Office', 'Offices', 'Warehouse']
+        if (!commercialCategories.includes(formData.category)) return
+        const count = parseInt(formData.floors) || 0
+        setFloorDetails(prev => {
+            if (count === 0) return []
+            return Array.from({ length: count }, (_, i) => ({
+                floor: i + 1,
+                bathrooms: prev[i]?.bathrooms ?? '',
+                sqft: prev[i]?.sqft ?? '',
+            }))
+        })
+    }, [formData.floors, formData.category])
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -166,6 +191,7 @@ export default function EditPropertyPage() {
             lot_size: data.lot_size?.toString() || '',
             floors: data.floors?.toString() || '',
             rooms: data.rooms?.toString() || '',
+            parking_count: data.parking_count?.toString() || '',
             // Normalise legacy 'Sales' value to 'Sale'
             property_type: data.property_type === 'Sales' ? 'Sale' : (data.property_type || 'Sale'),
             category: data.category || 'House',
@@ -215,6 +241,12 @@ export default function EditPropertyPage() {
         // Parse connectivity
         const connData = data.connectivity || []
         setConnectivity(connData.length > 0 ? connData : [{ type: '', name: '', distance: '', icon: '' }])
+
+        // Parse floor details (commercial floor-wise breakdown)
+        const fdData = data.floor_details || []
+        if (fdData.length > 0) {
+            setFloorDetails(fdData.map((f: any) => ({ floor: f.floor, bathrooms: f.bathrooms?.toString() || '', sqft: f.sqft?.toString() || '' })))
+        }
 
         setLoading(false)
     }
@@ -279,6 +311,11 @@ export default function EditPropertyPage() {
     }
     const addFloorPlan = () => setFloorPlans(prev => [...prev, { name: '', image: '', bedrooms: '', bathrooms: '', area: '', description: '' }])
     const removeFloorPlan = (index: number) => setFloorPlans(prev => prev.filter((_, i) => i !== index))
+
+    // Floor detail handlers
+    const handleFloorDetailChange = (index: number, field: 'bathrooms' | 'sqft', value: string) => {
+        setFloorDetails(prev => prev.map((fd, i) => i === index ? { ...fd, [field]: value } : fd))
+    }
 
     // Connectivity handlers
     const handleConnectivityChange = (index: number, field: keyof ConnectivityItem, value: string) => {
@@ -345,6 +382,7 @@ export default function EditPropertyPage() {
                 lot_size: formData.lot_size ? parseInt(formData.lot_size) : null,
                 floors: formData.floors ? parseInt(formData.floors) : null,
                 rooms: formData.rooms ? parseInt(formData.rooms) : null,
+                parking_count: formData.parking_count ? parseInt(formData.parking_count) : null,
                 property_type: formData.property_type,
                 category: formData.category,
                 status: formData.status,
@@ -358,6 +396,11 @@ export default function EditPropertyPage() {
                 amenities: amenitiesData.length > 0 ? amenitiesData : null,
                 floor_plans: floorPlansData.length > 0 ? floorPlansData : null,
                 connectivity: connectivityData.length > 0 ? connectivityData : null,
+                floor_details: floorDetails.length > 0 ? floorDetails.map(fd => ({
+                    floor: fd.floor,
+                    bathrooms: fd.bathrooms ? parseInt(fd.bathrooms) : null,
+                    sqft: fd.sqft ? parseInt(fd.sqft) : null,
+                })) : null,
                 pricing_details: formData.property_type === 'Rent' ? {
                     maintenance_charges: pricingDetails.maintenance_charges ? parseFloat(pricingDetails.maintenance_charges) : null,
                     maintenance_paid_by_licensor: pricingDetails.maintenance_paid_by_licensor,
@@ -599,31 +642,22 @@ export default function EditPropertyPage() {
                                     <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={formStyles.input} />
                                 </div>
                             </div>
+                            <div className={formStyles.grid3}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Parking Spaces</label>
+                                    <input type="number" name="parking_count" value={formData.parking_count} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                            </div>
                         </>
                     ) : formData.category === 'Plot' ? (
-                        <div className={formStyles.grid3}>
-                            <div className={formStyles.field}>
-                                <label className={formStyles.label}>Plot Size (sqft)</label>
-                                <input type="number" name="lot_size" value={formData.lot_size} onChange={handleChange} className={formStyles.input} />
-                            </div>
-                            <div className={formStyles.field}>
-                                <label className={formStyles.label}>Sqft</label>
-                                <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={formStyles.input} />
-                            </div>
-                            <div className={formStyles.field}>
-                                <label className={formStyles.label}>Floors</label>
-                                <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={formStyles.input} />
-                            </div>
-                        </div>
-                    ) : (
                         <>
                             <div className={formStyles.grid3}>
                                 <div className={formStyles.field}>
-                                    <label className={formStyles.label}>Bathrooms</label>
-                                    <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={formStyles.input} />
+                                    <label className={formStyles.label}>Plot Size (sqft)</label>
+                                    <input type="number" name="lot_size" value={formData.lot_size} onChange={handleChange} className={formStyles.input} />
                                 </div>
                                 <div className={formStyles.field}>
-                                    <label className={formStyles.label}>Sqft / Built-up Area</label>
+                                    <label className={formStyles.label}>Sqft</label>
                                     <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={formStyles.input} />
                                 </div>
                                 <div className={formStyles.field}>
@@ -631,6 +665,79 @@ export default function EditPropertyPage() {
                                     <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={formStyles.input} />
                                 </div>
                             </div>
+                            <div className={formStyles.grid3}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Parking Spaces</label>
+                                    <input type="number" name="parking_count" value={formData.parking_count} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className={formStyles.grid3}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Total Bathrooms</label>
+                                    <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Total Sqft / Built-up Area</label>
+                                    <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Total Floors</label>
+                                    <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                            </div>
+                            <div className={formStyles.grid3}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Parking Spaces</label>
+                                    <input type="number" name="parking_count" value={formData.parking_count} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                            </div>
+
+                            {floorDetails.length > 0 && (
+                                <div style={{ marginTop: '1.25rem' }}>
+                                    <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Floor-wise Breakdown</p>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                                        <thead>
+                                            <tr style={{ background: '#f8fafc' }}>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b', width: '80px' }}>Floor</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Bathrooms</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Sqft / Built-up Area</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {floorDetails.map((fd, i) => (
+                                                <tr key={fd.floor}>
+                                                    <td style={{ padding: '6px 12px', border: '1px solid #e2e8f0', fontWeight: 500, color: '#374151', background: '#f8fafc' }}>Floor {fd.floor}</td>
+                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
+                                                        <input
+                                                            type="number"
+                                                            value={fd.bathrooms}
+                                                            onChange={e => handleFloorDetailChange(i, 'bathrooms', e.target.value)}
+                                                            className={formStyles.input}
+                                                            style={{ margin: 0 }}
+                                                            min="0"
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
+                                                        <input
+                                                            type="number"
+                                                            value={fd.sqft}
+                                                            onChange={e => handleFloorDetailChange(i, 'sqft', e.target.value)}
+                                                            className={formStyles.input}
+                                                            style={{ margin: 0 }}
+                                                            min="0"
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

@@ -197,6 +197,7 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                 // Floor info (Apartment, Commercial…)
                 floor_number: d.floor_number || null,
                 total_floors: d.total_floors || null,
+                floors: d.floors ? parseInt(d.floors) : null,
 
                 // Property details
                 furnishing: d.furnishing || null,

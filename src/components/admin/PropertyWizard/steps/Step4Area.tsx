@@ -29,6 +29,9 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
         carpet_area: initialData.carpet_area || '',
         terrace_area: initialData.terrace_area || '',
         plot_size: initialData.plot_size || '',
+        bathrooms: initialData.bathrooms || '',
+        floors: initialData.floors || '',
+        parking_count: initialData.parking_count || '',
         price: initialData.price || '',
         is_negotiable: initialData.is_negotiable || false,
         maintenance_charges: initialData.maintenance_charges || '',
@@ -90,6 +93,16 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                             <input type="number" name="plot_size" value={formData.plot_size} onChange={handleChange} className={styles.input} />
                         </div>
                     </div>
+                    <div className={styles.grid2}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Bathrooms</label>
+                            <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={styles.input} min="0" />
+                        </div>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Floors</label>
+                            <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={styles.input} min="0" />
+                        </div>
+                    </div>
                 </>
             )}
 
@@ -104,6 +117,16 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                         <div className={styles.field}>
                             <label className={styles.label}>Built-Up Area</label>
                             <input type="number" name="built_up_area" value={formData.built_up_area} onChange={handleChange} className={styles.input} />
+                        </div>
+                    </div>
+                    <div className={styles.grid2}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Bathrooms</label>
+                            <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={styles.input} min="0" />
+                        </div>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Floors</label>
+                            <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={styles.input} min="0" />
                         </div>
                     </div>
                 </>
@@ -152,6 +175,16 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                     <div className={styles.field}>
                         <label className={styles.label}>Plot Area</label>
                         <input type="number" name="plot_size" value={formData.plot_size} onChange={handleChange} className={styles.input} />
+                    </div>
+                </div>
+            )}
+
+            {/* Parking — shown for all except Plot */}
+            {!isPlot && (
+                <div className={styles.grid2} style={{ marginTop: '1rem' }}>
+                    <div className={styles.field}>
+                        <label className={styles.label}>Parking Spaces</label>
+                        <input type="number" name="parking_count" value={formData.parking_count} onChange={handleChange} className={styles.input} min="0" />
                     </div>
                 </div>
             )}
