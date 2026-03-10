@@ -17,10 +17,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'File type not allowed. Accepted: JPEG, PNG, WebP, GIF, SVG, PDF' }, { status: 400 })
         }
 
-        // Validate file size (max 10 MB)
-        const MAX_SIZE_BYTES = 10 * 1024 * 1024
+        // Validate file size (max 50 MB — supports brochure PDFs)
+        const MAX_SIZE_BYTES = 50 * 1024 * 1024
         if (file.size > MAX_SIZE_BYTES) {
-            return NextResponse.json({ error: 'File too large. Maximum size is 10 MB' }, { status: 400 })
+            return NextResponse.json({ error: 'File too large. Maximum size is 50 MB' }, { status: 400 })
         }
 
         const supabase = createClient(

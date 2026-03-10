@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Upload, X, Loader2, FileText } from 'lucide-react'
 
 interface BrochureUploadProps {
@@ -17,7 +16,6 @@ export default function BrochureUpload({
     folder = 'projects/brochures',
     label = 'Upload Brochure (PDF)',
 }: BrochureUploadProps) {
-    const supabase = createClient()
     const inputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -42,30 +40,19 @@ export default function BrochureUpload({
         setError(null)
 
         try {
-            // Clean filename
-            const cleanName = file.name.toLowerCase().replace(/[^a-z0-9.]/g, '-').replace(/-+/g, '-')
-            const timestamp = Date.now()
-            const fileName = `${folder}/${timestamp}-${cleanName}`
+            // Upload via server-side API route (bypasses RLS)
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('folder', folder)
 
-            // Direct Supabase upload from client
-            const { error: uploadError } = await supabase.storage
-                .from('media')
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                })
+            const res = await fetch('/api/upload', { method: 'POST', body: formData })
+            const data = await res.json()
 
-            if (uploadError) {
-                console.error('Supabase Storage Error:', uploadError)
-                throw new Error(uploadError.message || 'Upload failed')
+            if (!res.ok) {
+                throw new Error(data.error || 'Upload failed')
             }
 
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('media')
-                .getPublicUrl(fileName)
-
-            onChange(publicUrl)
+            onChange(data.publicUrl)
         } catch (err) {
             console.error('Upload failed:', err)
             setError(err instanceof Error ? err.message : 'Upload failed')
