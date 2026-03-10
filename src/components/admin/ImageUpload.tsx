@@ -11,6 +11,50 @@ interface ImageUploadProps {
     accept?: string
 }
 
+// Compress image client-side to stay under Vercel's 4.5 MB body limit
+async function compressImage(file: File, maxSizeMB = 3.5): Promise<File> {
+    const maxBytes = maxSizeMB * 1024 * 1024
+    if (file.size <= maxBytes || file.type === 'image/gif') return file
+
+    return new Promise((resolve, reject) => {
+        const img = new Image()
+        const url = URL.createObjectURL(file)
+        img.onload = () => {
+            URL.revokeObjectURL(url)
+            const canvas = document.createElement('canvas')
+            let { width, height } = img
+            // Scale down if very large
+            const MAX_DIM = 2400
+            if (width > MAX_DIM || height > MAX_DIM) {
+                const ratio = Math.min(MAX_DIM / width, MAX_DIM / height)
+                width = Math.round(width * ratio)
+                height = Math.round(height * ratio)
+            }
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')!
+            ctx.drawImage(img, 0, 0, width, height)
+
+            // Try quality levels until under limit
+            let quality = 0.85
+            const attempt = () => {
+                canvas.toBlob(blob => {
+                    if (!blob) return reject(new Error('Compression failed'))
+                    if (blob.size <= maxBytes || quality <= 0.3) {
+                        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }))
+                    } else {
+                        quality -= 0.1
+                        attempt()
+                    }
+                }, 'image/jpeg', quality)
+            }
+            attempt()
+        }
+        img.onerror = reject
+        img.src = url
+    })
+}
+
 export default function ImageUpload({
     value,
     onChange,
@@ -26,18 +70,15 @@ export default function ImageUpload({
         const file = e.target.files?.[0]
         if (!file) return
 
-        // Validate size (4MB — within Vercel's serverless body limit)
-        if (file.size > 4 * 1024 * 1024) {
-            setError('File must be under 4 MB. Please compress or resize the image first.')
-            return
-        }
-
         setUploading(true)
         setError(null)
 
         try {
+            // Compress images > 3.5 MB before upload
+            const uploadFile = await compressImage(file)
+
             const formData = new FormData()
-            formData.append('file', file)
+            formData.append('file', uploadFile)
             formData.append('folder', folder)
 
             const res = await fetch('/api/upload', {
@@ -49,24 +90,20 @@ export default function ImageUpload({
             try {
                 data = await res.json()
             } catch {
-                const text = await res.text().catch(() => '')
                 throw new Error(
                     res.status === 413
-                        ? 'File too large for upload. Please use an image under 4 MB.'
-                        : `Upload failed (${res.status})${text ? ': ' + text.slice(0, 80) : ''}`
+                        ? 'File still too large after compression. Please manually resize below 4 MB.'
+                        : `Upload failed (${res.status})`
                 )
             }
 
-            if (!res.ok) {
-                throw new Error(data.error || 'Upload failed')
-            }
+            if (!res.ok) throw new Error(data.error || 'Upload failed')
 
             onChange(data.publicUrl)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Upload failed')
         } finally {
             setUploading(false)
-            // Reset input so same file can be re-selected
             if (inputRef.current) inputRef.current.value = ''
         }
     }

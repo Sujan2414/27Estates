@@ -27,6 +27,7 @@ export default function EditBlogPage() {
         author_image: '',
         cover_image: '',
         reading_time: '',
+        category: '',
         published_at: null as string | null,
     })
 
@@ -59,6 +60,7 @@ export default function EditBlogPage() {
             author_image: data.author_image || '',
             cover_image: data.cover_image || '',
             reading_time: data.reading_time || '',
+            category: data.category || '',
             published_at: data.published_at,
         })
         setTags(data.tags || [])
@@ -169,6 +171,29 @@ export default function EditBlogPage() {
                                 onChange={handleChange}
                                 className={formStyles.input}
                             />
+                        </div>
+                    </div>
+
+                    <div className={formStyles.grid2}>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Category</label>
+                            <select
+                                name="category"
+                                value={formData.category}
+                                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                                className={formStyles.input}
+                            >
+                                <option value="">Select category...</option>
+                                <option value="Analysis">Analysis</option>
+                                <option value="Market Trends">Market Trends</option>
+                                <option value="Investment">Investment</option>
+                                <option value="Legal">Legal</option>
+                                <option value="Residential">Residential</option>
+                                <option value="Commercial">Commercial</option>
+                                <option value="Lifestyle">Lifestyle</option>
+                                <option value="News">News</option>
+                                <option value="Tips & Guides">Tips &amp; Guides</option>
+                            </select>
                         </div>
                     </div>
 
