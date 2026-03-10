@@ -138,10 +138,9 @@ export default function EditPropertyPage() {
         fetchOwners()
     }, [])
 
-    // Sync floorDetails rows when floors count changes for commercial categories
+    // Sync floorDetails rows when floors count changes (all categories except Plot)
     useEffect(() => {
-        const commercialCategories = ['Commercial', 'Office', 'Offices', 'Warehouse']
-        if (!commercialCategories.includes(formData.category)) return
+        if (formData.category === 'Plot') return
         const count = parseInt(formData.floors) || 0
         setFloorDetails(prev => {
             if (count === 0) return []
@@ -648,6 +647,33 @@ export default function EditPropertyPage() {
                                     <input type="number" name="parking_count" value={formData.parking_count} onChange={handleChange} className={formStyles.input} min="0" />
                                 </div>
                             </div>
+                            {floorDetails.length > 0 && (
+                                <div style={{ marginTop: '1.25rem' }}>
+                                    <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Floor-wise Breakdown</p>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                                        <thead>
+                                            <tr style={{ background: '#f8fafc' }}>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b', width: '80px' }}>Floor</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Bathrooms</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Sqft / Area</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {floorDetails.map((fd, i) => (
+                                                <tr key={fd.floor}>
+                                                    <td style={{ padding: '6px 12px', border: '1px solid #e2e8f0', fontWeight: 500, color: '#374151', background: '#f8fafc' }}>Floor {fd.floor}</td>
+                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
+                                                        <input type="number" value={fd.bathrooms} onChange={e => handleFloorDetailChange(i, 'bathrooms', e.target.value)} className={formStyles.input} style={{ margin: 0 }} min="0" placeholder="0" />
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
+                                                        <input type="number" value={fd.sqft} onChange={e => handleFloorDetailChange(i, 'sqft', e.target.value)} className={formStyles.input} style={{ margin: 0 }} min="0" placeholder="0" />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </>
                     ) : formData.category === 'Plot' ? (
                         <>

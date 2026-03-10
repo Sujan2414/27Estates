@@ -1,8 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
 import styles from '../property-wizard.module.css'
+
+interface FloorDetail {
+    floor: number
+    bathrooms: string
+    sqft: string
+}
 
 interface StepProps {
     initialData: any
@@ -41,6 +47,32 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
         deposit_refundable: initialData.deposit_refundable || false,
     })
 
+    const isCommercialOrWarehouse = isCommercial || isWarehouse
+    const showFloorTable = isCommercialOrWarehouse || isResidential
+
+    // Floor-wise breakdown state (all non-plot categories)
+    const [floorDetails, setFloorDetails] = useState<FloorDetail[]>(
+        initialData.floor_details || []
+    )
+
+    // Sync rows when floors count changes
+    useEffect(() => {
+        if (!showFloorTable) return
+        const count = parseInt(formData.floors) || 0
+        setFloorDetails(prev => {
+            if (count === 0) return []
+            return Array.from({ length: count }, (_, i) => ({
+                floor: i + 1,
+                bathrooms: prev[i]?.bathrooms ?? '',
+                sqft: prev[i]?.sqft ?? '',
+            }))
+        })
+    }, [formData.floors, isCommercialOrWarehouse])
+
+    const handleFloorDetailChange = (index: number, field: 'bathrooms' | 'sqft', value: string) => {
+        setFloorDetails(prev => prev.map((fd, i) => i === index ? { ...fd, [field]: value } : fd))
+    }
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target
         if (type === 'checkbox') {
@@ -57,7 +89,12 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
             alert('Please fill in required fields (*)')
             return
         }
-        onNext(formData)
+        const floorDetailsData = floorDetails.length > 0 ? floorDetails.map(fd => ({
+            floor: fd.floor,
+            bathrooms: fd.bathrooms ? parseInt(fd.bathrooms) : null,
+            sqft: fd.sqft ? parseInt(fd.sqft) : null,
+        })) : null
+        onNext({ ...formData, floor_details: floorDetailsData })
     }
 
     return (
@@ -85,7 +122,7 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                 <>
                     <div className={styles.grid2}>
                         <div className={styles.field}>
-                            <label className={styles.label}>Built-Up Area (Sq.Ft) <span>*</span></label>
+                            <label className={styles.label}>Total Built-Up Area (Sq.Ft) <span>*</span></label>
                             <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={styles.input} required />
                         </div>
                         <div className={styles.field}>
@@ -95,14 +132,15 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                     </div>
                     <div className={styles.grid2}>
                         <div className={styles.field}>
-                            <label className={styles.label}>Bathrooms</label>
+                            <label className={styles.label}>Total Bathrooms</label>
                             <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={styles.input} min="0" />
                         </div>
                         <div className={styles.field}>
-                            <label className={styles.label}>Floors</label>
+                            <label className={styles.label}>Total Floors</label>
                             <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={styles.input} min="0" />
                         </div>
                     </div>
+                    {floorDetails.length > 0 && <FloorTable rows={floorDetails} onChange={handleFloorDetailChange} />}
                 </>
             )}
 
@@ -111,24 +149,25 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                 <>
                     <div className={styles.grid2}>
                         <div className={styles.field}>
-                            <label className={styles.label}>Carpet Area (Sq.Ft) <span>*</span></label>
+                            <label className={styles.label}>Total Carpet Area (Sq.Ft) <span>*</span></label>
                             <input type="number" name="sqft" value={formData.sqft} onChange={handleChange} className={styles.input} required />
                         </div>
                         <div className={styles.field}>
-                            <label className={styles.label}>Built-Up Area</label>
+                            <label className={styles.label}>Total Built-Up Area</label>
                             <input type="number" name="built_up_area" value={formData.built_up_area} onChange={handleChange} className={styles.input} />
                         </div>
                     </div>
                     <div className={styles.grid2}>
                         <div className={styles.field}>
-                            <label className={styles.label}>Bathrooms</label>
+                            <label className={styles.label}>Total Bathrooms</label>
                             <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={styles.input} min="0" />
                         </div>
                         <div className={styles.field}>
-                            <label className={styles.label}>Floors</label>
+                            <label className={styles.label}>Total Floors</label>
                             <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={styles.input} min="0" />
                         </div>
                     </div>
+                    {floorDetails.length > 0 && <FloorTable rows={floorDetails} onChange={handleFloorDetailChange} />}
                 </>
             )}
 
@@ -162,6 +201,13 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                             <input type="number" name="plot_size" value={formData.plot_size} onChange={handleChange} className={styles.input} />
                         </div>
                     )}
+                    <div className={styles.grid2}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Total Floors</label>
+                            <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={styles.input} min="0" />
+                        </div>
+                    </div>
+                    {floorDetails.length > 0 && <FloorTable rows={floorDetails} onChange={handleFloorDetailChange} />}
                 </>
             )}
 
@@ -244,5 +290,35 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                 </button>
             </div>
         </form>
+    )
+}
+
+function FloorTable({ rows, onChange }: { rows: FloorDetail[]; onChange: (i: number, field: 'bathrooms' | 'sqft', val: string) => void }) {
+    return (
+        <div style={{ marginTop: '1rem' }}>
+            <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>Floor-wise Breakdown</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                <thead>
+                    <tr style={{ background: '#f8fafc' }}>
+                        <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b', width: '80px' }}>Floor</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Bathrooms</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Sqft / Built-up Area</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((fd, i) => (
+                        <tr key={fd.floor}>
+                            <td style={{ padding: '6px 12px', border: '1px solid #e2e8f0', fontWeight: 500, color: '#374151', background: '#f8fafc' }}>Floor {fd.floor}</td>
+                            <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
+                                <input type="number" value={fd.bathrooms} onChange={e => onChange(i, 'bathrooms', e.target.value)} style={{ width: '100%', padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.8125rem' }} min="0" placeholder="0" />
+                            </td>
+                            <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
+                                <input type="number" value={fd.sqft} onChange={e => onChange(i, 'sqft', e.target.value)} style={{ width: '100%', padding: '6px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.8125rem' }} min="0" placeholder="0" />
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
     )
 }

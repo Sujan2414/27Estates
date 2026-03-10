@@ -230,6 +230,7 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                 // JSONB
                 amenities: amenities.length > 0 ? amenities : null,
                 connectivity: connectivity.length > 0 ? connectivity : null,
+                floor_details: Array.isArray(d.floor_details) && d.floor_details.length > 0 ? d.floor_details : null,
                 pricing_details,
                 commercial_details,
                 warehouse_details,

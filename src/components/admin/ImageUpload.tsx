@@ -26,9 +26,9 @@ export default function ImageUpload({
         const file = e.target.files?.[0]
         if (!file) return
 
-        // Validate size (10MB)
-        if (file.size > 10 * 1024 * 1024) {
-            setError('File must be under 10MB')
+        // Validate size (4MB — within Vercel's serverless body limit)
+        if (file.size > 4 * 1024 * 1024) {
+            setError('File must be under 4 MB. Please compress or resize the image first.')
             return
         }
 
@@ -45,7 +45,17 @@ export default function ImageUpload({
                 body: formData,
             })
 
-            const data = await res.json()
+            let data: any = {}
+            try {
+                data = await res.json()
+            } catch {
+                const text = await res.text().catch(() => '')
+                throw new Error(
+                    res.status === 413
+                        ? 'File too large for upload. Please use an image under 4 MB.'
+                        : `Upload failed (${res.status})${text ? ': ' + text.slice(0, 80) : ''}`
+                )
+            }
 
             if (!res.ok) {
                 throw new Error(data.error || 'Upload failed')
