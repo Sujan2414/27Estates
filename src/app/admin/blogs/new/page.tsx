@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import ImageUpload from '@/components/admin/ImageUpload'
+import BlogEditor from '@/components/admin/BlogEditor'
 import styles from '../../admin.module.css'
 import formStyles from '../../properties/form.module.css'
 
@@ -151,14 +152,9 @@ export default function NewBlogPage() {
 
                     <div className={formStyles.field}>
                         <label className={formStyles.label}>Content *</label>
-                        <textarea
-                            name="content"
+                        <BlogEditor
                             value={formData.content}
-                            onChange={handleChange}
-                            className={formStyles.textarea}
-                            placeholder="Write your article content here... (Markdown supported)"
-                            rows={15}
-                            required
+                            onChange={(html) => setFormData(prev => ({ ...prev, content: html }))}
                         />
                     </div>
                 </div>
