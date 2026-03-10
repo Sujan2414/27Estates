@@ -139,9 +139,10 @@ export default function EditPropertyPage() {
         fetchOwners()
     }, [])
 
-    // Pre-populate rows from "Total Floors" only when no rows exist yet
+    // Pre-populate rows from "Total Floors" only for commercial/warehouse and only when no rows exist yet
+    const COMMERCIAL_CATS = ['Commercial', 'Office', 'Offices', 'Warehouse']
     useEffect(() => {
-        if (formData.category === 'Plot') return
+        if (!COMMERCIAL_CATS.includes(formData.category)) return
         const count = parseInt(formData.floors) || 0
         setFloorDetails(prev => {
             if (prev.length > 0 || count === 0) return prev
@@ -649,52 +650,6 @@ export default function EditPropertyPage() {
                                     <input type="number" name="parking_count" value={formData.parking_count} onChange={handleChange} className={formStyles.input} min="0" />
                                 </div>
                             </div>
-                            {floorDetails.length > 0 && (
-                                <div style={{ marginTop: '1.25rem' }}>
-                                    <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Floor-wise Breakdown</p>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
-                                        <thead>
-                                            <tr style={{ background: '#f8fafc' }}>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b', width: '70px' }}>Floor</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Bathrooms</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Sqft / Area</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Status</th>
-                                                <th style={{ padding: '8px 12px', border: '1px solid #e2e8f0', width: '40px' }}></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {floorDetails.map((fd, i) => (
-                                                <tr key={i}>
-                                                    <td style={{ padding: '6px 12px', border: '1px solid #e2e8f0', fontWeight: 500, color: '#374151', background: '#f8fafc' }}>Floor {fd.floor}</td>
-                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
-                                                        <input type="number" value={fd.bathrooms} onChange={e => handleFloorDetailChange(i, 'bathrooms', e.target.value)} className={formStyles.input} style={{ margin: 0 }} min="0" placeholder="0" />
-                                                    </td>
-                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
-                                                        <input type="number" value={fd.sqft} onChange={e => handleFloorDetailChange(i, 'sqft', e.target.value)} className={formStyles.input} style={{ margin: 0 }} min="0" placeholder="0" />
-                                                    </td>
-                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
-                                                        <select value={fd.status} onChange={e => handleFloorDetailChange(i, 'status', e.target.value)} className={formStyles.input} style={{ margin: 0 }}>
-                                                            <option value="">—</option>
-                                                            <option value="Available">Available</option>
-                                                            <option value="For Rent">For Rent</option>
-                                                            <option value="Leased">Leased</option>
-                                                            <option value="Sold">Sold</option>
-                                                            <option value="Vacant">Vacant</option>
-                                                        </select>
-                                                    </td>
-                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                                                        <button type="button" onClick={() => removeFloorRow(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1rem', lineHeight: 1 }}>×</button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                    <button type="button" onClick={addFloorRow} style={{ marginTop: '8px', padding: '6px 14px', border: '1px dashed #94a3b8', borderRadius: '6px', background: 'none', color: '#475569', fontSize: '0.8125rem', cursor: 'pointer' }}>+ Add Floor</button>
-                                </div>
-                            )}
-                            {floorDetails.length === 0 && (
-                                <button type="button" onClick={addFloorRow} style={{ marginTop: '8px', padding: '6px 14px', border: '1px dashed #94a3b8', borderRadius: '6px', background: 'none', color: '#475569', fontSize: '0.8125rem', cursor: 'pointer' }}>+ Add Floor Breakdown</button>
-                            )}
                         </>
                     ) : formData.category === 'Plot' ? (
                         <>

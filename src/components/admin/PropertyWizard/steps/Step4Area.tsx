@@ -49,9 +49,9 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
     })
 
     const isCommercialOrWarehouse = isCommercial || isWarehouse
-    const showFloorTable = isCommercialOrWarehouse || isResidential
+    const showFloorTable = isCommercialOrWarehouse
 
-    // Floor-wise breakdown state (all non-plot categories)
+    // Floor-wise breakdown state (commercial/warehouse only)
     const [floorDetails, setFloorDetails] = useState<FloorDetail[]>(
         initialData.floor_details || []
     )
@@ -203,13 +203,6 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                             <input type="number" name="plot_size" value={formData.plot_size} onChange={handleChange} className={styles.input} />
                         </div>
                     )}
-                    <div className={styles.grid2}>
-                        <div className={styles.field}>
-                            <label className={styles.label}>Total Floors</label>
-                            <input type="number" name="floors" value={formData.floors} onChange={handleChange} className={styles.input} min="0" />
-                        </div>
-                    </div>
-                    <FloorTable rows={floorDetails} onChange={handleFloorDetailChange} onAdd={addFloorRow} onRemove={removeFloorRow} />
                 </>
             )}
 

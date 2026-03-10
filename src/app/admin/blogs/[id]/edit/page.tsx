@@ -95,10 +95,20 @@ export default function EditBlogPage() {
                 published_at: publish ? new Date().toISOString() : formData.published_at,
             }
 
-            const { error: updateError } = await supabase
+            let { error: updateError } = await supabase
                 .from('blogs')
                 .update(blogData)
                 .eq('id', params?.id as string)
+
+            // If category column doesn't exist yet, retry without it
+            if (updateError?.message?.includes('category')) {
+                const { category: _cat, ...blogDataWithoutCategory } = blogData
+                const { error: retryError } = await supabase
+                    .from('blogs')
+                    .update(blogDataWithoutCategory)
+                    .eq('id', params?.id as string)
+                updateError = retryError
+            }
 
             if (updateError) throw updateError
 

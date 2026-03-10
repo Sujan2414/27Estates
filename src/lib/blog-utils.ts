@@ -12,6 +12,7 @@ export interface DbBlog {
     cover_image: string | null;
     tags: string[];
     reading_time: string | null;
+    category: string | null;
     published_at: string | null;
     created_at: string;
     updated_at: string;
@@ -36,7 +37,7 @@ export function mapDbBlogToPost(dbBlog: DbBlog): BlogPost {
         heroImage: image,
         thumbnailImage: image,
         contentImages: [],
-        category: dbBlog.tags?.[0] || 'General',
+        category: dbBlog.category || dbBlog.tags?.[0] || 'General',
         date: formatDate(dbBlog.published_at || dbBlog.created_at),
         readTime: dbBlog.reading_time || '5 min read',
         tags: dbBlog.tags || [],
