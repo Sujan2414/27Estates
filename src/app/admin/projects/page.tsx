@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, Search, FileSpreadsheet } from 'lucide-react'
 import BulkUploadModal from '@/components/admin/BulkUploadModal'
+import { proxyUrl } from '@/lib/proxy-url'
 import styles from '../admin.module.css'
 import propertyStyles from '../properties/properties.module.css'
 
@@ -123,7 +124,7 @@ export default function ProjectsPage() {
                             <div className={propertyStyles.imageContainer}>
                                 {project.images && project.images.length > 0 ? (
                                     <Image
-                                        src={project.images[0]}
+                                        src={proxyUrl(project.images[0])}
                                         alt={project.project_name}
                                         fill
                                         className={propertyStyles.image}
