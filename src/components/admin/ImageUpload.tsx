@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
+import { Upload, X, Loader2 } from 'lucide-react'
 
 interface ImageUploadProps {
     value: string
@@ -19,7 +18,6 @@ export default function ImageUpload({
     label = 'Upload Image',
     accept = 'image/jpeg,image/png,image/webp,image/gif',
 }: ImageUploadProps) {
-    const supabase = createClient()
     const inputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -38,30 +36,22 @@ export default function ImageUpload({
         setError(null)
 
         try {
-            // Clean filename
-            const cleanName = file.name.toLowerCase().replace(/[^a-z0-9.]/g, '-').replace(/-+/g, '-')
-            const timestamp = Date.now()
-            const fileName = `${folder}/${timestamp}-${cleanName}`
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('folder', folder)
 
-            // Direct Supabase upload from client
-            const { error: uploadError } = await supabase.storage
-                .from('media')
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                })
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            })
 
-            if (uploadError) {
-                console.error('Supabase Storage Error:', uploadError)
-                throw new Error(uploadError.message || 'Upload failed')
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Upload failed')
             }
 
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('media')
-                .getPublicUrl(fileName)
-
-            onChange(publicUrl)
+            onChange(data.publicUrl)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Upload failed')
         } finally {

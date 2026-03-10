@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { Upload, X, Loader2, Plus } from 'lucide-react'
+import { X, Loader2, Plus } from 'lucide-react'
 
 interface MultiImageUploadProps {
     images: string[]
@@ -19,7 +18,6 @@ export default function MultiImageUpload({
     label = 'Upload Images',
     maxImages = 20,
 }: MultiImageUploadProps) {
-    const supabase = createClient()
     const inputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -46,32 +44,24 @@ export default function MultiImageUpload({
                     continue
                 }
 
-                // Clean filename
-                const cleanName = file.name.toLowerCase().replace(/[^a-z0-9.]/g, '-').replace(/-+/g, '-')
-                const timestamp = Date.now()
-                // Add index to filename to prevent collisions when uploading multiple files at once
-                const fileName = `${folder}/${timestamp}-${cleanName}`
+                const formData = new FormData()
+                formData.append('file', file)
+                formData.append('folder', folder)
 
-                // Direct Supabase upload from client
-                const { error: uploadError } = await supabase.storage
-                    .from('media')
-                    .upload(fileName, file, {
-                        cacheControl: '3600',
-                        upsert: false
-                    })
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                })
 
-                if (uploadError) {
-                    console.error(`Failed to upload ${file.name}:`, uploadError)
+                const data = await res.json()
+
+                if (!res.ok) {
+                    console.error(`Failed to upload ${file.name}:`, data.error)
                     setError(`Failed to upload ${file.name}`)
                     continue
                 }
 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('media')
-                    .getPublicUrl(fileName)
-
-                uploadedUrls.push(publicUrl)
+                uploadedUrls.push(data.publicUrl)
             }
 
             if (uploadedUrls.length > 0) {
