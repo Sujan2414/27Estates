@@ -32,10 +32,6 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'ulgashwdsaxaiebtqrvf.supabase.co',
       },
-      {
-        protocol: 'https',
-        hostname: '27estates.jiobase.com',
-      },
     ],
   },
   typescript: {

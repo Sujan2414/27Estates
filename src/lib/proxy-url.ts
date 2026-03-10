@@ -1,14 +1,10 @@
-const OLD_SUPABASE_HOST = 'ulgashwdsaxaiebtqrvf.supabase.co'
-const PROXY_HOST = '27estates.jiobase.com'
-
 /**
- * Originally rewrote Supabase URLs to jiobase.com proxy.
- * JIO block is lifted and jiobase.com is shutting down, so we return the original URL.
- * It also replaces any jiobase URLs back to supabase URLs just in case they were saved that way.
+ * Normalises storage URLs — converts any old jiobase.com URLs to the real Supabase host.
+ * JioBase was a temporary ISP-bypass proxy; all new uploads go directly to Supabase.
  */
 export function proxyUrl(url: string | null | undefined): string {
     if (!url) return ''
-    return url.replace(PROXY_HOST, OLD_SUPABASE_HOST)
+    return url.replace('27estates.jiobase.com', 'ulgashwdsaxaiebtqrvf.supabase.co')
 }
 
 /**
