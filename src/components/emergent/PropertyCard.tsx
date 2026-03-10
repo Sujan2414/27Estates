@@ -4,6 +4,7 @@ import { MapPin, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { proxyUrl } from "@/lib/proxy-url";
 import styles from "./PropertyCard.module.css";
 
 // Property type matching Supabase V2 schema
@@ -38,7 +39,7 @@ const PropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkCha
         setBookmarked(initialBookmarked);
     }, [initialBookmarked]);
 
-    const mainImage = property.images?.[0] || '/placeholder-property.jpg';
+    const mainImage = proxyUrl(property.images?.[0]) || '/placeholder-property.jpg';
 
     const handleBookmark = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -139,7 +140,7 @@ const PropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkCha
                 <div className={styles.thumbnailGallery}>
                     {property.images.slice(1, 3).map((img, i) => (
                         <div key={i} className={styles.thumbnail}>
-                            <img src={img} alt="" />
+                            <img src={proxyUrl(img)} alt="" />
                         </div>
                     ))}
                     {property.images.length > 3 && (

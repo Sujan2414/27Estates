@@ -161,3 +161,27 @@
 .eyeButton:hover {
     color: #374151;
 }
+
+.rememberRow {
+    display: flex;
+    align-items: center;
+    margin-top: -0.25rem;
+}
+
+.rememberLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+}
+
+.rememberCheckbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #183C38;
+    cursor: pointer;
+    border-radius: 4px;
+}

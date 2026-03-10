@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 import StickyViewListingsBtn from '@/components/ui/StickyViewListingsBtn';
+import ChatWidget from '@/components/ChatWidget';
 
 const playfair = Playfair_Display({
     subsets: ["latin"],
@@ -32,6 +33,10 @@ export const metadata: Metadata = {
     publisher: "27 Estates",
     alternates: {
         canonical: '/',
+    },
+    other: {
+        'llms.txt': 'https://www.27estates.com/llms.txt',
+        'llms-full.txt': 'https://www.27estates.com/llms-full.txt',
     },
     openGraph: {
         title: "27 Estates | Own the Extraordinary",
@@ -128,6 +133,22 @@ export default function RootLayout({
                         })
                     }}
                 />
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "WebSite",
+                            "name": "27 Estates",
+                            "url": "https://www.27estates.com",
+                            "potentialAction": {
+                                "@type": "SearchAction",
+                                "target": "https://www.27estates.com/properties/search?q={search_term_string}",
+                                "query-input": "required name=search_term_string"
+                            }
+                        })
+                    }}
+                />
                 <AuthProvider>
                     <SmoothScroll>
                         <PageTransitionLayout>
@@ -135,6 +156,7 @@ export default function RootLayout({
                         </PageTransitionLayout>
                     </SmoothScroll>
                     <StickyViewListingsBtn />
+                    <ChatWidget />
                 </AuthProvider>
             </body>
         </html>

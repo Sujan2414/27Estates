@@ -48,6 +48,24 @@ const faqItems = [
 function FAQ() {
     return (
         <section style={{ padding: '5rem 0', backgroundColor: '#ffffff' }}>
+            {/* FAQPage JSON-LD for AEO / SEO */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "FAQPage",
+                        "mainEntity": faqItems.map(item => ({
+                            "@type": "Question",
+                            "name": item.question,
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": item.answer,
+                            },
+                        })),
+                    }),
+                }}
+            />
             <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 clamp(1.5rem, 4vw, 4rem)' }}>
                 <div style={{
                     display: 'grid',

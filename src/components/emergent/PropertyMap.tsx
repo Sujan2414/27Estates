@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { getCoordinatesForLocation } from "@/lib/bangalore-geocode";
+import { proxyUrl } from "@/lib/proxy-url";
 
 // Color palette for categories
 const CATEGORY_COLORS: Record<string, string> = {
@@ -208,7 +209,7 @@ const PropertyMap = ({ properties, projects = [] }: PropertyMapProps) => {
                             <div style={{ minWidth: 200, maxWidth: 260 }}>
                                 {item.images?.[0] && (
                                     <img
-                                        src={item.images[0]}
+                                        src={proxyUrl(item.images[0])}
                                         alt={item.title}
                                         style={{
                                             width: "100%",

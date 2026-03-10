@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Save } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { pingIndexNow } from '@/lib/indexnow'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import styles from '../property-wizard.module.css'
 
@@ -94,10 +95,15 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
             return
         }
         const price = parseFloat(initialData.price)
-        if (!initialData.price || isNaN(price) || price <= 0) {
+        const specialPriceTexts = ['Price on Request', 'Price TBD', 'Request for Details']
+        const isSpecialPrice = specialPriceTexts.includes(initialData.price_text)
+        if (!isSpecialPrice && (!initialData.price || isNaN(price) || price <= 0)) {
             setSubmitError('Invalid price — go back to Step 4.')
             return
         }
+
+        // When a special price text is selected and no numeric price, default to 0
+        const finalPrice = (!isNaN(price) && price > 0) ? price : 0
 
         setSubmitting(true)
 
@@ -159,9 +165,9 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                 sub_category: d.plot_sub_type || null,       // for Plot type
 
                 // Pricing
-                price: price,
-                price_text: formatPriceText(d.price),
-                price_per_sqft: (d.sqft && price) ? Math.round(price / parseFloat(d.sqft)) : null,
+                price: finalPrice,
+                price_text: isSpecialPrice ? d.price_text : formatPriceText(d.price),
+                price_per_sqft: (d.sqft && finalPrice) ? Math.round(finalPrice / parseFloat(d.sqft)) : null,
 
                 // Area — map correct primary field per category
                 sqft: parseFloat(d.sqft) || 0,
@@ -198,7 +204,7 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                 transaction_type: d.transaction_type || null,
                 property_age: d.age_of_property || null,
                 possession_status: d.possession_status || 'Ready To Move',
-                suitable_for: d.suitable_for || null,
+                suitable_for: Array.isArray(d.suitable_for) && d.suitable_for.length > 0 ? d.suitable_for : (typeof d.suitable_for === 'string' && d.suitable_for ? [d.suitable_for] : null),
                 unique_feature: d.unique_feature || null,
 
                 // Status & meta
@@ -245,6 +251,9 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
                     throw new Error(error.message)
                 }
             }
+
+            // Notify search engines about the new property
+            pingIndexNow(`/properties/${dbPayload.property_id}`)
 
             router.push('/admin/properties')
 

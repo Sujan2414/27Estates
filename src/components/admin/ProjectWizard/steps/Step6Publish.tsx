@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ArrowLeft, Save, Plus, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { pingIndexNow } from '@/lib/indexnow'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import BrochureUpload from '@/components/admin/BrochureUpload'
@@ -224,6 +225,9 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                     }])
                 }
             }
+
+            // Notify search engines about the new project
+            pingIndexNow(`/projects/${projectId}`)
 
             router.push('/admin/projects')
         } catch (err) {

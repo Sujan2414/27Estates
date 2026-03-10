@@ -218,7 +218,11 @@ const ProjectsSearchPage = () => {
         }
 
         if (selectedCategory) {
-            result = result.filter(p => p.category === selectedCategory);
+            if (selectedCategory === 'Apartment') {
+                result = result.filter(p => p.category === 'Apartment' || p.category === 'Residential');
+            } else {
+                result = result.filter(p => p.category === selectedCategory);
+            }
         }
 
         if (selectedStatus) {

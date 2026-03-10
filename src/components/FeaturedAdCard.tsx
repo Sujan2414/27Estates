@@ -2,6 +2,7 @@
 
 import React from 'react';
 import styles from './FeaturedAdCard.module.css';
+import { proxyUrl } from '@/lib/proxy-url';
 
 interface FeaturedAdCardProps {
     id: string;
@@ -40,7 +41,7 @@ const FeaturedAdCard: React.FC<FeaturedAdCardProps> = ({
         <div className={styles.card} onClick={() => onCardClick(path)}>
             <div className={styles.imageWrapper}>
                 <img
-                    src={image}
+                    src={proxyUrl(image)}
                     alt={title}
                     className={styles.image}
                     loading="lazy"

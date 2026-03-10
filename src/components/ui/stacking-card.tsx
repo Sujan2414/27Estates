@@ -75,10 +75,8 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
                     top: `calc(-5vh + ${i * 25}px)`,
                     cursor: 'pointer',
                 }}
-                className="relative -top-[25%] w-[92%] max-w-[1200px] h-[45vh] md:h-[70vh] rounded-xl overflow-hidden shadow-2xl origin-top"
+                className="group relative -top-[25%] w-[92%] max-w-[1200px] h-[45vh] md:h-[70vh] rounded-xl overflow-hidden shadow-2xl origin-top"
                 onClick={() => checkAuthAndNavigate(project.linkTo)}
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
             >
                 {/* Full Background Image */}
                 <motion.div
@@ -93,15 +91,11 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
                 </motion.div>
 
                 {/* Gradient overlay */}
-                <div style={{
-                    position: 'absolute', inset: 0, zIndex: 1,
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 45%, rgba(0,0,0,0.08) 70%, transparent 100%)',
-                    transition: 'opacity 0.3s ease',
-                }} />
+                <div className="absolute inset-0 z-10 transition-opacity duration-300 md:bg-[linear-gradient(to_top,rgba(0,0,0,0.82)_0%,rgba(0,0,0,0.3)_45%,rgba(0,0,0,0.08)_70%,transparent_100%)] bg-[linear-gradient(to_top,rgba(0,0,0,0.9)_0%,rgba(0,0,0,0.5)_45%,rgba(0,0,0,0.15)_70%,transparent_100%)] group-hover:bg-[linear-gradient(to_top,rgba(0,0,0,0.9)_0%,rgba(0,0,0,0.5)_45%,rgba(0,0,0,0.15)_70%,transparent_100%)]" />
 
                 {/* Top-left: Featured Project */}
                 <div style={{
-                    position: 'absolute', top: '1rem', left: '1rem', zIndex: 2,
+                    position: 'absolute', top: '1rem', left: '1rem', zIndex: 20,
                 }}>
                     <span style={{
                         padding: '6px 14px', borderRadius: '2rem',
@@ -118,7 +112,7 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
                 {/* Top-right: Location */}
                 {locationDisplay && (
                     <div style={{
-                        position: 'absolute', top: '1rem', right: '1rem', zIndex: 2,
+                        position: 'absolute', top: '1rem', right: '1rem', zIndex: 20,
                         display: 'flex', alignItems: 'center', gap: '5px',
                         padding: '4px 10px', borderRadius: '2rem',
                         background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
@@ -131,26 +125,15 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
 
                 {/* Bottom content — project name + hover details */}
                 <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2,
+                    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
                     padding: '2rem',
                 }}>
-                    <h3 style={{
-                        margin: '0 0 0.75rem', color: '#fff',
-                        fontFamily: 'var(--font-heading)',
-                        fontSize: 'clamp(1.25rem, 3vw, 2rem)', fontWeight: 600,
-                        lineHeight: 1.2, textShadow: '0 2px 8px rgba(0,0,0,0.4)',
-                    }}>
+                    <h3 className="mb-3 text-white !text-white font-heading text-[clamp(1.25rem,3vw,2rem)] font-semibold leading-tight drop-shadow-md">
                         {project.title}
                     </h3>
 
                     {/* Hover-reveal details */}
-                    <div style={{
-                        display: 'flex', gap: '1.5rem', flexWrap: 'wrap',
-                        transform: hovered ? 'translateY(0)' : 'translateY(12px)',
-                        opacity: hovered ? 1 : 0,
-                        transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-                        pointerEvents: hovered ? 'auto' : 'none',
-                    }}>
+                    <div className="flex flex-wrap gap-6 transition-all duration-300 md:opacity-0 md:translate-y-3 md:pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto pointer-events-auto">
                         {priceDisplay && (
                             <div>
                                 <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '3px' }}>Price Range</div>

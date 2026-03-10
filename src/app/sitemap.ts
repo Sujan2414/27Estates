@@ -50,9 +50,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             changeFrequency: 'daily',
         },
         {
-            url: `${baseUrl}/projects`,
+            url: `${baseUrl}/properties/search`,
             lastModified: new Date(),
             priority: 0.9,
+            changeFrequency: 'daily',
+        },
+        {
+            url: `${baseUrl}/properties/projects`,
+            lastModified: new Date(),
+            priority: 0.9,
+            changeFrequency: 'daily',
+        },
+        {
+            url: `${baseUrl}/bangalore/office-spaces`,
+            lastModified: new Date(),
+            priority: 0.8,
+            changeFrequency: 'daily',
+        },
+        {
+            url: `${baseUrl}/bangalore/commercial`,
+            lastModified: new Date(),
+            priority: 0.8,
+            changeFrequency: 'daily',
+        },
+        {
+            url: `${baseUrl}/bangalore/villas`,
+            lastModified: new Date(),
+            priority: 0.8,
+            changeFrequency: 'daily',
+        },
+        {
+            url: `${baseUrl}/pune/residential`,
+            lastModified: new Date(),
+            priority: 0.8,
             changeFrequency: 'daily',
         },
         {
@@ -74,10 +104,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             changeFrequency: 'weekly',
         },
         {
-            url: `${baseUrl}/blogs`,
+            url: `${baseUrl}/blog`,
             lastModified: new Date(),
             priority: 0.8,
             changeFrequency: 'weekly',
+        },
+        {
+            url: `${baseUrl}/services`,
+            lastModified: new Date(),
+            priority: 0.8,
+            changeFrequency: 'monthly',
+        },
+        {
+            url: `${baseUrl}/careers`,
+            lastModified: new Date(),
+            priority: 0.6,
+            changeFrequency: 'weekly',
+        },
+        {
+            url: `${baseUrl}/llms.txt`,
+            lastModified: new Date(),
+            priority: 0.3,
+            changeFrequency: 'monthly',
         },
     ];
 

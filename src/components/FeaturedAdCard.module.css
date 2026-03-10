@@ -155,7 +155,7 @@
 }
 
 /* Mobile Responsive */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .content {
         padding: 1rem;
     }
@@ -171,5 +171,24 @@
     .priceBadge {
         font-size: 0.75rem;
         padding: 0.25rem 0.625rem;
+    }
+
+    /* Show hover details by default on mobile (no hover on touch) */
+    .detailsRow {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .viewPrompt {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .overlay {
+        background: linear-gradient(to top,
+                rgba(0, 0, 0, 0.9) 0%,
+                rgba(0, 0, 0, 0.5) 45%,
+                rgba(0, 0, 0, 0.15) 70%,
+                transparent 100%);
     }
 }

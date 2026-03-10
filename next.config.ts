@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
     viewTransition: true,
   },
   turbopack: {},
+  async redirects() {
+    return [
+      {
+        source: '/projects',
+        destination: '/properties/projects',
+        permanent: true,
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {
@@ -23,12 +32,16 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'ulgashwdsaxaiebtqrvf.supabase.co',
       },
+      {
+        protocol: 'https',
+        hostname: '27estates.jiobase.com',
+      },
     ],
   },
   typescript: {
     ignoreBuildErrors: true,
   },
-reactStrictMode: true,
+  reactStrictMode: true,
   webpack: (config) => {
     // Required for react-pdf
     config.resolve.alias.canvas = false;

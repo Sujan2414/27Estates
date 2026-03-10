@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Mail, Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { proxyUrl } from "@/lib/proxy-url";
 import styles from "@/components/emergent/Agents.module.css";
 
 interface Agent {
@@ -60,7 +61,7 @@ const Agents = () => {
                         {/* Agent Image */}
                         <div className={styles.agentImage}>
                             <img
-                                src={agent.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=random&color=fff&size=200`}
+                                src={proxyUrl(agent.image) || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=random&color=fff&size=200`}
                                 alt={agent.name}
                                 className={styles.image}
                             />

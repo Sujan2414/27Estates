@@ -305,8 +305,9 @@ export default function EditPropertyPage() {
             // Compute human-readable price text (matches wizard logic)
             // If user selected a special price text like "Price on Request", keep it
             const specialPriceTexts = ['Price on Request', 'Price TBD', 'Request for Details']
+            const isSpecialPrice = specialPriceTexts.includes(formData.price_text)
             let priceText = ''
-            if (specialPriceTexts.includes(formData.price_text)) {
+            if (isSpecialPrice) {
                 priceText = formData.price_text
             } else if (!isNaN(priceNum) && priceNum > 0) {
                 if (priceNum >= 10000000) priceText = `₹ ${(priceNum / 10000000).toFixed(2)} Cr`
@@ -314,11 +315,14 @@ export default function EditPropertyPage() {
                 else priceText = `₹ ${priceNum.toLocaleString('en-IN')}`
             }
 
+            // When a special price text is selected and no numeric price, default to 0
+            const finalPrice = (!isNaN(priceNum) && priceNum > 0) ? priceNum : 0
+
             const propertyData = {
                 property_id: formData.property_id,
                 title: formData.title,
                 description: formData.description,
-                price: priceNum,
+                price: finalPrice,
                 price_text: priceText || null,
                 price_per_sqft: (sqftNum && priceNum) ? Math.round(priceNum / sqftNum) : (formData.price_per_sqft ? parseFloat(formData.price_per_sqft) : null),
                 location: formData.location,

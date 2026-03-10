@@ -50,6 +50,8 @@ const Footer: React.FC = () => {
                         </ul>
                     </div>
 
+
+
                     <div className={styles.linkColumn}>
                         <h4 className={styles.columnTitle}>Contact</h4>
                         <ul className={styles.linkList}>

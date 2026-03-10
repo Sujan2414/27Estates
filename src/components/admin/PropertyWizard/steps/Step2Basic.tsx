@@ -82,6 +82,19 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
         ? ['Company', 'Startup', 'MNC']
         : ['Family', 'Bachelor', 'Company']
 
+    const handleArrayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const { name, options } = e.target
+        const selectedValues = Array.from(options)
+            .filter(opt => opt.selected)
+            .map(opt => opt.value)
+
+        setFormData(prev => ({ ...prev, [name]: selectedValues }))
+    }
+
+    const suitableForValue = Array.isArray(formData.suitable_for)
+        ? formData.suitable_for
+        : (formData.suitable_for ? [formData.suitable_for] : [])
+
     return (
         <form onSubmit={handleSubmit}>
             <h2 className={styles.stepTitle}>Give us some basic information</h2>
@@ -196,10 +209,17 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
                 <div className={styles.grid2}>
                     <div className={styles.field}>
                         <label className={styles.label}>Suitable For</label>
-                        <select name="suitable_for" value={formData.suitable_for} onChange={handleChange} className={styles.select}>
-                            <option value="">Select</option>
+                        <select
+                            name="suitable_for"
+                            multiple
+                            value={suitableForValue}
+                            onChange={handleArrayChange}
+                            className={styles.select}
+                            style={{ height: 'auto', minHeight: '80px' }}
+                        >
                             {suitableForOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </select>
+                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>Hold Ctrl/Cmd to select multiple</div>
                     </div>
                     <div className={styles.field}>
                         <label className={styles.label}>Channel</label>

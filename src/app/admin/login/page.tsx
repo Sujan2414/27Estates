@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -9,11 +9,25 @@ import styles from './admin-login.module.css'
 export default function AdminLoginPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [rememberMe, setRememberMe] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const router = useRouter()
     const supabase = createClient()
+
+    // Load saved credentials on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('admin_remember')
+            if (saved) {
+                const { email: savedEmail, password: savedPassword } = JSON.parse(saved)
+                setEmail(savedEmail || '')
+                setPassword(savedPassword || '')
+                setRememberMe(true)
+            }
+        } catch { /* ignore */ }
+    }, [])
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -54,6 +68,13 @@ export default function AdminLoginPage() {
                 await supabase.auth.signOut()
                 setError(`Access denied. Your role is: ${profile.role}. Admin/Agent role required.`)
                 return
+            }
+
+            // Save or clear remember me
+            if (rememberMe) {
+                localStorage.setItem('admin_remember', JSON.stringify({ email, password }))
+            } else {
+                localStorage.removeItem('admin_remember')
             }
 
             router.push('/admin')
@@ -127,6 +148,18 @@ export default function AdminLoginPage() {
                                 </button>
                             )}
                         </div>
+                    </div>
+
+                    <div className={styles.rememberRow}>
+                        <label className={styles.rememberLabel}>
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                                className={styles.rememberCheckbox}
+                            />
+                            Remember me
+                        </label>
                     </div>
 
                     <button

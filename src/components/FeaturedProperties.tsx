@@ -6,6 +6,7 @@ import styles from './FeaturedProperties.module.css';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import FeaturedAdCard from '@/components/FeaturedAdCard';
+import { proxyUrl } from '@/lib/proxy-url';
 
 interface FeaturedProperty {
     id: string;
@@ -122,7 +123,7 @@ const FeaturedProperties: React.FC = () => {
                                 <FeaturedAdCard
                                     id={property.id}
                                     type="property"
-                                    image={property.images?.[0] || '/placeholder-property.jpg'}
+                                    image={proxyUrl(property.images?.[0]) || '/placeholder-property.jpg'}
                                     title={property.title}
                                     location={property.location}
                                     city={property.city || undefined}

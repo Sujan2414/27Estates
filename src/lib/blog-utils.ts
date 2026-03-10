@@ -22,8 +22,10 @@ function formatDate(dateStr: string): string {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+import { proxyUrl } from './proxy-url';
+
 export function mapDbBlogToPost(dbBlog: DbBlog): BlogPost {
-    const image = dbBlog.cover_image || '';
+    const image = proxyUrl(dbBlog.cover_image) || '';
     return {
         id: dbBlog.id,
         slug: dbBlog.slug,
