@@ -37,6 +37,7 @@ interface FloorDetail {
     floor: number
     bathrooms: string
     sqft: string
+    status: string
 }
 
 interface ConnectivityItem {
@@ -138,16 +139,14 @@ export default function EditPropertyPage() {
         fetchOwners()
     }, [])
 
-    // Sync floorDetails rows when floors count changes (all categories except Plot)
+    // Pre-populate rows from "Total Floors" only when no rows exist yet
     useEffect(() => {
         if (formData.category === 'Plot') return
         const count = parseInt(formData.floors) || 0
         setFloorDetails(prev => {
-            if (count === 0) return []
+            if (prev.length > 0 || count === 0) return prev
             return Array.from({ length: count }, (_, i) => ({
-                floor: i + 1,
-                bathrooms: prev[i]?.bathrooms ?? '',
-                sqft: prev[i]?.sqft ?? '',
+                floor: i + 1, bathrooms: '', sqft: '', status: '',
             }))
         })
     }, [formData.floors, formData.category])
@@ -244,7 +243,7 @@ export default function EditPropertyPage() {
         // Parse floor details (commercial floor-wise breakdown)
         const fdData = data.floor_details || []
         if (fdData.length > 0) {
-            setFloorDetails(fdData.map((f: any) => ({ floor: f.floor, bathrooms: f.bathrooms?.toString() || '', sqft: f.sqft?.toString() || '' })))
+            setFloorDetails(fdData.map((f: any) => ({ floor: f.floor, bathrooms: f.bathrooms?.toString() || '', sqft: f.sqft?.toString() || '', status: f.status || '' })))
         }
 
         setLoading(false)
@@ -312,9 +311,11 @@ export default function EditPropertyPage() {
     const removeFloorPlan = (index: number) => setFloorPlans(prev => prev.filter((_, i) => i !== index))
 
     // Floor detail handlers
-    const handleFloorDetailChange = (index: number, field: 'bathrooms' | 'sqft', value: string) => {
+    const handleFloorDetailChange = (index: number, field: 'bathrooms' | 'sqft' | 'status', value: string) => {
         setFloorDetails(prev => prev.map((fd, i) => i === index ? { ...fd, [field]: value } : fd))
     }
+    const addFloorRow = () => setFloorDetails(prev => [...prev, { floor: prev.length + 1, bathrooms: '', sqft: '', status: '' }])
+    const removeFloorRow = (index: number) => setFloorDetails(prev => prev.filter((_, i) => i !== index).map((fd, i) => ({ ...fd, floor: i + 1 })))
 
     // Connectivity handlers
     const handleConnectivityChange = (index: number, field: keyof ConnectivityItem, value: string) => {
@@ -399,6 +400,7 @@ export default function EditPropertyPage() {
                     floor: fd.floor,
                     bathrooms: fd.bathrooms ? parseInt(fd.bathrooms) : null,
                     sqft: fd.sqft ? parseInt(fd.sqft) : null,
+                    status: fd.status || null,
                 })) : null,
                 pricing_details: formData.property_type === 'Rent' ? {
                     maintenance_charges: pricingDetails.maintenance_charges ? parseFloat(pricingDetails.maintenance_charges) : null,
@@ -653,14 +655,16 @@ export default function EditPropertyPage() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                                         <thead>
                                             <tr style={{ background: '#f8fafc' }}>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b', width: '80px' }}>Floor</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b', width: '70px' }}>Floor</th>
                                                 <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Bathrooms</th>
                                                 <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Sqft / Area</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Status</th>
+                                                <th style={{ padding: '8px 12px', border: '1px solid #e2e8f0', width: '40px' }}></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {floorDetails.map((fd, i) => (
-                                                <tr key={fd.floor}>
+                                                <tr key={i}>
                                                     <td style={{ padding: '6px 12px', border: '1px solid #e2e8f0', fontWeight: 500, color: '#374151', background: '#f8fafc' }}>Floor {fd.floor}</td>
                                                     <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
                                                         <input type="number" value={fd.bathrooms} onChange={e => handleFloorDetailChange(i, 'bathrooms', e.target.value)} className={formStyles.input} style={{ margin: 0 }} min="0" placeholder="0" />
@@ -668,11 +672,28 @@ export default function EditPropertyPage() {
                                                     <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
                                                         <input type="number" value={fd.sqft} onChange={e => handleFloorDetailChange(i, 'sqft', e.target.value)} className={formStyles.input} style={{ margin: 0 }} min="0" placeholder="0" />
                                                     </td>
+                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
+                                                        <select value={fd.status} onChange={e => handleFloorDetailChange(i, 'status', e.target.value)} className={formStyles.input} style={{ margin: 0 }}>
+                                                            <option value="">—</option>
+                                                            <option value="Available">Available</option>
+                                                            <option value="For Rent">For Rent</option>
+                                                            <option value="Leased">Leased</option>
+                                                            <option value="Sold">Sold</option>
+                                                            <option value="Vacant">Vacant</option>
+                                                        </select>
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                                                        <button type="button" onClick={() => removeFloorRow(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1rem', lineHeight: 1 }}>×</button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
+                                    <button type="button" onClick={addFloorRow} style={{ marginTop: '8px', padding: '6px 14px', border: '1px dashed #94a3b8', borderRadius: '6px', background: 'none', color: '#475569', fontSize: '0.8125rem', cursor: 'pointer' }}>+ Add Floor</button>
                                 </div>
+                            )}
+                            {floorDetails.length === 0 && (
+                                <button type="button" onClick={addFloorRow} style={{ marginTop: '8px', padding: '6px 14px', border: '1px dashed #94a3b8', borderRadius: '6px', background: 'none', color: '#475569', fontSize: '0.8125rem', cursor: 'pointer' }}>+ Add Floor Breakdown</button>
                             )}
                         </>
                     ) : formData.category === 'Plot' ? (
@@ -721,49 +742,49 @@ export default function EditPropertyPage() {
                                 </div>
                             </div>
 
-                            {floorDetails.length > 0 && (
-                                <div style={{ marginTop: '1.25rem' }}>
-                                    <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Floor-wise Breakdown</p>
+                            <div style={{ marginTop: '1.25rem' }}>
+                                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Floor-wise Breakdown</p>
+                                {floorDetails.length > 0 && (
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                                         <thead>
                                             <tr style={{ background: '#f8fafc' }}>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b', width: '80px' }}>Floor</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b', width: '70px' }}>Floor</th>
                                                 <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Bathrooms</th>
                                                 <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Sqft / Built-up Area</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', border: '1px solid #e2e8f0', fontWeight: 600, color: '#64748b' }}>Status</th>
+                                                <th style={{ padding: '8px 12px', border: '1px solid #e2e8f0', width: '40px' }}></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {floorDetails.map((fd, i) => (
-                                                <tr key={fd.floor}>
+                                                <tr key={i}>
                                                     <td style={{ padding: '6px 12px', border: '1px solid #e2e8f0', fontWeight: 500, color: '#374151', background: '#f8fafc' }}>Floor {fd.floor}</td>
                                                     <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
-                                                        <input
-                                                            type="number"
-                                                            value={fd.bathrooms}
-                                                            onChange={e => handleFloorDetailChange(i, 'bathrooms', e.target.value)}
-                                                            className={formStyles.input}
-                                                            style={{ margin: 0 }}
-                                                            min="0"
-                                                            placeholder="0"
-                                                        />
+                                                        <input type="number" value={fd.bathrooms} onChange={e => handleFloorDetailChange(i, 'bathrooms', e.target.value)} className={formStyles.input} style={{ margin: 0 }} min="0" placeholder="0" />
                                                     </td>
                                                     <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
-                                                        <input
-                                                            type="number"
-                                                            value={fd.sqft}
-                                                            onChange={e => handleFloorDetailChange(i, 'sqft', e.target.value)}
-                                                            className={formStyles.input}
-                                                            style={{ margin: 0 }}
-                                                            min="0"
-                                                            placeholder="0"
-                                                        />
+                                                        <input type="number" value={fd.sqft} onChange={e => handleFloorDetailChange(i, 'sqft', e.target.value)} className={formStyles.input} style={{ margin: 0 }} min="0" placeholder="0" />
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0' }}>
+                                                        <select value={fd.status} onChange={e => handleFloorDetailChange(i, 'status', e.target.value)} className={formStyles.input} style={{ margin: 0 }}>
+                                                            <option value="">—</option>
+                                                            <option value="Available">Available</option>
+                                                            <option value="For Rent">For Rent</option>
+                                                            <option value="Leased">Leased</option>
+                                                            <option value="Sold">Sold</option>
+                                                            <option value="Vacant">Vacant</option>
+                                                        </select>
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                                                        <button type="button" onClick={() => removeFloorRow(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1rem', lineHeight: 1 }}>×</button>
                                                     </td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
-                            )}
+                                )}
+                                <button type="button" onClick={addFloorRow} style={{ marginTop: '8px', padding: '6px 14px', border: '1px dashed #94a3b8', borderRadius: '6px', background: 'none', color: '#475569', fontSize: '0.8125rem', cursor: 'pointer' }}>+ Add Floor</button>
+                            </div>
                         </>
                     )}
                 </div>
