@@ -794,15 +794,57 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                     <div className={styles.sectionHeader}>
                         <h2 className={styles.sectionTitle} style={{ margin: 0 }}>SIMILAR LISTINGS</h2>
                     </div>
-                    <div className={styles.similarGrid}>
-                        {similarProperties.map((p) => (
-                            <PropertyCard
-                                key={p.id}
-                                property={p}
-                                isBookmarked={isPropertyInBookmarks(p.id)}
-                                onBookmarkChange={fetchPropertyData}
-                            />
-                        ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {similarProperties.map((p) => {
+                            const thumb = p.images?.[0] ? proxyUrl(p.images[0]) : null;
+                            const pPrice = p.price_text || (p.price > 0 ? formatIndianRupee(p.price) : 'Price on Request');
+                            return (
+                                <a
+                                    key={p.id}
+                                    href={`/properties/${p.id}`}
+                                    style={{
+                                        display: 'flex', gap: '1rem', background: '#fff',
+                                        borderRadius: '14px', border: '1px solid #e8e8e8',
+                                        overflow: 'hidden', textDecoration: 'none', color: 'inherit',
+                                        transition: 'box-shadow 0.2s',
+                                    }}
+                                    onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.10)')}
+                                    onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                                >
+                                    {/* Thumbnail */}
+                                    <div style={{ width: '160px', minWidth: '160px', height: '120px', overflow: 'hidden', flexShrink: 0 }}>
+                                        {thumb
+                                            ? <img src={thumb} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            : <div style={{ width: '100%', height: '100%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Building2 size={32} color="#94a3b8" /></div>
+                                        }
+                                    </div>
+                                    {/* Details */}
+                                    <div style={{ flex: 1, padding: '14px 16px 14px 0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+                                        <div>
+                                            <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 700, background: '#183C38', color: '#fff', padding: '2px 8px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{p.category}</span>
+                                                {p.property_type_for && <span style={{ fontSize: '0.7rem', fontWeight: 600, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '20px' }}>{p.property_type_for}</span>}
+                                            </div>
+                                            <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9375rem', color: '#0f172a', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.title}</p>
+                                        </div>
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '6px 0 8px', color: '#64748b', fontSize: '0.8rem' }}>
+                                                <MapPin size={12} strokeWidth={2} />
+                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.location || p.city}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                                <span style={{ fontWeight: 800, fontSize: '1rem', color: '#183C38' }}>{pPrice}</span>
+                                                <div style={{ display: 'flex', gap: '12px', color: '#64748b', fontSize: '0.78rem' }}>
+                                                    {p.bedrooms > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><BedDouble size={13} />{p.bedrooms} Bed</span>}
+                                                    {p.bathrooms > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Bath size={13} />{p.bathrooms} Bath</span>}
+                                                    {p.sqft > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Maximize size={13} />{p.sqft.toLocaleString()} sqft</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            );
+                        })}
                     </div>
                 </div>
             )}
