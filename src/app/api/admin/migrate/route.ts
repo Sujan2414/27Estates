@@ -12,6 +12,10 @@ const MIGRATIONS: { id: string; sql: string }[] = [
         id: 'add_parking_count',
         sql: 'ALTER TABLE properties ADD COLUMN IF NOT EXISTS parking_count integer;',
     },
+    {
+        id: 'add_blog_category',
+        sql: 'ALTER TABLE blogs ADD COLUMN IF NOT EXISTS category text;',
+    },
 ]
 
 async function runSQL(sql: string): Promise<{ ok: boolean; error?: string }> {

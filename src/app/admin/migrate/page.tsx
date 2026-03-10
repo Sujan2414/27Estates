@@ -54,7 +54,7 @@ export default function MigratePage() {
                     <div>
                         <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>Pending Migrations</p>
                         <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
-                            floor_details column · parking_count column
+                            floor_details · parking_count · blogs.category
                         </p>
                     </div>
                 </div>
@@ -106,7 +106,10 @@ export default function MigratePage() {
   ADD COLUMN IF NOT EXISTS floor_details jsonb;
 
 ALTER TABLE properties
-  ADD COLUMN IF NOT EXISTS parking_count integer;`}
+  ADD COLUMN IF NOT EXISTS parking_count integer;
+
+ALTER TABLE blogs
+  ADD COLUMN IF NOT EXISTS category text;`}
                         </pre>
                     </div>
                 )}
