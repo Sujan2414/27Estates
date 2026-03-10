@@ -278,8 +278,8 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
         ? proxyUrls(property.images)
         : ['/placeholder-property.jpg'];
 
-    // Get display price - prefer price_text if available
-    const displayPrice = property.price_text || formatIndianRupee(property.price);
+    // Get display price - prefer price_text if available, hide ₹0
+    const displayPrice = property.price_text || (property.price > 0 ? formatIndianRupee(property.price) : 'Price on Request');
 
     return (
         <div className={styles.pageContainer}>
@@ -557,7 +557,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                             <div className={styles.detailColumn}>
                                 <div className={styles.detailItem}>
                                     <span className={styles.detailLabel}>Price</span>
-                                    <span className={styles.detailValue}>₹ {property.price.toLocaleString()}</span>
+                                    <span className={styles.detailValue}>{property.price_text || (property.price > 0 ? `₹ ${property.price.toLocaleString()}` : 'Price on Request')}</span>
                                 </div>
                                 <div className={styles.detailItem}>
                                     <span className={styles.detailLabel}>Property Size</span>

@@ -119,8 +119,8 @@ const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookm
         property.category || "House"
     ];
 
-    // Display price - prefer price_text if available
-    const displayPrice = property.price_text || formatIndianRupee(property.price);
+    // Display price - prefer price_text if available, hide ₹0
+    const displayPrice = property.price_text || (property.price > 0 ? formatIndianRupee(property.price) : 'Price on Request');
 
     return (
         <div onClick={handleCardClick} className={styles.card}>
