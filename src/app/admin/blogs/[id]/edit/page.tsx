@@ -17,6 +17,7 @@ export default function EditBlogPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState<string | null>(null)
 
     const [formData, setFormData] = useState({
         title: '',
@@ -95,23 +96,15 @@ export default function EditBlogPage() {
                 published_at: publish ? new Date().toISOString() : formData.published_at,
             }
 
-            // Always save without category first (safe for all DB states),
-            // then attempt to save category separately if column exists
-            const { category, ...blogDataWithoutCategory } = blogData
-
             const { error: updateError } = await supabase
                 .from('blogs')
-                .update(blogDataWithoutCategory)
+                .update(blogData)
                 .eq('id', params?.id as string)
 
             if (updateError) throw updateError
 
-            // Try saving category separately — silently skip if column missing
-            if (category) {
-                await supabase.from('blogs').update({ category }).eq('id', params?.id as string)
-            }
-
-            router.push('/admin/blogs')
+            setSuccess('Blog post updated successfully!')
+            setTimeout(() => router.push('/admin/blogs'), 1500)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to update blog post')
         } finally {
@@ -144,6 +137,7 @@ export default function EditBlogPage() {
 
             <form onSubmit={(e) => handleSubmit(e, false)} className={formStyles.form}>
                 {error && <div className={formStyles.error}>{error}</div>}
+                {success && <div className={formStyles.success || ''} style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: '8px', padding: '12px 16px', color: '#166534', fontWeight: 500 }}>{success}</div>}
 
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Post Details</h2>

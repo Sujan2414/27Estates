@@ -15,6 +15,7 @@ export default function NewBlogPage() {
     const supabase = createClient()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState<string | null>(null)
 
     const [formData, setFormData] = useState({
         title: '',
@@ -63,27 +64,20 @@ export default function NewBlogPage() {
         setError(null)
 
         try {
-            const { category, ...formDataWithoutCategory } = formData
             const blogData = {
-                ...formDataWithoutCategory,
+                ...formData,
                 tags,
                 published_at: publish ? new Date().toISOString() : null,
             }
 
-            const { data: inserted, error: insertError } = await supabase
+            const { error: insertError } = await supabase
                 .from('blogs')
                 .insert([blogData])
-                .select('id')
-                .single()
 
             if (insertError) throw insertError
 
-            // Try saving category separately — silently skip if column missing
-            if (category && inserted?.id) {
-                await supabase.from('blogs').update({ category }).eq('id', inserted.id)
-            }
-
-            router.push('/admin/blogs')
+            setSuccess('Blog post created successfully!')
+            setTimeout(() => router.push('/admin/blogs'), 1500)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create blog post')
         } finally {
@@ -105,6 +99,7 @@ export default function NewBlogPage() {
 
             <form onSubmit={(e) => handleSubmit(e, false)} className={formStyles.form}>
                 {error && <div className={formStyles.error}>{error}</div>}
+                {success && <div style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: '8px', padding: '12px 16px', color: '#166534', fontWeight: 500 }}>{success}</div>}
 
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Post Details</h2>
