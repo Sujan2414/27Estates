@@ -27,6 +27,10 @@ interface Owner {
 interface FloorPlan {
     name: string
     image: string
+    bedrooms?: string
+    bathrooms?: string
+    area?: string
+    description?: string
 }
 
 interface ConnectivityItem {
@@ -113,7 +117,7 @@ export default function EditPropertyPage() {
 
     // Images & Floor Plans
     const [images, setImages] = useState<string[]>([''])
-    const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([{ name: '', image: '' }])
+    const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([{ name: '', image: '', bedrooms: '', bathrooms: '', area: '', description: '' }])
 
     // Connectivity
     const [connectivity, setConnectivity] = useState<ConnectivityItem[]>([{ type: '', name: '', distance: '', icon: '' }])
@@ -206,7 +210,7 @@ export default function EditPropertyPage() {
 
         // Parse floor plans
         const fp = data.floor_plans || []
-        setFloorPlans(fp.length > 0 ? fp : [{ name: '', image: '' }])
+        setFloorPlans(fp.length > 0 ? fp.map((f: any) => ({ name: f.name || '', image: f.image || '', bedrooms: f.bedrooms || '', bathrooms: f.bathrooms || '', area: f.area || '', description: f.description || '' })) : [{ name: '', image: '', bedrooms: '', bathrooms: '', area: '', description: '' }])
 
         // Parse connectivity
         const connData = data.connectivity || []
@@ -270,10 +274,10 @@ export default function EditPropertyPage() {
     const removeImage = (index: number) => setImages(prev => prev.filter((_, i) => i !== index))
 
     // Floor plan handlers
-    const handleFloorPlanChange = (index: number, field: 'name' | 'image', value: string) => {
+    const handleFloorPlanChange = (index: number, field: keyof FloorPlan, value: string) => {
         setFloorPlans(prev => prev.map((fp, i) => i === index ? { ...fp, [field]: value } : fp))
     }
-    const addFloorPlan = () => setFloorPlans(prev => [...prev, { name: '', image: '' }])
+    const addFloorPlan = () => setFloorPlans(prev => [...prev, { name: '', image: '', bedrooms: '', bathrooms: '', area: '', description: '' }])
     const removeFloorPlan = (index: number) => setFloorPlans(prev => prev.filter((_, i) => i !== index))
 
     // Connectivity handlers
@@ -765,21 +769,89 @@ export default function EditPropertyPage() {
                     </div>
                 </div>
 
-                {/* Floor Plans */}
+                {/* Floor Plans & Details */}
                 <div className={formStyles.section}>
-                    <h2 className={formStyles.sectionTitle}>Floor Plans</h2>
+                    <h2 className={formStyles.sectionTitle}>Floor-Wise Details</h2>
+                    <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '16px' }}>
+                        Add details for each floor. You can also upload a floor plan image.
+                    </p>
 
                     {floorPlans.map((fp, index) => (
-                        <div key={index} className={formStyles.floorPlanRow}>
-                            <div className={formStyles.grid2}>
-                                <input
-                                    type="text"
-                                    value={fp.name}
-                                    onChange={(e) => handleFloorPlanChange(index, 'name', e.target.value)}
-                                    className={formStyles.input}
-                                    placeholder="Floor name (e.g., Ground Floor)"
-                                />
-                                <div style={{ marginTop: '8px' }}>
+                        <div key={index} style={{
+                            padding: '16px', marginBottom: '12px',
+                            background: '#f9fafb', borderRadius: '12px',
+                            border: '1px solid #e5e7eb',
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#183C38' }}>Floor {index + 1}</span>
+                                {floorPlans.length > 1 && (
+                                    <button type="button" onClick={() => removeFloorPlan(index)} className={formStyles.removeBtn} style={{ width: '30px', height: '30px' }}>
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className={formStyles.grid2} style={{ marginBottom: '10px' }}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Floor Name</label>
+                                    <input
+                                        type="text"
+                                        value={fp.name}
+                                        onChange={(e) => handleFloorPlanChange(index, 'name', e.target.value)}
+                                        className={formStyles.input}
+                                        placeholder="e.g., Ground Floor, 1st Floor"
+                                    />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Area (sqft)</label>
+                                    <input
+                                        type="number"
+                                        value={fp.area || ''}
+                                        onChange={(e) => handleFloorPlanChange(index, 'area', e.target.value)}
+                                        className={formStyles.input}
+                                        placeholder="e.g., 1200"
+                                    />
+                                </div>
+                            </div>
+
+                            {!['Commercial', 'Office', 'Offices', 'Warehouse', 'Plot'].includes(formData.category) && (
+                                <div className={formStyles.grid2} style={{ marginBottom: '10px' }}>
+                                    <div className={formStyles.field}>
+                                        <label className={formStyles.label}>Bedrooms</label>
+                                        <input
+                                            type="number"
+                                            value={fp.bedrooms || ''}
+                                            onChange={(e) => handleFloorPlanChange(index, 'bedrooms', e.target.value)}
+                                            className={formStyles.input}
+                                            placeholder="e.g., 2"
+                                        />
+                                    </div>
+                                    <div className={formStyles.field}>
+                                        <label className={formStyles.label}>Bathrooms</label>
+                                        <input
+                                            type="number"
+                                            value={fp.bathrooms || ''}
+                                            onChange={(e) => handleFloorPlanChange(index, 'bathrooms', e.target.value)}
+                                            className={formStyles.input}
+                                            placeholder="e.g., 1"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className={formStyles.grid2} style={{ marginBottom: '10px' }}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Description / Notes</label>
+                                    <input
+                                        type="text"
+                                        value={fp.description || ''}
+                                        onChange={(e) => handleFloorPlanChange(index, 'description', e.target.value)}
+                                        className={formStyles.input}
+                                        placeholder="e.g., Master bedroom with attached bath"
+                                    />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Floor Plan Image</label>
                                     <ImageUpload
                                         value={fp.image}
                                         onChange={(url) => handleFloorPlanChange(index, 'image', url)}
@@ -787,16 +859,11 @@ export default function EditPropertyPage() {
                                         label="Upload Floor Plan"
                                     />
                                 </div>
-                                {floorPlans.length > 1 && (
-                                    <button type="button" onClick={() => removeFloorPlan(index)} className={formStyles.removeBtn} style={{ alignSelf: 'flex-start', marginTop: '8px' }}>
-                                        <X size={18} />
-                                    </button>
-                                )}
                             </div>
                         </div>
                     ))}
                     <button type="button" onClick={addFloorPlan} className={formStyles.addImageBtn}>
-                        <Plus size={16} /> Add Floor Plan
+                        <Plus size={16} /> Add Floor
                     </button>
                 </div>
 
