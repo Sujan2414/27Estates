@@ -531,22 +531,26 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                                     <span className={styles.detailLabel}>Property Id</span>
                                     <span className={styles.detailValue}>{property.property_id}</span>
                                 </div>
-                                {property.price_per_sqft && (
+                                <div className={styles.detailItem}>
+                                    <span className={styles.detailLabel}>Price</span>
+                                    <span className={styles.detailValue}>{property.price_text || (property.price > 0 ? `₹ ${property.price.toLocaleString()}` : 'Price on Request')}</span>
+                                </div>
+                                {property.price_per_sqft ? (
                                     <div className={styles.detailItem}>
                                         <span className={styles.detailLabel}>Price Info</span>
                                         <span className={styles.detailValue}>₹ {property.price_per_sqft} / sq ft</span>
                                     </div>
-                                )}
-                                {property.lot_size && (
+                                ) : null}
+                                <div className={styles.detailItem}>
+                                    <span className={styles.detailLabel}>Property Size</span>
+                                    <span className={styles.detailValue}>{property.sqft} ft²</span>
+                                </div>
+                                {property.lot_size ? (
                                     <div className={styles.detailItem}>
                                         <span className={styles.detailLabel}>Property Lot Size</span>
                                         <span className={styles.detailValue}>{property.lot_size.toLocaleString()} ft²</span>
                                     </div>
-                                )}
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Bedrooms</span>
-                                    <span className={styles.detailValue}>{property.bedrooms}</span>
-                                </div>
+                                ) : null}
                                 {property.sub_category && (
                                     <div className={styles.detailItem}>
                                         <span className={styles.detailLabel}>Type</span>
@@ -555,22 +559,73 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                                 )}
                             </div>
                             <div className={styles.detailColumn}>
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Price</span>
-                                    <span className={styles.detailValue}>{property.price_text || (property.price > 0 ? `₹ ${property.price.toLocaleString()}` : 'Price on Request')}</span>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Property Size</span>
-                                    <span className={styles.detailValue}>{property.sqft} ft²</span>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Rooms</span>
-                                    <span className={styles.detailValue}>{property.rooms || property.bedrooms}</span>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <span className={styles.detailLabel}>Bathrooms</span>
-                                    <span className={styles.detailValue}>{property.bathrooms}</span>
-                                </div>
+                                {['Commercial', 'Office', 'Offices', 'Warehouse', 'Plot'].includes(property.category) ? (
+                                    <>
+                                        {property.floors ? (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Floors</span>
+                                                <span className={styles.detailValue}>{property.floors}</span>
+                                            </div>
+                                        ) : null}
+                                        {property.carpet_area ? (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Carpet Area</span>
+                                                <span className={styles.detailValue}>{property.carpet_area.toLocaleString()} ft²</span>
+                                            </div>
+                                        ) : null}
+                                        {property.parking_count ? (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Parking</span>
+                                                <span className={styles.detailValue}>{property.parking_count}</span>
+                                            </div>
+                                        ) : null}
+                                        {property.furnishing && (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Furnishing</span>
+                                                <span className={styles.detailValue}>{property.furnishing}</span>
+                                            </div>
+                                        )}
+                                        {property.facing && (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Facing</span>
+                                                <span className={styles.detailValue}>{property.facing}</span>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        {property.bedrooms > 0 && (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Bedrooms</span>
+                                                <span className={styles.detailValue}>{property.bedrooms}</span>
+                                            </div>
+                                        )}
+                                        {property.bathrooms > 0 && (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Bathrooms</span>
+                                                <span className={styles.detailValue}>{property.bathrooms}</span>
+                                            </div>
+                                        )}
+                                        {(property.rooms || property.bedrooms) > 0 && (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Rooms</span>
+                                                <span className={styles.detailValue}>{property.rooms || property.bedrooms}</span>
+                                            </div>
+                                        )}
+                                        {property.furnishing && (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Furnishing</span>
+                                                <span className={styles.detailValue}>{property.furnishing}</span>
+                                            </div>
+                                        )}
+                                        {property.facing && (
+                                            <div className={styles.detailItem}>
+                                                <span className={styles.detailLabel}>Facing</span>
+                                                <span className={styles.detailValue}>{property.facing}</span>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                                 {property.project_name && (
                                     <div className={styles.detailItem}>
                                         <span className={styles.detailLabel}>Project</span>
