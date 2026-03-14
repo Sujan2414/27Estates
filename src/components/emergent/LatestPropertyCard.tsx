@@ -20,7 +20,7 @@ interface Property {
     bedrooms: number;
     bathrooms: number;
     sqft: number;
-    property_type: 'Sale' | 'Rent';
+    property_type: 'Sale' | 'Rent' | 'Lease';
     category: string;
     sub_category: string | null;
     furnishing: string | null;
@@ -56,7 +56,7 @@ const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookm
         setBookmarked(initialBookmarked);
     }, [initialBookmarked]);
 
-    const mainImage = proxyUrl(property.images?.[0]) || '/placeholder-property.jpg';
+    const mainImage = property.images?.[0] ? proxyUrl(property.images[0]) : '/no-image.svg';
     const isCommercialOrPlot = ['Commercial', 'Office', 'Offices', 'Warehouse', 'Plot'].includes(property.category);
 
     const handleCardClick = () => {
@@ -130,6 +130,7 @@ const LatestPropertyCard = ({ property, isBookmarked: initialBookmarked, onBookm
                     src={mainImage}
                     alt={property.title}
                     className={styles.image}
+                    onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
                 />
 
                 {/* Tags and Bookmark overlay */}

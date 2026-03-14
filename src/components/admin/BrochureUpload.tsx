@@ -40,19 +40,43 @@ export default function BrochureUpload({
         setError(null)
 
         try {
-            // Upload via server-side API route (bypasses RLS)
-            const formData = new FormData()
-            formData.append('file', file)
-            formData.append('folder', folder)
+            // Get Signed URL from our API to bypass RLS securely
+            const urlRes = await fetch('/api/upload/signed-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    folder: folder,
+                    contentType: file.type
+                })
+            });
 
-            const res = await fetch('/api/upload', { method: 'POST', body: formData })
-            const data = await res.json()
+            const urlData = await urlRes.json();
+            if (!urlRes.ok) throw new Error(urlData.error || 'Failed to get upload URL');
 
-            if (!res.ok) {
-                throw new Error(data.error || 'Upload failed')
+            const { signedUrl, path, token } = urlData;
+
+            // Upload directly to Supabase storage from the browser
+            // using the native fetch to PUT the file to the signed URL
+            const uploadRes = await fetch(signedUrl, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                    'Content-Type': file.type,
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!uploadRes.ok) {
+                const errText = await uploadRes.text();
+                throw new Error(`Upload to storage failed (${uploadRes.status})`);
             }
 
-            onChange(data.publicUrl)
+            // Construct the public URL
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ulgashwdsaxaiebtqrvf.supabase.co';
+            const publicUrl = `${supabaseUrl}/storage/v1/object/public/media/${path}`;
+
+            onChange(publicUrl)
         } catch (err) {
             console.error('Upload failed:', err)
             setError(err instanceof Error ? err.message : 'Upload failed')

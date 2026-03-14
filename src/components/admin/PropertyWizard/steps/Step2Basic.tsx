@@ -68,7 +68,7 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
     const showSuitableFor = isResidential || isCommercial
     const showOwnership = isResidential || isPlot || isCommercial
 
-    const propertyTypes = ['Apartment', 'House', 'Villa', 'Bungalow', 'Row Villa', 'Plot', 'Commercial', 'Farmhouse', 'Penthouse', 'Studio', 'Duplex', 'Office', 'Warehouse']
+    const propertyTypes = ['Apartment', 'House', 'Villa', 'Bungalow', 'Row Villa', 'Plot', 'Farmhouse', 'Penthouse', 'Studio', 'Duplex']
     const transactionTypes = ['New Property', 'Resale', 'Pre-Launch']
     const ownershipTypes = ['Freehold', 'Leasehold', 'Power of Attorney', 'Co-operative Society']
     const bedroomOptions = ['1', '2', '3', '4', '5', '6+']
@@ -114,8 +114,9 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
                 <div className={styles.field}>
                     <label className={styles.label}>For <span>*</span></label>
                     <select name="property_type_for" value={formData.property_type_for} onChange={handleChange} className={styles.select} required>
-                        <option value="Sale">Sale</option>
-                        <option value="Rent">Rent</option>
+                        <option value="Sale">For Sale</option>
+                        <option value="Rent">For Rent</option>
+                        <option value="Lease">For Lease</option>
                     </select>
                 </div>
                 <div className={styles.field}>

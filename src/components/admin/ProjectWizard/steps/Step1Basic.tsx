@@ -35,7 +35,8 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
         developer_image: initialData.developer_image || '',
         developer_description: initialData.developer_description || '',
         status: initialData.status || 'Under Construction',
-        category: initialData.category || 'Residential',
+        listing_type: initialData.listing_type || (initialData.section === 'commercial' || initialData.section === 'warehouse' ? 'For Rent' : 'For Sale'),
+        category: initialData.category || (initialData.section === 'commercial' ? 'Commercial' : initialData.section === 'warehouse' ? 'Warehouse' : 'Residential'),
         sub_category: initialData.sub_category || '',
         total_units: initialData.total_units || '',
         bhk_options: initialData.bhk_options || '',
@@ -105,23 +106,31 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                 ...prev,
                 category: value,
                 sub_category: '',
-                bhk_options: (value === 'Plot' || value === 'Commercial') ? '' : prev.bhk_options,
+                bhk_options: (value === 'Plot' || value === 'Commercial' || value === 'Warehouse') ? '' : prev.bhk_options,
             }))
         } else {
             setFormData(prev => ({ ...prev, [name]: value }))
         }
     }
 
-    const totalLabel = formData.category === 'Villa' ? 'Total Villas' : formData.category === 'Plot' ? 'Total Plots' : formData.category === 'Commercial' ? 'Total Units' : 'Total Units'
+    const totalLabel = formData.category === 'Villa' ? 'Total Villas' : formData.category === 'Plot' ? 'Total Plots' : formData.category === 'Warehouse' ? 'Total Units' : formData.category === 'Commercial' ? 'Total Units' : 'Total Units'
 
-    const categories = ['Residential', 'Villa', 'Plot', 'Commercial']
+    const sectionCategories: Record<string, string[]> = {
+        residential: ['Residential', 'Villa', 'Plot'],
+        commercial: ['Commercial'],
+        warehouse: ['Warehouse'],
+    }
+    const section = initialData.section || 'residential'
+    const categories = sectionCategories[section] || ['Residential', 'Villa', 'Plot']
+
     const subCategories: Record<string, string[]> = {
         Residential: ['Apartment', 'Penthouse', 'Studio', 'Duplex'],
         Villa: ['Independent Villa', 'Row House', 'Twin Villa', 'Farm Villa'],
         Plot: ['Farm Plot', 'Residential Plot', 'Commercial Plot', 'NA Plot'],
         Commercial: ['Office Space', 'Retail Shops', 'Co-Working Space', 'Showroom', 'Mixed Use', 'Business Park', 'Mall'],
+        Warehouse: ['Cold Storage', 'Distribution Center', 'Industrial', 'Self Storage', 'Fulfillment Center', 'Logistics Park'],
     }
-    const statusOptions = ['Under Construction', 'Ready to Move', 'Pre-Launch', 'Upcoming', 'Completed']
+    const statusOptions = ['Pre-Launch', 'Upcoming', 'New Launch', 'Under Construction', 'Ready to Move']
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -180,6 +189,19 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                     <input type="number" name="total_units" value={formData.total_units} onChange={handleChange} className={styles.input} />
                 </div>
             </div>
+
+            {(section === 'commercial' || section === 'warehouse') && (
+                <div className={styles.grid2}>
+                    <div className={styles.field}>
+                        <label className={styles.label}>Listing Type *</label>
+                        <select name="listing_type" value={formData.listing_type} onChange={handleChange} className={styles.select}>
+                            <option value="For Sale">For Sale</option>
+                            <option value="For Rent">For Rent</option>
+                            <option value="For Lease">For Lease</option>
+                        </select>
+                    </div>
+                </div>
+            )}
 
             <div style={{ marginTop: '2.5rem', marginBottom: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>Developer Information</h3>
@@ -274,7 +296,7 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                     <label className={styles.label}>RERA Number</label>
                     <input type="text" name="rera_number" value={formData.rera_number} onChange={handleChange} className={styles.input} />
                 </div>
-                {formData.category !== 'Plot' && formData.category !== 'Commercial' && (
+                {formData.category !== 'Plot' && formData.category !== 'Commercial' && formData.category !== 'Warehouse' && (
                     <div className={styles.field}>
                         <label className={styles.label}>BHK Options</label>
                         <BHKMultiSelect
@@ -295,7 +317,7 @@ export default function ProjectStep1Basic({ initialData, onNext }: StepProps) {
                     <label>RERA Approved</label>
                 </div>
             </div>
-            {formData.category === 'Commercial' && (
+            {(formData.category === 'Commercial' || formData.category === 'Warehouse') && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '0.75rem' }}>
                     <input type="checkbox" name="is_oc_approved" checked={formData.is_oc_approved} onChange={handleChange} />
                     <label>OC Certificate</label>

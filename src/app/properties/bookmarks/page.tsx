@@ -130,7 +130,8 @@ const Bookmarks = () => {
                                         key={project.id}
                                         id={project.id}
                                         project_name={project.project_name}
-                                        location={project.location || project.city || ''}
+                                        location={project.location || ''}
+                                        city={project.city}
                                         min_price={project.min_price}
                                         max_price={project.max_price}
                                         bhk_options={project.bhk_options}

@@ -11,6 +11,7 @@ interface ProjectCardProps {
     id: string;
     project_name: string;
     location: string;
+    city?: string | null;
     min_price: string | null;
     max_price: string | null;
     bhk_options: string[] | null;
@@ -27,6 +28,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     id,
     project_name,
     location,
+    city,
     min_price,
     max_price,
     bhk_options,
@@ -104,9 +106,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {/* Image */}
                 <div className={styles.imageContainer}>
                     <img
-                        src={proxyUrl(image) || '/placeholder-project.jpg'}
+                        src={image ? proxyUrl(image) : '/no-image.svg'}
                         alt={project_name}
                         className={styles.image}
+                        onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
                     />
 
                     {/* Status / RERA badges — top-left */}
@@ -147,7 +150,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                     <h3 className={styles.projectName}>{project_name}</h3>
                     <div className={styles.locationRow}>
                         <MapPin size={13} className={styles.locationIcon} />
-                        <span className={styles.location}>{location}</span>
+                        <span className={styles.location}>{location}{city && `, ${city}`}</span>
                     </div>
                 </div>
             </Link>

@@ -17,8 +17,8 @@ interface Project {
     location: string
     city: string | null
     category: string
+    sub_category: string | null
     status: string
-    bhk_options: string[] | null
     min_area: number | null
     max_area: number | null
     min_price: string | null
@@ -28,7 +28,7 @@ interface Project {
     created_at: string
 }
 
-export default function ProjectsPage() {
+export default function CommercialPage() {
     const [projects, setProjects] = useState<Project[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
@@ -44,7 +44,7 @@ export default function ProjectsPage() {
         const { data, error } = await supabase
             .from('projects')
             .select('*')
-            .or('section.eq.residential,section.is.null')
+            .eq('section', 'commercial')
             .order('created_at', { ascending: false })
 
         if (!error && data) {
@@ -88,17 +88,17 @@ export default function ProjectsPage() {
         <div className={styles.dashboard}>
             <div className={propertyStyles.header}>
                 <div>
-                    <h1 className={styles.pageTitle}>Projects</h1>
-                    <p className={styles.pageSubtitle}>Manage your project listings</p>
+                    <h1 className={styles.pageTitle}>Commercial</h1>
+                    <p className={styles.pageSubtitle}>Manage commercial project listings</p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={() => setShowBulkModal(true)} className={styles.addButton} style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db' }}>
                         <FileSpreadsheet size={18} />
                         Bulk Import
                     </button>
-                    <Link href="/admin/projects/new" className={styles.addButton}>
+                    <Link href="/admin/commercial/new" className={styles.addButton}>
                         <Plus size={18} />
-                        Add Project
+                        Add Commercial
                     </Link>
                 </div>
             </div>
@@ -108,7 +108,7 @@ export default function ProjectsPage() {
                 <Search size={20} className={propertyStyles.searchIcon} />
                 <input
                     type="text"
-                    placeholder="Search projects..."
+                    placeholder="Search commercial listings..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className={propertyStyles.searchInput}
@@ -117,7 +117,7 @@ export default function ProjectsPage() {
 
             {/* Projects Grid */}
             {loading ? (
-                <div className={styles.emptyState}>Loading projects...</div>
+                <div className={styles.emptyState}>Loading commercial listings...</div>
             ) : filteredProjects.length > 0 ? (
                 <div className={propertyStyles.grid}>
                     {filteredProjects.map((project) => (
@@ -138,16 +138,13 @@ export default function ProjectsPage() {
                             <div className={propertyStyles.content}>
                                 <div className={propertyStyles.tags}>
                                     <span className={propertyStyles.tag}>{project.status}</span>
-                                    <span className={propertyStyles.tag}>{project.category}</span>
+                                    {project.sub_category && <span className={propertyStyles.tag}>{project.sub_category}</span>}
                                 </div>
 
                                 <h3 className={propertyStyles.title}>{project.project_name}</h3>
                                 <p className={propertyStyles.location}>{project.location}{project.city ? `, ${project.city}` : ''}</p>
 
                                 <div className={propertyStyles.details}>
-                                    {project.bhk_options && project.bhk_options.length > 0 && (
-                                        <span>{project.bhk_options.join(', ')}</span>
-                                    )}
                                     {project.min_area && project.max_area && (
                                         <span>{project.min_area} - {project.max_area} sqft</span>
                                     )}
@@ -158,6 +155,14 @@ export default function ProjectsPage() {
                                         {project.min_price ? `${project.min_price}${project.max_price ? ` - ${project.max_price}` : ''}` : 'Request for Details'}
                                     </span>
                                     <div className={propertyStyles.actions}>
+                                        <button
+                                            className={propertyStyles.actionBtn}
+                                            onClick={() => toggleFeatured(project.id, project.is_featured)}
+                                            title={project.is_featured ? 'Remove from featured' : 'Mark as featured'}
+                                            style={{ color: project.is_featured ? '#f59e0b' : undefined }}
+                                        >
+                                            ★
+                                        </button>
                                         <Link href={`/admin/projects/${project.id}/edit`} className={propertyStyles.actionBtn}>
                                             <Pencil size={16} />
                                         </Link>
@@ -175,7 +180,7 @@ export default function ProjectsPage() {
                 </div>
             ) : (
                 <div className={styles.emptyState}>
-                    {searchQuery ? 'No projects match your search' : 'No projects yet. Add your first project!'}
+                    {searchQuery ? 'No commercial listings match your search' : 'No commercial listings yet. Add your first!'}
                 </div>
             )}
 
@@ -183,19 +188,13 @@ export default function ProjectsPage() {
             {deleteId && (
                 <div className={propertyStyles.modal}>
                     <div className={propertyStyles.modalContent}>
-                        <h3>Delete Project?</h3>
-                        <p>Are you sure you want to delete this project? This action cannot be undone.</p>
+                        <h3>Delete Commercial Listing?</h3>
+                        <p>Are you sure you want to delete this listing? This action cannot be undone.</p>
                         <div className={propertyStyles.modalActions}>
-                            <button
-                                className={propertyStyles.cancelBtn}
-                                onClick={() => setDeleteId(null)}
-                            >
+                            <button className={propertyStyles.cancelBtn} onClick={() => setDeleteId(null)}>
                                 Cancel
                             </button>
-                            <button
-                                className={propertyStyles.confirmDeleteBtn}
-                                onClick={() => handleDelete(deleteId)}
-                            >
+                            <button className={propertyStyles.confirmDeleteBtn} onClick={() => handleDelete(deleteId)}>
                                 Delete
                             </button>
                         </div>
@@ -205,6 +204,7 @@ export default function ProjectsPage() {
             {showBulkModal && (
                 <BulkUploadModal
                     type="project"
+                    section="commercial"
                     onClose={() => setShowBulkModal(false)}
                     onComplete={() => { fetchProjects(); }}
                 />

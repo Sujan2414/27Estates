@@ -17,13 +17,14 @@ import {
 
 interface BulkUploadModalProps {
     type: 'property' | 'project'
+    section?: 'residential' | 'commercial' | 'warehouse'
     onClose: () => void
     onComplete: () => void
 }
 
 type UploadStage = 'idle' | 'parsed' | 'uploading' | 'done'
 
-export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploadModalProps) {
+export default function BulkUploadModal({ type, section, onClose, onComplete }: BulkUploadModalProps) {
     const [stage, setStage] = useState<UploadStage>('idle')
     const [parsedProperties, setParsedProperties] = useState<ParsedProperty[]>([])
     const [parsedProjects, setParsedProjects] = useState<ParsedProject[]>([])
@@ -31,7 +32,8 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
     const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0, failed: 0 })
     const [uploadErrors, setUploadErrors] = useState<{ row: number; message: string }[]>([])
     const [dragOver, setDragOver] = useState(false)
-    const [templateCategory, setTemplateCategory] = useState<ProjectCategory>('Residential')
+    const defaultCategory: ProjectCategory = section === 'commercial' ? 'Commercial' : section === 'warehouse' ? 'Warehouse' : 'Residential'
+    const [templateCategory, setTemplateCategory] = useState<ProjectCategory>(defaultCategory)
     const fileRef = useRef<HTMLInputElement>(null)
     const supabase = createClient()
 
@@ -201,6 +203,7 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
             for (let i = 0; i < parsedProjects.length; i++) {
                 const p = parsedProjects[i]
 
+                const effectiveSection = section || p.section || 'residential'
                 const { error } = await supabase.from('projects').insert({
                     project_id: p.project_id || `PRJ-${Date.now()}-${i}`,
                     project_name: p.project_name,
@@ -209,6 +212,9 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                     rera_number: p.rera_number,
                     developer_name: p.developer_name,
                     status: p.status,
+                    section: effectiveSection,
+                    listing_type: p.listing_type || (effectiveSection === 'commercial' || effectiveSection === 'warehouse' ? 'For Rent' : null),
+                    is_oc_approved: p.is_oc_approved ?? false,
                     category: p.category,
                     sub_category: p.sub_category,
                     total_units: p.total_units,
@@ -289,6 +295,7 @@ export default function BulkUploadModal({ type, onClose, onComplete }: BulkUploa
                         <option value="Villa">Villa</option>
                         <option value="Plot">Plot</option>
                         <option value="Commercial">Commercial</option>
+                        <option value="Warehouse">Warehouse</option>
                     </select>
 
                     <button onClick={handleDownloadTemplate} style={templateBtnStyle}>

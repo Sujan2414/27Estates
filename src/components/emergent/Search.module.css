@@ -381,19 +381,20 @@
 }
 
 .collapsibleContent {
-    overflow: hidden;
     transition: all 0.2s ease;
 }
 
 .collapsibleContentClosed {
     max-height: 0;
     opacity: 0;
+    overflow: hidden;
     margin-top: 0;
 }
 
 .collapsibleContentOpen {
-    max-height: 500px;
+    max-height: 800px;
     opacity: 1;
+    overflow: visible;
     margin-top: 0.75rem;
 }
 
@@ -576,6 +577,7 @@
 
 .rangeInput {
     flex: 1;
+    min-width: 0;
     padding: 0.625rem 0.75rem;
     border: 1px solid #e5e5e5;
     border-radius: 0.5rem;
@@ -988,6 +990,110 @@
     .filterModalBody .filterLabel {
         font-size: 0.9375rem;
     }
+}
+
+/* ====================== */
+/* City Search Input      */
+/* ====================== */
+.citySearchWrap {
+    margin-top: 0.625rem;
+    position: relative;
+}
+
+.citySearchInput {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    color: #0a0a0a;
+    background-color: #f9f9f9;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.citySearchInput:focus {
+    border-color: #a3a3a3;
+    background-color: #ffffff;
+}
+
+.citySearchInput::placeholder {
+    color: #a3a3a3;
+}
+
+.citySearchIcon {
+    position: absolute;
+    left: 0.625rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a3a3a3;
+    pointer-events: none;
+}
+
+.citySearchResults {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.citySearchEmpty {
+    font-size: 0.75rem;
+    color: #a3a3a3;
+    margin-top: 0.375rem;
+    padding: 0 0.25rem;
+}
+
+/* ====================== */
+/* Autocomplete Dropdown  */
+/* ====================== */
+.autocompleteWrap {
+    position: relative;
+}
+
+.autocompleteWrapSpaced {
+    position: relative;
+    margin-bottom: 0.625rem;
+}
+
+.autocompleteList {
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 300;
+}
+
+.autocompleteItem {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    color: #404040;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.autocompleteItem:last-child {
+    border-bottom: none;
+}
+
+.autocompleteItem:hover {
+    background: #f5f5f5;
+}
+
+/* ====================== */
+/* Listing Type Filter    */
+/* ====================== */
+.listingTypeFilter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 /* ====================== */

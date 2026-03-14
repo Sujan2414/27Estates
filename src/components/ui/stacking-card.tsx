@@ -84,9 +84,10 @@ const ProjectCard = ({ i, project, progress, range, targetScale }: CardProps) =>
                     style={{ scale: imageScale }}
                 >
                     <img
-                        src={project.image}
+                        src={project.image || '/no-image.svg'}
                         alt={project.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
                     />
                 </motion.div>
 

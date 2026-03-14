@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
 
-export type ProjectCategory = 'Residential' | 'Villa' | 'Plot' | 'Commercial'
+export type ProjectCategory = 'Residential' | 'Villa' | 'Plot' | 'Commercial' | 'Warehouse'
 
 // ─── Property Columns ─────────────────────────────────────────
 
@@ -96,12 +96,12 @@ function getPropertyCategoryColumns(category: ProjectCategory): string[] {
 const PROJECT_SHARED_COLUMNS = [
     'project_id', 'project_name', 'title', 'description',
     'rera_number', 'developer_name',
-    'status', 'category', 'sub_category', 'total_units',
+    'status', 'section', 'listing_type', 'category', 'sub_category', 'total_units',
     'min_price', 'max_price', 'min_price_numeric', 'max_price_numeric',
     'price_per_sqft', 'min_area', 'max_area',
     'transaction_type', 'launch_date', 'possession_date',
     'video_url', 'brochure_url', 'master_plan_image',
-    'is_featured', 'is_rera_approved',
+    'is_featured', 'is_rera_approved', 'is_oc_approved',
     'employee_name', 'employee_phone', 'employee_email',
     'address', 'location', 'city', 'state', 'landmark', 'pincode',
     'images', 'amenities', 'floor_plans', 'connectivity', 'highlights',
@@ -148,7 +148,7 @@ function getCategoryColumns(category: ProjectCategory): string[] {
     } else if (category === 'Plot') {
         return [...base, ...PHASE_COLS, ...PLOT_UNIT_COLS]
     } else {
-        // Commercial
+        // Commercial / Warehouse — same structure
         return [...base, ...FLOOR_COLS, ...COMM_UNIT_COLS]
     }
 }
@@ -163,6 +163,9 @@ const PROJECT_SHARED_EXAMPLE: Record<string, string> = {
     rera_number: 'PRM/KA/RERA/2024/001',
     developer_name: 'ABC Builders',
     status: 'Under Construction',
+    section: 'residential',
+    listing_type: 'For Sale',
+    is_oc_approved: 'false',
     sub_category: '',
     total_units: '200',
     min_price: '60 Lakhs',
@@ -239,6 +242,9 @@ const CATEGORY_EXAMPLE_EXTRAS: Record<ProjectCategory, Record<string, string>> =
     },
     Commercial: {
         category: 'Commercial',
+        section: 'commercial',
+        listing_type: 'For Rent',
+        is_oc_approved: 'false',
         sub_category: 'Office Space',
         floor1_name: 'Ground Floor', floor1_total_units: '10', floor1_unit_types: 'Retail Shops', floor1_completion_date: '2025-12-31', floor1_status: 'Ready to Move',
         floor2_name: 'First Floor', floor2_total_units: '20', floor2_unit_types: 'Office Space', floor2_completion_date: '2025-12-31', floor2_status: 'Ready to Move',
@@ -247,6 +253,22 @@ const CATEGORY_EXAMPLE_EXTRAS: Record<ProjectCategory, Record<string, string>> =
         cunit1_type: 'Retail Shop', cunit1_area_range: '300-600 sqft', cunit1_price_range: '30-80 Lakhs', cunit1_rent_per_sqft: '120', cunit1_status: 'Available',
         cunit2_type: 'Office Unit', cunit2_area_range: '500-2000 sqft', cunit2_price_range: '50 L - 2 Cr', cunit2_rent_per_sqft: '85', cunit2_status: 'Available',
         cunit3_type: 'Co-Working Desk', cunit3_area_range: '50-200 sqft', cunit3_price_range: '5-20 Lakhs', cunit3_rent_per_sqft: '60', cunit3_status: 'Limited',
+        cunit4_type: '', cunit4_area_range: '', cunit4_price_range: '', cunit4_rent_per_sqft: '', cunit4_status: '',
+        cunit5_type: '', cunit5_area_range: '', cunit5_price_range: '', cunit5_rent_per_sqft: '', cunit5_status: '',
+    },
+    Warehouse: {
+        category: 'Warehouse',
+        section: 'warehouse',
+        listing_type: 'For Rent',
+        is_oc_approved: 'false',
+        sub_category: 'Industrial',
+        floor1_name: 'Block A', floor1_total_units: '5', floor1_unit_types: 'Cold Storage', floor1_completion_date: '2025-12-31', floor1_status: 'Ready to Move',
+        floor2_name: 'Block B', floor2_total_units: '8', floor2_unit_types: 'Fulfillment Center', floor2_completion_date: '2026-03-31', floor2_status: 'Under Construction',
+        floor3_name: '', floor3_total_units: '', floor3_unit_types: '', floor3_completion_date: '', floor3_status: '',
+        floor4_name: '', floor4_total_units: '', floor4_unit_types: '', floor4_completion_date: '', floor4_status: '',
+        cunit1_type: 'Cold Storage Unit', cunit1_area_range: '5000-10000 sqft', cunit1_price_range: '2-5 Cr', cunit1_rent_per_sqft: '45', cunit1_status: 'Available',
+        cunit2_type: 'Distribution Bay', cunit2_area_range: '2000-8000 sqft', cunit2_price_range: '1-3 Cr', cunit2_rent_per_sqft: '35', cunit2_status: 'Available',
+        cunit3_type: '', cunit3_area_range: '', cunit3_price_range: '', cunit3_rent_per_sqft: '', cunit3_status: '',
         cunit4_type: '', cunit4_area_range: '', cunit4_price_range: '', cunit4_rent_per_sqft: '', cunit4_status: '',
         cunit5_type: '', cunit5_area_range: '', cunit5_price_range: '', cunit5_rent_per_sqft: '', cunit5_status: '',
     },
@@ -260,6 +282,7 @@ function buildInstructionsSheet(category: ProjectCategory): XLSX.WorkSheet {
         Villa: 'Independent Villa | Row House | Twin Villa | Farm Villa',
         Plot: 'Farm Plot | Residential Plot | Commercial Plot | NA Plot',
         Commercial: 'Office Space | Retail Shops | Co-Working Space | Showroom | Mixed Use | Business Park | Mall',
+        Warehouse: 'Cold Storage | Distribution Center | Industrial | Self Storage | Fulfillment Center | Logistics Park',
     }
 
     const rows: unknown[][] = [
@@ -268,11 +291,14 @@ function buildInstructionsSheet(category: ProjectCategory): XLSX.WorkSheet {
         ['FIELD', 'VALID VALUES / FORMAT', 'NOTES'],
         ['─────────────────', '─────────────────────────────────────────────────', '───────────────────────'],
         ['status', 'Under Construction | Ready to Move | Pre-Launch | Upcoming | Completed', 'Required'],
+        ['section', 'residential | commercial | warehouse', 'Auto-set by template — do not change'],
+        ['listing_type', 'For Sale | For Rent | For Lease', 'Required for Commercial & Warehouse'],
         ['category', category, `Fixed for this template`],
         ['sub_category', subCatMap[category], 'Pick one from the list'],
         ['transaction_type', 'New Launch | Resale | Rental', ''],
         ['is_featured', 'true | false', ''],
         ['is_rera_approved', 'true | false', ''],
+        ['is_oc_approved', 'true | false', 'Commercial & Warehouse only'],
         [],
         ['DATE FORMAT', 'YYYY-MM-DD  (e.g., 2025-06-30)', ''],
         ['PRICE FORMAT', 'min_price / max_price: display text (e.g., "1.5 Cr")', ''],
@@ -445,7 +471,7 @@ function safeJsonParse<T>(val: unknown, fallback: T): T {
 // ─── Flat Column Assembly ─────────────────────────────────────
 
 function assembleTowersData(row: Record<string, unknown>, category: string): unknown[] | null {
-    if (category === 'Commercial') {
+    if (category === 'Commercial' || category === 'Warehouse') {
         const floors = [1, 2, 3, 4].map(n => ({
             floor_name: safeStr(row[`floor${n}_name`]),
             total_units: safeStr(row[`floor${n}_total_units`]),
@@ -477,7 +503,7 @@ function assembleTowersData(row: Record<string, unknown>, category: string): unk
 }
 
 function assembleUnitConfigs(row: Record<string, unknown>, category: string): unknown[] | null {
-    if (category === 'Commercial') {
+    if (category === 'Commercial' || category === 'Warehouse') {
         const units = [1, 2, 3, 4, 5].map(n => ({
             unit_type: safeStr(row[`cunit${n}_type`]),
             area_range: safeStr(row[`cunit${n}_area_range`]),
@@ -717,6 +743,9 @@ export interface ParsedProject {
     rera_number: string | null
     developer_name: string | null
     status: string
+    section: string
+    listing_type: string | null
+    is_oc_approved: boolean
     category: string
     sub_category: string | null
     total_units: number | null
@@ -777,6 +806,13 @@ export async function parseProjectExcel(file: File): Promise<ParseResult<ParsedP
 
             const category = safeStr(row['category']) || 'Residential'
             const flat = isFlatFormat(row)
+            const section = safeStr(row['section']) || (
+                category === 'Commercial' ? 'commercial' :
+                category === 'Warehouse' ? 'warehouse' : 'residential'
+            )
+            const listing_type = safeStr(row['listing_type']) || (
+                section === 'commercial' || section === 'warehouse' ? 'For Rent' : null
+            )
 
             valid.push({
                 project_id: safeStr(row['project_id']),
@@ -786,6 +822,9 @@ export async function parseProjectExcel(file: File): Promise<ParseResult<ParsedP
                 rera_number: safeStr(row['rera_number']) || null,
                 developer_name: safeStr(row['developer_name']) || null,
                 status: safeStr(row['status']) || 'Under Construction',
+                section,
+                listing_type,
+                is_oc_approved: safeBool(row['is_oc_approved']),
                 category,
                 sub_category: safeStr(row['sub_category']) || null,
                 total_units: safeInt(row['total_units']),
@@ -921,6 +960,9 @@ export function exportProjectsToExcel(projects: Record<string, unknown>[]): void
         rera_number: p.rera_number || '',
         developer_name: p.developer_name || '',
         status: p.status || '',
+        section: p.section || 'residential',
+        listing_type: p.listing_type || '',
+        is_oc_approved: p.is_oc_approved ? 'true' : 'false',
         category: p.category || '',
         sub_category: p.sub_category || '',
         total_units: p.total_units || '',

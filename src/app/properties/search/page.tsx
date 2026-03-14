@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Search as SearchIcon, Map, List, Building2, Home, Building, Factory, Briefcase, TreePine, ChevronDown, Search, Plus, X, SlidersHorizontal } from "lucide-react";
+import { Search as SearchIcon, Map, List, Building2, Home, Building, TreePine, ChevronDown, Search, Plus, X, SlidersHorizontal } from "lucide-react";
 import LatestPropertyCard from "@/components/emergent/LatestPropertyCard";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -51,6 +51,8 @@ interface Property {
 
 // ... imports
 
+const MAIN_CITIES = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Pune'];
+
 // Category options with icons
 const propertyCategories = [
     { id: "Apartment", label: "Apartment", icon: Building2 },
@@ -58,8 +60,6 @@ const propertyCategories = [
     { id: "Villa", label: "Villas", icon: Home },
     { id: "Plot", label: "Plots", icon: Map },
     { id: "Duplex", label: "Duplex", icon: Building },
-    { id: "Commercial", label: "Commercial", icon: Factory },
-    { id: "Offices", label: "Offices", icon: Briefcase },
     { id: "Penthouse", label: "Penthouse", icon: Building2 },
     { id: "Farmhouse", label: "Farmhouse", icon: TreePine },
 ];
@@ -101,6 +101,14 @@ const sortOptions = [
 const bedroomOptions = ["Any", "1", "2", "3", "4", "5+"];
 const bathroomOptions = ["Any", "1", "2", "3", "4+"];
 
+const directionOptions = [
+    { id: 'North', label: 'North' },
+    { id: 'South', label: 'South' },
+    { id: 'East', label: 'East' },
+    { id: 'West', label: 'West' },
+    { id: 'Central', label: 'Central' },
+];
+
 const SearchPage = () => {
     const supabase = createClient();
     const { user } = useAuth();
@@ -111,6 +119,13 @@ const SearchPage = () => {
 
     // Dynamic Filter Options
     const [cities, setCities] = useState<string[]>([]);
+    const [citySearch, setCitySearch] = useState('');
+    const [selectedDirection, setSelectedDirection] = useState<string | null>(null);
+    const [pincodeSearch, setPincodeSearch] = useState('');
+    const [areaSearch, setAreaSearch] = useState('');
+    const [showAreaDropdown, setShowAreaDropdown] = useState(false);
+    const [showPincodeDropdown, setShowPincodeDropdown] = useState(false);
+    const [showCityDropdown, setShowCityDropdown] = useState(false);
 
 
     // View toggle
@@ -134,29 +149,49 @@ const SearchPage = () => {
     const [selectedPropertyAge, setSelectedPropertyAge] = useState<string | null>(null);
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
     const [featuredOnly, setFeaturedOnly] = useState(false);
-    const [listingType, setListingType] = useState<'Buy' | 'Rent'>('Buy');
+    const [listingType, setListingType] = useState<'Buy' | 'Rent' | 'Lease'>('Rent');
     const [sortBy, setSortBy] = useState("newest");
     const [showPostForm, setShowPostForm] = useState(false);
+
+    // Split cities into main (quick chips) and others (searchable)
+    const otherCities = useMemo(() => cities.filter(c => !MAIN_CITIES.includes(c)), [cities]);
+    const filteredAllCities = useMemo(() =>
+        citySearch.trim() ? cities.filter(c => c.toLowerCase().includes(citySearch.toLowerCase())) : cities,
+        [cities, citySearch]
+    );
 
     // Derived Logic for Area Options
     const areaOptions = useMemo(() => {
         let propsToFilter = properties;
-
-        // If a city is selected, only show areas from that city
-        if (selectedCity) {
-            propsToFilter = properties.filter(p => p.city === selectedCity);
-        }
-
-        const uniqueAreas = Array.from(new Set(propsToFilter.map(p => p.location).filter(Boolean))) as string[];
-        return uniqueAreas.sort();
+        if (selectedCity) propsToFilter = properties.filter(p => p.city === selectedCity);
+        return Array.from(new Set(propsToFilter.map(p => p.location?.trim()).filter(Boolean))).sort() as string[];
     }, [properties, selectedCity]);
 
-    // Reset Selected Area if it's not in the new options list when City changes
+    const filteredAreaOptions = useMemo(() =>
+        areaSearch.trim()
+            ? areaOptions.filter(a => a.toLowerCase().includes(areaSearch.toLowerCase()))
+            : areaOptions,
+        [areaOptions, areaSearch]
+    );
+
+    const availablePincodes = useMemo(() => {
+        let base = properties;
+        if (selectedCity) base = properties.filter(p => p.city === selectedCity);
+        return Array.from(new Set(base.map(p => p.pincode?.trim()).filter(Boolean))).sort() as string[];
+    }, [properties, selectedCity]);
+
+    const filteredPincodes = useMemo(() =>
+        pincodeSearch.trim().length >= 2
+            ? availablePincodes.filter(p => p.startsWith(pincodeSearch.trim()))
+            : availablePincodes,
+        [availablePincodes, pincodeSearch]
+    );
+
+    // Reset area search when city changes
     useEffect(() => {
-        if (selectedArea && !areaOptions.includes(selectedArea)) {
-            setSelectedArea(null);
-        }
-    }, [selectedCity, areaOptions, selectedArea]);
+        setAreaSearch('');
+        setSelectedArea(null);
+    }, [selectedCity]);
 
     // Collapsible sections
     const [openSections, setOpenSections] = useState({
@@ -226,8 +261,8 @@ const SearchPage = () => {
     useEffect(() => {
         let result = [...properties];
 
-        // Filter by Buy/Rent (property_type)
-        result = result.filter(p => p.property_type === (listingType === 'Buy' ? 'Sale' : 'Rent'));
+        // Filter by Buy/Rent/Lease (property_type)
+        result = result.filter(p => p.property_type === (listingType === 'Buy' ? 'Sale' : listingType));
 
         if (propertyIdSearch.trim()) {
             const id = propertyIdSearch.toLowerCase();
@@ -256,6 +291,18 @@ const SearchPage = () => {
 
         if (selectedArea) {
             result = result.filter(p => p.location.includes(selectedArea));
+        }
+
+        if (selectedDirection) {
+            result = result.filter(p =>
+                p.direction?.toLowerCase() === selectedDirection.toLowerCase() ||
+                p.location?.toLowerCase().includes(selectedDirection.toLowerCase())
+            );
+        }
+
+        if (pincodeSearch.trim()) {
+            const pin = pincodeSearch.trim();
+            result = result.filter(p => p.pincode?.startsWith(pin) || p.location?.includes(pin));
         }
 
         if (minPrice) {
@@ -314,9 +361,9 @@ const SearchPage = () => {
 
         setFilteredProperties(result);
     }, [
-        searchQuery, propertyIdSearch, selectedCategory, selectedCity, selectedArea,
+        searchQuery, propertyIdSearch, selectedCategory, selectedCity, selectedArea, selectedDirection,
         minPrice, maxPrice, selectedBedrooms, selectedBathrooms,
-        minArea, maxArea, featuredOnly, listingType, sortBy, properties, selectedStatus, selectedFurnishing
+        minArea, maxArea, featuredOnly, listingType, sortBy, properties, selectedStatus, selectedFurnishing, pincodeSearch
     ]);
 
     const handleReset = () => {
@@ -336,8 +383,11 @@ const SearchPage = () => {
         setSelectedPropertyAge(null);
         setSelectedStatus(null);
         setFeaturedOnly(false);
-        setListingType('Buy');
+        setListingType('Rent');
         setSortBy("newest");
+        setSelectedDirection(null);
+        setPincodeSearch("");
+        setAreaSearch("");
     };
 
     const toggleAmenity = (amenity: string) => {
@@ -388,7 +438,7 @@ const SearchPage = () => {
 
                 {/* Scrollable Content */}
                 <div className={styles.filterScrollArea} data-lenis-prevent>
-                    {/* Buy / Rent Toggle */}
+                    {/* Buy / Rent / Lease Toggle */}
                     <div className={styles.listingTypeToggle}>
                         <button
                             className={`${styles.listingTypeBtn} ${listingType === 'Buy' ? styles.listingTypeBtnActive : ''}`}
@@ -398,6 +448,10 @@ const SearchPage = () => {
                             className={`${styles.listingTypeBtn} ${listingType === 'Rent' ? styles.listingTypeBtnActive : ''}`}
                             onClick={() => setListingType('Rent')}
                         >Rent</button>
+                        <button
+                            className={`${styles.listingTypeBtn} ${listingType === 'Lease' ? styles.listingTypeBtnActive : ''}`}
+                            onClick={() => setListingType('Lease')}
+                        >Lease</button>
                     </div>
 
                     {/* Featured Property Toggle */}
@@ -432,12 +486,35 @@ const SearchPage = () => {
                             <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.location ? styles.collapseIconOpen : ''}`} />
                         </div>
                         <div className={`${styles.collapsibleContent} ${openSections.location ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            {/* City autocomplete — all cities */}
+                            <div className={styles.autocompleteWrap} style={{ marginBottom: '0.625rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Search city..."
+                                    value={selectedCity ? selectedCity : citySearch}
+                                    onChange={e => { setCitySearch(e.target.value); setSelectedCity(null); setShowCityDropdown(true); }}
+                                    onFocus={() => setShowCityDropdown(true)}
+                                    onBlur={() => setTimeout(() => setShowCityDropdown(false), 150)}
+                                    className={styles.textInput}
+                                />
+                                {showCityDropdown && filteredAllCities.length > 0 && (
+                                    <div className={styles.autocompleteList}>
+                                        {filteredAllCities.slice(0, 20).map((city: string) => (
+                                            <div key={city} className={styles.autocompleteItem}
+                                                onMouseDown={() => { setSelectedCity(city); setCitySearch(''); setShowCityDropdown(false); }}>
+                                                {city}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {/* Main cities — quick select chips */}
                             <div className={styles.locationGrid}>
-                                {cities.map((city) => (
+                                {MAIN_CITIES.map((city) => (
                                     <button
                                         key={city}
                                         className={`${styles.locationButton} ${selectedCity === city ? styles.locationButtonActive : ''}`}
-                                        onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+                                        onClick={() => { setSelectedCity(selectedCity === city ? null : city); setCitySearch(''); setShowCityDropdown(false); }}
                                     >
                                         {city}
                                     </button>
@@ -446,23 +523,75 @@ const SearchPage = () => {
                         </div>
                     </div>
 
-                    {/* Area - Dropdown (NEW) */}
-                    <div className={styles.filterSection}>
-                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('area_filter')}>
-                            <label className={styles.filterLabel}>Area / Neighborhood</label>
-                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.area_filter ? styles.collapseIconOpen : ''}`} />
-                        </div>
-                        <div className={`${styles.collapsibleContent} ${openSections.area_filter ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
-                            <select
-                                value={selectedArea || ""}
-                                onChange={(e) => setSelectedArea(e.target.value || null)}
-                                className={styles.selectInput}
-                            >
-                                <option value="">Select Area</option>
-                                {areaOptions.map(area => (
-                                    <option key={area} value={area}>{area}</option>
+                    {/* Direction Filter — only shown when a city is selected */}
+                    {selectedCity && (
+                        <div className={styles.filterSection}>
+                            <label className={styles.filterLabel}>Direction</label>
+                            <div className={styles.locationGrid}>
+                                {directionOptions.map(opt => (
+                                    <button
+                                        key={opt.id}
+                                        className={`${styles.locationButton} ${selectedDirection === opt.id ? styles.locationButtonActive : ''}`}
+                                        onClick={() => setSelectedDirection(selectedDirection === opt.id ? null : opt.id)}
+                                    >
+                                        {opt.label}
+                                    </button>
                                 ))}
-                            </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Area / Neighborhood */}
+                    {areaOptions.length > 0 && (
+                        <div className={styles.filterSection}>
+                            <label className={styles.filterLabel}>Area / Neighborhood</label>
+                            <div className={styles.autocompleteWrap}>
+                                <input
+                                    type="text"
+                                    placeholder="Type to search area..."
+                                    value={selectedArea || areaSearch}
+                                    onChange={e => { setAreaSearch(e.target.value); setSelectedArea(null); setShowAreaDropdown(true); }}
+                                    onFocus={() => setShowAreaDropdown(true)}
+                                    onBlur={() => setTimeout(() => setShowAreaDropdown(false), 150)}
+                                    className={styles.textInput}
+                                />
+                                {showAreaDropdown && filteredAreaOptions.length > 0 && (
+                                    <div className={styles.autocompleteList}>
+                                        {filteredAreaOptions.slice(0, 20).map(area => (
+                                            <div key={area} className={styles.autocompleteItem} onMouseDown={() => { setSelectedArea(area); setAreaSearch(''); setShowAreaDropdown(false); }}>
+                                                {area}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pincode Search */}
+                    <div className={styles.filterSection}>
+                        <label className={styles.filterLabel}>Pincode</label>
+                        <div className={styles.autocompleteWrap}>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="Enter pincode..."
+                                value={pincodeSearch}
+                                onChange={e => { setPincodeSearch(e.target.value.replace(/\D/g, '').slice(0, 6)); setShowPincodeDropdown(true); }}
+                                onFocus={() => setShowPincodeDropdown(true)}
+                                onBlur={() => setTimeout(() => setShowPincodeDropdown(false), 150)}
+                                className={styles.textInput}
+                                maxLength={6}
+                            />
+                            {showPincodeDropdown && filteredPincodes.length > 0 && (
+                                <div className={styles.autocompleteList}>
+                                    {filteredPincodes.slice(0, 15).map(pin => (
+                                        <div key={pin} className={styles.autocompleteItem} onMouseDown={() => { setPincodeSearch(pin); setShowPincodeDropdown(false); }}>
+                                            {pin}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -686,39 +815,6 @@ const SearchPage = () => {
                         </div>
                     </div>
 
-                    {/* Builder/Developer */}
-                    <div className={styles.filterSection}>
-                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('builder')}>
-                            <label className={styles.filterLabel}>Builder/Developer</label>
-                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.builder ? styles.collapseIconOpen : ''}`} />
-                        </div>
-                        <div className={`${styles.collapsibleContent} ${openSections.builder ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
-                            <input
-                                type="text"
-                                placeholder="Search Builder..."
-                                className={styles.textInput}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Nearby Facilities */}
-                    <div className={styles.filterSection}>
-                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('nearby')}>
-                            <label className={styles.filterLabel}>Nearby Facilities</label>
-                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.nearby ? styles.collapseIconOpen : ''}`} />
-                        </div>
-                        <div className={`${styles.collapsibleContent} ${openSections.nearby ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
-                            <div className={styles.checkboxGrid}>
-                                {["Schools", "Hospitals", "Public Transport", "Shopping Mall", "Park", "Metro Station"].map((facility) => (
-                                    <label key={facility} className={styles.checkboxLabel}>
-                                        <input type="checkbox" className={styles.checkbox} />
-                                        {facility}
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Sort Order */}
                     <div className={styles.filterSection}>
                         {/* ... keeping rest same */}
@@ -824,7 +920,7 @@ const SearchPage = () => {
                     </button>
                 )}
 
-                {/* Buy / Rent Toggle & Post Property Button */}
+                {/* Buy / Rent / Lease Toggle & Post Property Button */}
                 <div className={styles.listingActionsRow}>
                     <div className={styles.listingToggle}>
                         <button
@@ -835,6 +931,10 @@ const SearchPage = () => {
                             className={`${styles.listingBtn} ${listingType === 'Rent' ? styles.listingBtnActive : ''}`}
                             onClick={() => setListingType('Rent')}
                         >Rent</button>
+                        <button
+                            className={`${styles.listingBtn} ${listingType === 'Lease' ? styles.listingBtnActive : ''}`}
+                            onClick={() => setListingType('Lease')}
+                        >Lease</button>
                     </div>
                 </div>
 
@@ -905,12 +1005,35 @@ const SearchPage = () => {
                             <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.location ? styles.collapseIconOpen : ''}`} />
                         </div>
                         <div className={`${styles.collapsibleContent} ${openSections.location ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
+                            {/* City autocomplete — all cities */}
+                            <div className={styles.autocompleteWrap} style={{ marginBottom: '0.625rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Search city..."
+                                    value={selectedCity ? selectedCity : citySearch}
+                                    onChange={e => { setCitySearch(e.target.value); setSelectedCity(null); setShowCityDropdown(true); }}
+                                    onFocus={() => setShowCityDropdown(true)}
+                                    onBlur={() => setTimeout(() => setShowCityDropdown(false), 150)}
+                                    className={styles.textInput}
+                                />
+                                {showCityDropdown && filteredAllCities.length > 0 && (
+                                    <div className={styles.autocompleteList}>
+                                        {filteredAllCities.slice(0, 20).map((city: string) => (
+                                            <div key={city} className={styles.autocompleteItem}
+                                                onMouseDown={() => { setSelectedCity(city); setCitySearch(''); setShowCityDropdown(false); }}>
+                                                {city}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {/* Main cities — quick select chips */}
                             <div className={styles.locationGrid}>
-                                {cities.map((city) => (
+                                {MAIN_CITIES.map((city) => (
                                     <button
                                         key={city}
                                         className={`${styles.locationButton} ${selectedCity === city ? styles.locationButtonActive : ''}`}
-                                        onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+                                        onClick={() => { setSelectedCity(selectedCity === city ? null : city); setCitySearch(''); setShowCityDropdown(false); }}
                                     >
                                         {city}
                                     </button>
@@ -919,23 +1042,75 @@ const SearchPage = () => {
                         </div>
                     </div>
 
-                    {/* Area */}
-                    <div className={styles.filterSection}>
-                        <div className={styles.collapsibleHeader} onClick={() => toggleSection('area_filter')}>
-                            <label className={styles.filterLabel}>Area / Neighborhood</label>
-                            <ChevronDown size={16} className={`${styles.collapseIcon} ${openSections.area_filter ? styles.collapseIconOpen : ''}`} />
-                        </div>
-                        <div className={`${styles.collapsibleContent} ${openSections.area_filter ? styles.collapsibleContentOpen : styles.collapsibleContentClosed}`}>
-                            <select
-                                value={selectedArea || ""}
-                                onChange={(e) => setSelectedArea(e.target.value || null)}
-                                className={styles.selectInput}
-                            >
-                                <option value="">Select Area</option>
-                                {areaOptions.map(area => (
-                                    <option key={area} value={area}>{area}</option>
+                    {/* Direction Filter — only shown when a city is selected */}
+                    {selectedCity && (
+                        <div className={styles.filterSection}>
+                            <label className={styles.filterLabel}>Direction</label>
+                            <div className={styles.locationGrid}>
+                                {directionOptions.map(opt => (
+                                    <button
+                                        key={opt.id}
+                                        className={`${styles.locationButton} ${selectedDirection === opt.id ? styles.locationButtonActive : ''}`}
+                                        onClick={() => setSelectedDirection(selectedDirection === opt.id ? null : opt.id)}
+                                    >
+                                        {opt.label}
+                                    </button>
                                 ))}
-                            </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Area / Neighborhood */}
+                    {areaOptions.length > 0 && (
+                        <div className={styles.filterSection}>
+                            <label className={styles.filterLabel}>Area / Neighborhood</label>
+                            <div className={styles.autocompleteWrap}>
+                                <input
+                                    type="text"
+                                    placeholder="Type to search area..."
+                                    value={selectedArea || areaSearch}
+                                    onChange={e => { setAreaSearch(e.target.value); setSelectedArea(null); setShowAreaDropdown(true); }}
+                                    onFocus={() => setShowAreaDropdown(true)}
+                                    onBlur={() => setTimeout(() => setShowAreaDropdown(false), 150)}
+                                    className={styles.textInput}
+                                />
+                                {showAreaDropdown && filteredAreaOptions.length > 0 && (
+                                    <div className={styles.autocompleteList}>
+                                        {filteredAreaOptions.slice(0, 20).map(area => (
+                                            <div key={area} className={styles.autocompleteItem} onMouseDown={() => { setSelectedArea(area); setAreaSearch(''); setShowAreaDropdown(false); }}>
+                                                {area}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pincode */}
+                    <div className={styles.filterSection}>
+                        <label className={styles.filterLabel}>Pincode</label>
+                        <div className={styles.autocompleteWrap}>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="Enter pincode..."
+                                value={pincodeSearch}
+                                onChange={e => { setPincodeSearch(e.target.value.replace(/\D/g, '').slice(0, 6)); setShowPincodeDropdown(true); }}
+                                onFocus={() => setShowPincodeDropdown(true)}
+                                onBlur={() => setTimeout(() => setShowPincodeDropdown(false), 150)}
+                                className={styles.textInput}
+                                maxLength={6}
+                            />
+                            {showPincodeDropdown && filteredPincodes.length > 0 && (
+                                <div className={styles.autocompleteList}>
+                                    {filteredPincodes.slice(0, 15).map(pin => (
+                                        <div key={pin} className={styles.autocompleteItem} onMouseDown={() => { setPincodeSearch(pin); setShowPincodeDropdown(false); }}>
+                                            {pin}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 

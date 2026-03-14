@@ -22,6 +22,7 @@ export default function ProjectStep3Location({ initialData, onNext, onBack }: St
         address: initialData.address || '',
         location: initialData.location || '',
         city: initialData.city || '',
+        direction: initialData.direction || '',
         state: initialData.state || '',
         landmark: initialData.landmark || '',
         pincode: initialData.pincode || '',
@@ -81,19 +82,30 @@ export default function ProjectStep3Location({ initialData, onNext, onBack }: St
             <div className={styles.grid3}>
                 <div className={styles.field}>
                     <label className={styles.label}>City</label>
-                    <input type="text" name="city" value={address.city} onChange={handleChange} className={styles.input} />
+                    <input type="text" name="city" value={address.city} onChange={handleChange} className={styles.input} placeholder="e.g. Bangalore" />
+                </div>
+                <div className={styles.field}>
+                    <label className={styles.label}>Direction</label>
+                    <select name="direction" value={address.direction} onChange={(e) => setAddress(prev => ({ ...prev, direction: e.target.value }))} className={styles.input}>
+                        <option value="">None</option>
+                        <option value="North">North</option>
+                        <option value="South">South</option>
+                        <option value="East">East</option>
+                        <option value="West">West</option>
+                        <option value="Central">Central</option>
+                    </select>
                 </div>
                 <div className={styles.field}>
                     <label className={styles.label}>State</label>
                     <input type="text" name="state" value={address.state} onChange={handleChange} className={styles.input} />
                 </div>
+            </div>
+
+            <div className={styles.grid3}>
                 <div className={styles.field}>
                     <label className={styles.label}>PIN Code</label>
                     <input type="text" name="pincode" value={address.pincode} onChange={handleChange} className={styles.input} />
                 </div>
-            </div>
-
-            <div className={styles.grid3}>
                 <div className={styles.field}>
                     <label className={styles.label}>Country</label>
                     <input type="text" name="country" value={address.country} onChange={handleChange} className={styles.input} />
@@ -102,13 +114,13 @@ export default function ProjectStep3Location({ initialData, onNext, onBack }: St
                     <label className={styles.label}>Landmark</label>
                     <input type="text" name="landmark" value={address.landmark} onChange={handleChange} className={styles.input} />
                 </div>
+            </div>
+
+            <div className={styles.grid3}>
                 <div className={styles.field}>
                     <label className={styles.label}>Latitude</label>
                     <input type="text" name="latitude" value={address.latitude} onChange={handleChange} className={styles.input} />
                 </div>
-            </div>
-
-            <div className={styles.grid3}>
                 <div className={styles.field}>
                     <label className={styles.label}>Longitude</label>
                     <input type="text" name="longitude" value={address.longitude} onChange={handleChange} className={styles.input} />

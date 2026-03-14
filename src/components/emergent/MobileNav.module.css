@@ -1,4 +1,4 @@
-/* Mobile Bottom Navigation — Airbnb Style */
+/* Mobile Bottom Navigation */
 
 .mobileNav {
     display: block;
@@ -22,7 +22,7 @@
     align-items: center;
     justify-content: space-around;
     background-color: #ffffff;
-    padding: 0.5rem 0.5rem 0.625rem;
+    padding: 0.5rem 0.5rem 0.75rem;
     border-top: 1px solid #ebebeb;
     pointer-events: auto;
 }
@@ -33,12 +33,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     flex: 1;
     padding: 0.25rem 0;
     text-decoration: none;
     transition: color 0.15s ease;
     color: #717171;
+    border: none;
+    background: transparent;
+    cursor: pointer;
 }
 
 .navLink:hover {
@@ -60,4 +63,130 @@
     line-height: 1;
     white-space: nowrap;
     letter-spacing: 0.01em;
+}
+
+/* ── Browse Bottom Sheet ── */
+
+.browseOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.browseSheet {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 20px 20px 0 0;
+    padding: 1.25rem 1.25rem 2rem;
+    animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.browseSheetHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.browseSheetTitle {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.browseCloseBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.browseGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.browseCategoryCard {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.browseCategoryCard:hover,
+.browseCategoryCard:active {
+    background: #183C38;
+    border-color: #183C38;
+    color: #ffffff;
+}
+
+.browseCategoryCard:hover .browseCategoryDesc,
+.browseCategoryCard:active .browseCategoryDesc {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.browseCategoryIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(24, 60, 56, 0.08);
+    border-radius: 10px;
+    color: #183C38;
+    margin-bottom: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.browseCategoryCard:hover .browseCategoryIcon,
+.browseCategoryCard:active .browseCategoryIcon {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.browseCategoryLabel {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #0f172a;
+    transition: color 0.2s ease;
+}
+
+.browseCategoryCard:hover .browseCategoryLabel,
+.browseCategoryCard:active .browseCategoryLabel {
+    color: #ffffff;
+}
+
+.browseCategoryDesc {
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.3;
+    transition: color 0.2s ease;
 }

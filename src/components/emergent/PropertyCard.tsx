@@ -39,7 +39,7 @@ const PropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkCha
         setBookmarked(initialBookmarked);
     }, [initialBookmarked]);
 
-    const mainImage = proxyUrl(property.images?.[0]) || '/placeholder-property.jpg';
+    const mainImage = property.images?.[0] ? proxyUrl(property.images[0]) : '/no-image.svg';
 
     const handleBookmark = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -123,6 +123,7 @@ const PropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkCha
                     src={mainImage}
                     alt={property.title}
                     className={styles.image}
+                    onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}
                 />
             </div>
 

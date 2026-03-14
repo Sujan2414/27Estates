@@ -19,9 +19,13 @@ const STEPS = [
     { id: 6, label: 'Media & Publish', icon: Globe },
 ]
 
-export default function ProjectWizard() {
+interface ProjectWizardProps {
+    section?: 'residential' | 'commercial' | 'warehouse'
+}
+
+export default function ProjectWizard({ section = 'residential' }: ProjectWizardProps) {
     const [currentStep, setCurrentStep] = useState(1)
-    const [formData, setFormData] = useState({})
+    const [formData, setFormData] = useState<Record<string, any>>({ section })
 
     const handleNext = (data: any) => {
         setFormData(prev => ({ ...prev, ...data }))

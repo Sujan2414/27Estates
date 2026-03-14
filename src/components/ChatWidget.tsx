@@ -584,6 +584,7 @@ export default function ChatWidget() {
             <button
                 onClick={isOpen ? () => setIsOpen(false) : handleOpen}
                 aria-label="Chat with 27 Estates"
+                className="chat-float-btn"
                 style={{
                     position: 'fixed', bottom: '32px', right: '32px', zIndex: 99999,
                     width: '60px', height: '60px', borderRadius: '50%',
@@ -633,6 +634,15 @@ export default function ChatWidget() {
                 @keyframes chatPulse {
                     0% { transform: scale(1); opacity: 0.6; }
                     100% { transform: scale(1.8); opacity: 0; }
+                }
+                @media (max-width: 767px) {
+                    .chat-float-btn {
+                        bottom: 80px !important;
+                        right: 16px !important;
+                    }
+                    body.browse-open .chat-float-btn {
+                        display: none !important;
+                    }
                 }
             `}</style>
         </>

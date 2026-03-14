@@ -7,8 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Configure pdf.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Worker is configured inside useEffect (below) to ensure browser-only execution
 
 interface BookSliderProps {
     pdfUrl: string;
@@ -23,6 +22,13 @@ export default function BookSlider({ pdfUrl }: BookSliderProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const flipBookRef = useRef<any>(null);
     const thumbnailContainerRef = useRef<HTMLDivElement>(null);
+
+    // Configure pdf.js worker once, browser-side only
+    useEffect(() => {
+        if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+            pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+        }
+    }, []);
 
     // Detect mobile
     useEffect(() => {

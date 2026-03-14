@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Building2, FolderKanban, FileText, MessageSquare, Upload, Users, Plus, Briefcase, UserCheck } from 'lucide-react'
+import { Building2, FolderKanban, FileText, MessageSquare, Upload, Users, Plus, Briefcase, UserCheck, Landmark, Warehouse } from 'lucide-react'
 import styles from './admin.module.css'
 
 interface DashboardStats {
     properties: number
     projects: number
+    commercial: number
+    warehouse: number
     blogs: number
     inquiries: number
     submissions: number
@@ -40,6 +42,8 @@ export default function AdminDashboard() {
     const [stats, setStats] = useState<DashboardStats>({
         properties: 0,
         projects: 0,
+        commercial: 0,
+        warehouse: 0,
         blogs: 0,
         inquiries: 0,
         submissions: 0,
@@ -55,9 +59,11 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             // Fetch counts
-            const [propertiesCount, projectsCount, blogsCount, inquiriesCount, submissionsCount, agentsCount, openingsCount, newAppsCount] = await Promise.all([
+            const [propertiesCount, projectsCount, commercialCount, warehouseCount, blogsCount, inquiriesCount, submissionsCount, agentsCount, openingsCount, newAppsCount] = await Promise.all([
                 supabase.from('properties').select('id', { count: 'exact', head: true }),
-                supabase.from('projects').select('id', { count: 'exact', head: true }),
+                supabase.from('projects').select('id', { count: 'exact', head: true }).or('section.eq.residential,section.is.null'),
+                supabase.from('projects').select('id', { count: 'exact', head: true }).eq('section', 'commercial'),
+                supabase.from('projects').select('id', { count: 'exact', head: true }).eq('section', 'warehouse'),
                 supabase.from('blogs').select('id', { count: 'exact', head: true }),
                 supabase.from('inquiries').select('id', { count: 'exact', head: true }),
                 supabase.from('property_submissions').select('id', { count: 'exact', head: true }),
@@ -69,6 +75,8 @@ export default function AdminDashboard() {
             setStats({
                 properties: propertiesCount.count || 0,
                 projects: projectsCount.count || 0,
+                commercial: commercialCount.count || 0,
+                warehouse: warehouseCount.count || 0,
                 blogs: blogsCount.count || 0,
                 inquiries: inquiriesCount.count || 0,
                 submissions: submissionsCount.count || 0,
@@ -153,6 +161,26 @@ export default function AdminDashboard() {
 
                 <div className={styles.statCard}>
                     <div className={styles.statHeader}>
+                        <span className={styles.statLabel}>Commercial</span>
+                        <div className={`${styles.statIcon} ${styles.statIconPurple}`}>
+                            <Landmark size={20} />
+                        </div>
+                    </div>
+                    <div className={styles.statValue}>{loading ? '-' : stats.commercial}</div>
+                </div>
+
+                <div className={styles.statCard}>
+                    <div className={styles.statHeader}>
+                        <span className={styles.statLabel}>Warehouse</span>
+                        <div className={`${styles.statIcon} ${styles.statIconGold}`}>
+                            <Warehouse size={20} />
+                        </div>
+                    </div>
+                    <div className={styles.statValue}>{loading ? '-' : stats.warehouse}</div>
+                </div>
+
+                <div className={styles.statCard}>
+                    <div className={styles.statHeader}>
                         <span className={styles.statLabel}>Blog Posts</span>
                         <div className={`${styles.statIcon} ${styles.statIconGold}`}>
                             <FileText size={20} />
@@ -225,6 +253,14 @@ export default function AdminDashboard() {
                     <Link href="/admin/projects/new" className={styles.addButton}>
                         <Plus size={18} />
                         New Project
+                    </Link>
+                    <Link href="/admin/commercial/new" className={styles.addButton}>
+                        <Plus size={18} />
+                        Add Commercial
+                    </Link>
+                    <Link href="/admin/warehouse/new" className={styles.addButton}>
+                        <Plus size={18} />
+                        Add Warehouse
                     </Link>
                     <Link href="/admin/blogs/new" className={styles.addButton}>
                         <Plus size={18} />

@@ -173,7 +173,8 @@ export default async function TopLevelCityCategoryPage({ params }: Props) {
                                                 key={p.id}
                                                 id={p.id}
                                                 project_name={p.project_name}
-                                                location={p.location || p.city || ''}
+                                                location={p.location || ''}
+                                                city={p.city}
                                                 min_price={p.min_price}
                                                 max_price={p.max_price}
                                                 bhk_options={p.bhk_options}

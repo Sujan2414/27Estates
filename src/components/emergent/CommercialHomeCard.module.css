@@ -1,0 +1,253 @@
+/* CommercialHomeCard — modern clean card for commercial listings */
+
+.card {
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.card:hover {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    transform: translateY(-3px);
+    border-color: #e0e0e0;
+}
+
+/* ── Image ── */
+.imageWrap {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background: #f3f4f6;
+    overflow: hidden;
+}
+
+.image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.card:hover .image {
+    transform: scale(1.05);
+}
+
+.noImage {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #9ca3af;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* ── Badges on image ── */
+.topBadges {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.listingBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+}
+
+/* Listing type color variants — all use primary brand color */
+.badgeSale,
+.badgeRent,
+.badgeLease {
+    background: rgba(24, 60, 56, 0.92);
+    color: #ffffff;
+}
+
+.reraBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #059669;
+    border-radius: 20px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    backdrop-filter: blur(8px);
+}
+
+/* ── Bookmark button ── */
+.bookmarkBtn {
+    position: absolute;
+    bottom: 44px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.92);
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    z-index: 2;
+}
+
+.bookmarkBtn:hover {
+    background: #ffffff;
+    transform: scale(1.1);
+}
+
+.bookmarkBtnActive {
+    color: #ef4444;
+}
+
+.bottomBar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 12px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.statusBadge {
+    padding: 3px 9px;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    border-radius: 12px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(6px);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+/* ── Content ── */
+.content {
+    padding: 1rem 1.125rem 1.125rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.locationRow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.locationIcon {
+    flex-shrink: 0;
+    color: #94a3b8;
+}
+
+.locationText {
+    font-size: 0.8125rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.metaRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.metaChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #475569;
+    font-weight: 500;
+}
+
+.footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: 0.25rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.priceBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.priceLabel {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.price {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.developer {
+    font-size: 0.6875rem;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+    font-style: italic;
+}

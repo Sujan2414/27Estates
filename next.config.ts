@@ -41,6 +41,13 @@ const nextConfig: NextConfig = {
   webpack: (config) => {
     // Required for react-pdf
     config.resolve.alias.canvas = false;
+    // pdfjs-dist ships .mjs files that webpack must treat as plain JS modules
+    // otherwise it throws "Object.defineProperty called on non-object"
+    config.module.rules.push({
+      test: /\.mjs$/,
+      include: /node_modules/,
+      type: 'javascript/auto',
+    });
     return config;
   },
 };

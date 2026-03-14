@@ -150,6 +150,7 @@ export default function EditProjectPage() {
     const [developers, setDevelopers] = useState<Developer[]>([])
     const [devMode, setDevMode] = useState<'existing' | 'new'>('existing')
     const [agents, setAgents] = useState<Agent[]>([])
+    const [projectSection, setProjectSection] = useState<string>('residential')
 
     // Basic Info
     const [formData, setFormData] = useState({
@@ -187,6 +188,7 @@ export default function EditProjectPage() {
         brochure_url: '',
         master_plan_image: '',
         // Flags
+        listing_type: '',
         is_featured: false,
         is_rera_approved: false,
         is_oc_approved: false,
@@ -202,6 +204,7 @@ export default function EditProjectPage() {
         address: '',
         location: '',
         city: '',
+        direction: '',
         state: '',
         landmark: '',
         pincode: '',
@@ -373,6 +376,7 @@ export default function EditProjectPage() {
             video_url: data.video_url || '',
             brochure_url: data.brochure_url || '',
             master_plan_image: (data as Record<string, unknown>).master_plan_image as string || '',
+            listing_type: (data as Record<string, unknown>).listing_type as string || '',
             is_featured: data.is_featured || false,
             is_rera_approved: data.is_rera_approved || false,
             is_oc_approved: data.is_oc_approved || false,
@@ -386,6 +390,7 @@ export default function EditProjectPage() {
             address: data.address || '',
             location: data.location || '',
             city: data.city || '',
+            direction: data.direction || '',
             state: data.state || '',
             landmark: data.landmark || '',
             pincode: data.pincode || '',
@@ -416,6 +421,9 @@ export default function EditProjectPage() {
 
         // Specifications
         setSpecGroups(parseSpecsFromObject(data.specifications_complex))
+
+        // Section
+        setProjectSection((data as Record<string, unknown>).section as string || 'residential')
 
         // Ad Card
         setAdCardImage((data as Record<string, unknown>).ad_card_image as string || '')
@@ -797,6 +805,7 @@ export default function EditProjectPage() {
                 address: address.address || null,
                 location: address.location || null,
                 city: address.city || null,
+                direction: address.direction && address.direction.trim() !== '' ? address.direction : null,
                 state: address.state || null,
                 landmark: address.landmark || null,
                 pincode: address.pincode || null,
@@ -809,6 +818,7 @@ export default function EditProjectPage() {
                 brochure_url: formData.brochure_url || null,
                 master_plan_image: formData.master_plan_image || null,
                 // Flags
+                listing_type: formData.listing_type || null,
                 is_featured: formData.is_featured,
                 is_rera_approved: formData.is_rera_approved,
                 is_oc_approved: formData.is_oc_approved,
@@ -859,7 +869,8 @@ export default function EditProjectPage() {
             }
 
             setSuccess('Project saved successfully!')
-            setTimeout(() => router.push('/admin/projects'), 1500)
+            const redirectPath = projectSection === 'commercial' ? '/admin/commercial' : projectSection === 'warehouse' ? '/admin/warehouse' : '/admin/projects'
+            setTimeout(() => router.push(redirectPath), 1500)
         } catch (err: any) {
             console.error('Project save failed:', err)
             const msg = err?.message || err?.details || (typeof err === 'string' ? err : 'Failed to update project')
@@ -869,14 +880,20 @@ export default function EditProjectPage() {
         }
     }
 
-    const categories = ['Residential', 'Villa', 'Plot', 'Commercial']
+    const sectionCategoryMap: Record<string, string[]> = {
+        residential: ['Residential', 'Villa', 'Plot'],
+        commercial: ['Commercial'],
+        warehouse: ['Warehouse'],
+    }
+    const categories = sectionCategoryMap[projectSection] || ['Residential', 'Villa', 'Plot', 'Commercial']
     const subCategories: Record<string, string[]> = {
         Residential: ['Apartment', 'Penthouse', 'Studio', 'Duplex'],
         Villa: ['Independent Villa', 'Row House', 'Twin Villa', 'Farm Villa'],
         Plot: ['Farm Plot', 'Residential Plot', 'Commercial Plot', 'NA Plot'],
         Commercial: ['Office Space', 'Retail Shops', 'Co-Working Space', 'Showroom', 'Mixed Use', 'Business Park', 'Mall'],
+        Warehouse: ['Cold Storage', 'Distribution Center', 'Industrial', 'Self Storage', 'Fulfillment Center', 'Logistics Park'],
     }
-    const statusOptions = ['Under Construction', 'Ready to Move', 'Pre-Launch', 'Upcoming', 'Completed']
+    const statusOptions = ['Upcoming', 'New Launch', 'Under Construction', 'Ready to Move']
 
     if (loading) {
         return (
@@ -892,11 +909,11 @@ export default function EditProjectPage() {
     return (
         <div className={styles.dashboard}>
             <div className={formStyles.header}>
-                <Link href="/admin/projects" className={formStyles.backBtn}>
+                <Link href={projectSection === 'commercial' ? '/admin/commercial' : projectSection === 'warehouse' ? '/admin/warehouse' : '/admin/projects'} className={formStyles.backBtn}>
                     <ArrowLeft size={20} />
                 </Link>
                 <div>
-                    <h1 className={styles.pageTitle}>Edit Project</h1>
+                    <h1 className={styles.pageTitle}>{projectSection === 'commercial' ? 'Edit Commercial Listing' : projectSection === 'warehouse' ? 'Edit Warehouse Listing' : 'Edit Project'}</h1>
                     <p className={styles.pageSubtitle}>{formData.project_name}</p>
                 </div>
             </div>
@@ -1059,9 +1076,17 @@ export default function EditProjectPage() {
                             <label>RERA Approved</label>
                         </div>
                     </div>
-                    {formData.category === 'Commercial' && (
+                    {(formData.category === 'Commercial' || formData.category === 'Warehouse') && (
                         <div className={formStyles.grid2} style={{ marginTop: '0.75rem' }}>
-                            <div className={formStyles.checkboxField}>
+                            <div className={formStyles.field}>
+                                <label className={formStyles.label}>Listing Type</label>
+                                <select name="listing_type" value={formData.listing_type} onChange={handleChange} className={formStyles.select}>
+                                    <option value="For Sale">For Sale</option>
+                                    <option value="For Rent">For Rent</option>
+                                    <option value="For Lease">For Lease</option>
+                                </select>
+                            </div>
+                            <div className={formStyles.checkboxField} style={{ alignSelf: 'flex-end', paddingBottom: '10px' }}>
                                 <input type="checkbox" name="is_oc_approved" checked={formData.is_oc_approved} onChange={handleChange} />
                                 <label>OC Certificate</label>
                             </div>
@@ -1163,19 +1188,30 @@ export default function EditProjectPage() {
                     <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>City</label>
-                            <input type="text" name="city" value={address.city} onChange={handleAddressChange} className={formStyles.input} />
+                            <input type="text" name="city" value={address.city} onChange={handleAddressChange} className={formStyles.input} placeholder="e.g. Bangalore" />
+                        </div>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Direction</label>
+                            <select name="direction" value={address.direction} onChange={(e) => setAddress(prev => ({ ...prev, direction: e.target.value }))} className={formStyles.input}>
+                                <option value="">None</option>
+                                <option value="North">North</option>
+                                <option value="South">South</option>
+                                <option value="East">East</option>
+                                <option value="West">West</option>
+                                <option value="Central">Central</option>
+                            </select>
                         </div>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>State</label>
                             <input type="text" name="state" value={address.state} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
+                    </div>
+
+                    <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>PIN Code</label>
                             <input type="text" name="pincode" value={address.pincode} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
-                    </div>
-
-                    <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Country</label>
                             <input type="text" name="country" value={address.country} onChange={handleAddressChange} className={formStyles.input} />
@@ -1184,13 +1220,13 @@ export default function EditProjectPage() {
                             <label className={formStyles.label}>Landmark</label>
                             <input type="text" name="landmark" value={address.landmark} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
+                    </div>
+
+                    <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Latitude</label>
                             <input type="text" name="latitude" value={address.latitude} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
-                    </div>
-
-                    <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Longitude</label>
                             <input type="text" name="longitude" value={address.longitude} onChange={handleAddressChange} className={formStyles.input} />

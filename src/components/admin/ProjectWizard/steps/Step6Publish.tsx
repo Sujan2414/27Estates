@@ -175,6 +175,7 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                 address: d.address || null,
                 location: d.location || null,
                 city: d.city || null,
+                direction: d.direction && d.direction.trim() !== '' ? d.direction : null,
                 state: d.state || null,
                 landmark: d.landmark || null,
                 pincode: d.pincode || null,
@@ -201,6 +202,7 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                 specifications_complex: Object.keys(specsData).length > 0 ? specsData : null,
                 ad_card_image: adCardImage || null,
                 show_ad_on_home: showAdOnHome,
+                section: d.section || 'residential',
             }
 
             const { error: insertError } = await supabase
@@ -229,7 +231,10 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
             // Notify search engines about the new project
             pingIndexNow(`/projects/${projectId}`)
 
-            router.push('/admin/projects')
+            const section = (d.section || 'residential') as string
+            if (section === 'commercial') router.push('/admin/commercial')
+            else if (section === 'warehouse') router.push('/admin/warehouse')
+            else router.push('/admin/projects')
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create project')
         } finally {
