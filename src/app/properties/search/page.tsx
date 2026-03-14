@@ -217,10 +217,11 @@ const SearchPage = () => {
 
     const fetchProperties = async () => {
         try {
-            // Fetch all properties from Supabase
+            // Fetch residential/plot properties only — exclude commercial & warehouse
             const { data: allProps, error } = await supabase
                 .from('properties')
                 .select('*')
+                .not('category', 'in', '("Commercial","Office","Offices","Warehouse")')
                 .order('created_at', { ascending: false });
 
             if (error) throw error;

@@ -221,6 +221,7 @@ const ProjectsSearchPage = () => {
             const { data: allProjects, error } = await supabase
                 .from('projects')
                 .select('*')
+                .or('section.eq.residential,section.is.null')
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
