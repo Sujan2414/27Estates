@@ -951,6 +951,7 @@ const SearchPage = () => {
                                     type: "property" as const,
                                     category: p.category,
                                 }))}
+                                scrollWheelZoom={true}
                             />
                         </div>
                     ) : (

@@ -86,6 +86,7 @@ interface MapItem {
 interface PropertyMapProps {
     properties: MapItem[];
     projects?: MapItem[];
+    scrollWheelZoom?: boolean;
 }
 
 const formatIndianRupee = (amount: number): string => {
@@ -103,6 +104,41 @@ function resolveCoords(item: MapItem): [number, number] | null {
         return [item.latitude, item.longitude];
     }
     return getCoordinatesForLocation(item.location);
+}
+
+// Re-center control: snaps map back to a specific position
+function RecenterControl({ center, zoom }: { center: [number, number]; zoom: number }) {
+    const map = useMap();
+
+    useEffect(() => {
+        const ctrl = new L.Control({ position: "topright" });
+        ctrl.onAdd = () => {
+            const btn = L.DomUtil.create("button");
+            btn.title = "Re-center map";
+            btn.style.cssText = [
+                "width:34px", "height:34px", "cursor:pointer",
+                "border:2px solid rgba(0,0,0,0.2)", "border-radius:4px",
+                "background:#fff", "display:flex", "align-items:center",
+                "justify-content:center", "box-shadow:0 1px 5px rgba(0,0,0,0.18)",
+                "font-size:16px", "line-height:1",
+            ].join(";");
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/>
+                <line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/>
+                <line x1="18" y1="12" x2="22" y2="12"/>
+            </svg>`;
+            L.DomEvent.on(btn, "click", (e) => {
+                L.DomEvent.stopPropagation(e);
+                map.setView(center, zoom, { animate: true });
+            });
+            L.DomEvent.disableClickPropagation(btn);
+            return btn;
+        };
+        ctrl.addTo(map);
+        return () => { ctrl.remove(); };
+    }, [map, center, zoom]);
+
+    return null;
 }
 
 // Component to auto-fit map bounds to markers
@@ -133,7 +169,7 @@ function FitBounds({ items }: { items: MapItem[] }) {
     return null;
 }
 
-const PropertyMap = ({ properties, projects = [] }: PropertyMapProps) => {
+const PropertyMap = ({ properties, projects = [], scrollWheelZoom = false }: PropertyMapProps) => {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -177,13 +213,16 @@ const PropertyMap = ({ properties, projects = [] }: PropertyMapProps) => {
             center={center}
             zoom={12}
             style={{ height: "100%", width: "100%", borderRadius: "1rem" }}
-            scrollWheelZoom={true}
+            scrollWheelZoom={scrollWheelZoom}
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             <FitBounds items={allItems} />
+            {resolvedItems.length === 1 && (
+                <RecenterControl center={resolvedItems[0].coords} zoom={14} />
+            )}
 
             {resolvedItems.map(({ item, coords }) => {
                 const isProject = item.type === "project";

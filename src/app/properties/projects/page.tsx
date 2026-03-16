@@ -851,6 +851,7 @@ const ProjectsSearchPage = () => {
                                     type: "project" as const,
                                     category: p.category || undefined,
                                 }))}
+                                scrollWheelZoom={true}
                             />
                         </div>
                     ) : (

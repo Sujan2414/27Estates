@@ -1223,11 +1223,28 @@
     display: flex;
     align-items: center;
     gap: 0.625rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 /* Category type dropdown — shown only on mobile, replaces chip row */
 .categorySelectMobile {
     display: none;
+}
+
+/* Inline category dropdown — sits in the section header row on all screen sizes */
+.categorySelectInline {
+    display: inline-block;
+    padding: 0.4rem 0.75rem;
+    border: 1.5px solid #e5e5e5;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0a0a0a;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    appearance: auto;
+    flex-shrink: 0;
 }
 
 @media (max-width: 767px) {
@@ -1243,20 +1260,9 @@
     .categoryFilterRow {
         display: none;
     }
-    .categorySelectMobile {
-        display: block;
-        width: 100%;
-        padding: 0.625rem 1rem;
-        border: 1.5px solid #e5e5e5;
-        border-radius: 12px;
-        background: #ffffff;
-        color: #0a0a0a;
-        font-size: 0.9375rem;
-        font-weight: 500;
-        cursor: pointer;
-        appearance: auto;
-        margin-bottom: 1.25rem;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    .categorySelectInline {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.5rem;
     }
 }
 

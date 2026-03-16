@@ -868,40 +868,21 @@ const Dashboard = () => {
                                 <button className={`${styles.listingBtn} ${propertyListingType === 'Rent' ? styles.listingBtnActive : ''}`} onClick={() => setPropertyListingType('Rent')}>For Rent</button>
                                 <button className={`${styles.listingBtn} ${propertyListingType === 'Lease' ? styles.listingBtnActive : ''}`} onClick={() => setPropertyListingType('Lease')}>For Lease</button>
                             </div>
+                            <select
+                                className={styles.categorySelectInline}
+                                value={propertyTypeFilter}
+                                onChange={e => setPropertyTypeFilter(e.target.value)}
+                            >
+                                <option value="">All Types</option>
+                                {propertyCategories.map(t => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
                             <Link href="/properties/search" className={styles.sectionPostBtn}>
                                 View All
                             </Link>
                         </div>
                     </div>
-                    {/* Property Category Filter — desktop chips */}
-                    <div className={styles.categoryFilterRow}>
-                        <button
-                            className={`${styles.categoryFilterChip} ${!propertyTypeFilter ? styles.categoryFilterChipActive : ''}`}
-                            onClick={() => setPropertyTypeFilter('')}
-                        >
-                            All
-                        </button>
-                        {propertyCategories.map(t => (
-                            <button
-                                key={t}
-                                className={`${styles.categoryFilterChip} ${propertyTypeFilter === t ? styles.categoryFilterChipActive : ''}`}
-                                onClick={() => setPropertyTypeFilter(propertyTypeFilter === t ? '' : t)}
-                            >
-                                {t}
-                            </button>
-                        ))}
-                    </div>
-                    {/* Property Category Filter — mobile dropdown */}
-                    <select
-                        className={styles.categorySelectMobile}
-                        value={propertyTypeFilter}
-                        onChange={e => setPropertyTypeFilter(e.target.value)}
-                    >
-                        <option value="">All Types</option>
-                        {propertyCategories.map(t => (
-                            <option key={t} value={t}>{t}</option>
-                        ))}
-                    </select>
                     {filteredPropertiesByStatus.length > 0 ? (
                         <>
                             <div className={styles.latestGrid}>
@@ -941,40 +922,21 @@ const Dashboard = () => {
                                 <button className={`${styles.listingBtn} ${commercialListingType === 'For Rent' ? styles.listingBtnActive : ''}`} onClick={() => setCommercialListingType('For Rent')}>For Rent</button>
                                 <button className={`${styles.listingBtn} ${commercialListingType === 'For Lease' ? styles.listingBtnActive : ''}`} onClick={() => setCommercialListingType('For Lease')}>For Lease</button>
                             </div>
+                            <select
+                                className={styles.categorySelectInline}
+                                value={commercialTypeFilter}
+                                onChange={e => setCommercialTypeFilter(e.target.value)}
+                            >
+                                <option value="">All Types</option>
+                                {commercialTypes.map(t => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
                             <Link href="/properties/commercial" className={styles.sectionPostBtn}>
                                 View All
                             </Link>
                         </div>
                     </div>
-                    {/* Commercial Type Filter — desktop chips */}
-                    <div className={styles.categoryFilterRow}>
-                        <button
-                            className={`${styles.categoryFilterChip} ${!commercialTypeFilter ? styles.categoryFilterChipActive : ''}`}
-                            onClick={() => setCommercialTypeFilter('')}
-                        >
-                            All Types
-                        </button>
-                        {commercialTypes.map(t => (
-                            <button
-                                key={t}
-                                className={`${styles.categoryFilterChip} ${commercialTypeFilter === t ? styles.categoryFilterChipActive : ''}`}
-                                onClick={() => setCommercialTypeFilter(commercialTypeFilter === t ? '' : t)}
-                            >
-                                {t}
-                            </button>
-                        ))}
-                    </div>
-                    {/* Commercial Type Filter — mobile dropdown */}
-                    <select
-                        className={styles.categorySelectMobile}
-                        value={commercialTypeFilter}
-                        onChange={e => setCommercialTypeFilter(e.target.value)}
-                    >
-                        <option value="">All Types</option>
-                        {commercialTypes.map(t => (
-                            <option key={t} value={t}>{t}</option>
-                        ))}
-                    </select>
                     {filteredCommercial.length > 0 ? (
                         <>
                             <div className={styles.commercialGrid}>
@@ -1026,40 +988,21 @@ const Dashboard = () => {
                                 <button className={`${styles.listingBtn} ${warehouseListingType === 'For Rent' ? styles.listingBtnActive : ''}`} onClick={() => setWarehouseListingType('For Rent')}>For Rent</button>
                                 <button className={`${styles.listingBtn} ${warehouseListingType === 'For Lease' ? styles.listingBtnActive : ''}`} onClick={() => setWarehouseListingType('For Lease')}>For Lease</button>
                             </div>
+                            <select
+                                className={styles.categorySelectInline}
+                                value={warehouseTypeFilter}
+                                onChange={e => setWarehouseTypeFilter(e.target.value)}
+                            >
+                                <option value="">All Types</option>
+                                {warehouseTypes.map(t => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
                             <Link href="/properties/warehouse" className={styles.sectionPostBtn}>
                                 View All
                             </Link>
                         </div>
                     </div>
-                    {/* Warehouse Type Filter — desktop chips */}
-                    <div className={styles.categoryFilterRow}>
-                        <button
-                            className={`${styles.categoryFilterChip} ${!warehouseTypeFilter ? styles.categoryFilterChipActive : ''}`}
-                            onClick={() => setWarehouseTypeFilter('')}
-                        >
-                            All Types
-                        </button>
-                        {warehouseTypes.map(t => (
-                            <button
-                                key={t}
-                                className={`${styles.categoryFilterChip} ${warehouseTypeFilter === t ? styles.categoryFilterChipActive : ''}`}
-                                onClick={() => setWarehouseTypeFilter(warehouseTypeFilter === t ? '' : t)}
-                            >
-                                {t}
-                            </button>
-                        ))}
-                    </div>
-                    {/* Warehouse Type Filter — mobile dropdown */}
-                    <select
-                        className={styles.categorySelectMobile}
-                        value={warehouseTypeFilter}
-                        onChange={e => setWarehouseTypeFilter(e.target.value)}
-                    >
-                        <option value="">All Types</option>
-                        {warehouseTypes.map(t => (
-                            <option key={t} value={t}>{t}</option>
-                        ))}
-                    </select>
                     {filteredWarehouse.length > 0 ? (
                         <>
                             <div className={styles.commercialGrid}>
