@@ -95,6 +95,29 @@ export default function EditPropertyPage() {
         agent_id: '',
         owner_id: '',
         video_url: '',
+        keyword: '',
+        // Availability
+        possession_status: 'Immediately/Ready to Move',
+        possession_date: '',
+        age_of_property: 'New Construction',
+        // Commercial features
+        workstation: '',
+        cabin: '',
+        conference_room: '',
+        reception_area: '',
+        power_kva: '',
+        power_backup: '',
+        // Warehouse features
+        pollution_zone: 'Green',
+        racking_capacity_tonnes: '',
+        floor_strength: '',
+        stp_etp_capacity: '',
+        loading_bays: '',
+        canopy_length: '',
+        canopy_width: '',
+        fire_noc: false,
+        approval_plan: false,
+        dock_levellers: false,
     })
 
     // Address
@@ -201,6 +224,31 @@ export default function EditPropertyPage() {
             agent_id: data.agent_id || '',
             owner_id: data.owner_id || '',
             video_url: data.video_url || '',
+            keyword: data.keyword || '',
+            // Availability — normalise legacy values
+            possession_status: (data.possession_status === 'Ready To Move' || data.possession_status === 'Under Construction')
+                ? (data.possession_status === 'Ready To Move' ? 'Immediately/Ready to Move' : 'Specify Time')
+                : (data.possession_status || 'Immediately/Ready to Move'),
+            possession_date: data.possession_date || '',
+            age_of_property: data.age_of_property || 'New Construction',
+            // Commercial features
+            workstation: data.workstation?.toString() || '',
+            cabin: data.cabin?.toString() || '',
+            conference_room: data.conference_room?.toString() || '',
+            reception_area: data.reception_area?.toString() || '',
+            power_kva: data.power_kva?.toString() || '',
+            power_backup: data.power_backup || '',
+            // Warehouse features
+            pollution_zone: data.pollution_zone || 'Green',
+            racking_capacity_tonnes: data.racking_capacity_tonnes?.toString() || '',
+            floor_strength: data.floor_strength?.toString() || '',
+            stp_etp_capacity: data.stp_etp_capacity?.toString() || '',
+            loading_bays: data.loading_bays?.toString() || '',
+            canopy_length: data.canopy_length?.toString() || '',
+            canopy_width: data.canopy_width?.toString() || '',
+            fire_noc: data.fire_noc || false,
+            approval_plan: data.approval_plan || false,
+            dock_levellers: data.dock_levellers || false,
         })
 
         // Read address from flat DB columns (not legacy JSONB object)
@@ -393,6 +441,29 @@ export default function EditPropertyPage() {
                 agent_id: formData.agent_id || null,
                 owner_id: formData.owner_id || null,
                 video_url: formData.video_url || null,
+                keyword: formData.keyword || null,
+                // Availability
+                possession_status: formData.possession_status || null,
+                possession_date: formData.possession_status === 'Specify Time' ? (formData.possession_date || null) : null,
+                age_of_property: formData.age_of_property || null,
+                // Commercial features
+                workstation: formData.workstation ? parseInt(formData.workstation) : null,
+                cabin: formData.cabin ? parseInt(formData.cabin) : null,
+                conference_room: formData.conference_room ? parseInt(formData.conference_room) : null,
+                reception_area: formData.reception_area ? parseInt(formData.reception_area) : null,
+                power_kva: formData.power_kva ? parseFloat(formData.power_kva) : null,
+                power_backup: formData.power_backup || null,
+                // Warehouse features
+                pollution_zone: formData.pollution_zone || null,
+                racking_capacity_tonnes: formData.racking_capacity_tonnes ? parseFloat(formData.racking_capacity_tonnes) : null,
+                floor_strength: formData.floor_strength ? parseFloat(formData.floor_strength) : null,
+                stp_etp_capacity: formData.stp_etp_capacity ? parseFloat(formData.stp_etp_capacity) : null,
+                loading_bays: formData.loading_bays ? parseInt(formData.loading_bays) : null,
+                canopy_length: formData.canopy_length ? parseFloat(formData.canopy_length) : null,
+                canopy_width: formData.canopy_width ? parseFloat(formData.canopy_width) : null,
+                fire_noc: formData.fire_noc || false,
+                approval_plan: formData.approval_plan || false,
+                dock_levellers: formData.dock_levellers || false,
                 images: (images || []).filter(img => img && typeof img === 'string' && img.trim() !== ''),
                 amenities: amenitiesData.length > 0 ? amenitiesData : null,
                 floor_plans: floorPlansData.length > 0 ? floorPlansData : null,
@@ -744,6 +815,143 @@ export default function EditPropertyPage() {
                     )}
                 </div>
 
+                {/* Other Details */}
+                <div className={formStyles.section}>
+                    <h2 className={formStyles.sectionTitle}>Other Details</h2>
+
+                    <div className={formStyles.grid2}>
+                        {formData.category !== 'Plot' && (
+                            <div className={formStyles.field}>
+                                <label className={formStyles.label}>Age of Property</label>
+                                <select name="age_of_property" value={formData.age_of_property} onChange={handleChange} className={formStyles.select}>
+                                    <option value="New Construction">New Construction</option>
+                                    <option value="Less than 5 years">Less than 5 years</option>
+                                    <option value="5 to 10 years">5 to 10 years</option>
+                                    <option value="More than 10 years">More than 10 years</option>
+                                </select>
+                            </div>
+                        )}
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Availability/Possession</label>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <select name="possession_status" value={formData.possession_status} onChange={handleChange} className={formStyles.select} style={{ flex: 1 }}>
+                                    <option value="Immediately/Ready to Move">Immediately/Ready to Move</option>
+                                    <option value="Specify Time">Specify Time</option>
+                                </select>
+                                {formData.possession_status === 'Specify Time' && (
+                                    <input type="date" name="possession_date" value={formData.possession_date} onChange={handleChange} className={formStyles.input} style={{ flex: 1 }} />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={formStyles.field}>
+                        <label className={formStyles.label}>Video URL (YouTube/Vimeo)</label>
+                        <input type="text" name="video_url" value={formData.video_url} onChange={handleChange} className={formStyles.input} placeholder="https://..." />
+                    </div>
+
+                    <div className={formStyles.field}>
+                        <label className={formStyles.label}>Website Keyword</label>
+                        <input type="text" name="keyword" value={formData.keyword} onChange={handleChange} className={formStyles.input} />
+                    </div>
+
+                    {/* Commercial Features */}
+                    {['Commercial', 'Office', 'Offices'].includes(formData.category) && (
+                        <>
+                            <h3 className={formStyles.sectionTitle} style={{ fontSize: '1rem', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>Commercial Features</h3>
+                            <div className={formStyles.grid2}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Workstation</label>
+                                    <input type="number" name="workstation" value={formData.workstation} onChange={handleChange} className={formStyles.input} placeholder="No." min="0" />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Cabins</label>
+                                    <input type="number" name="cabin" value={formData.cabin} onChange={handleChange} className={formStyles.input} placeholder="No." min="0" />
+                                </div>
+                            </div>
+                            <div className={formStyles.grid2}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Conference Room</label>
+                                    <input type="number" name="conference_room" value={formData.conference_room} onChange={handleChange} className={formStyles.input} placeholder="No." min="0" />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Reception</label>
+                                    <input type="number" name="reception_area" value={formData.reception_area} onChange={handleChange} className={formStyles.input} placeholder="Area" min="0" />
+                                </div>
+                            </div>
+                            <div className={formStyles.grid2}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Power (KVA)</label>
+                                    <input type="number" name="power_kva" value={formData.power_kva} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>DB Backup</label>
+                                    <input type="text" name="power_backup" value={formData.power_backup} onChange={handleChange} className={formStyles.input} />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Warehouse Features */}
+                    {formData.category === 'Warehouse' && (
+                        <>
+                            <h3 className={formStyles.sectionTitle} style={{ fontSize: '1rem', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>Warehouse Features</h3>
+                            <div className={formStyles.grid2}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Pollution Zone</label>
+                                    <select name="pollution_zone" value={formData.pollution_zone} onChange={handleChange} className={formStyles.select}>
+                                        <option value="Green">Green</option>
+                                        <option value="Orange">Orange</option>
+                                        <option value="Red">Red</option>
+                                    </select>
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>No. of Loading Bays</label>
+                                    <input type="number" name="loading_bays" value={formData.loading_bays} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                            </div>
+                            <div className={formStyles.grid2}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Racking Capacity (Tonnes)</label>
+                                    <input type="number" name="racking_capacity_tonnes" value={formData.racking_capacity_tonnes} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Floor Strength (Ton/m³)</label>
+                                    <input type="number" name="floor_strength" value={formData.floor_strength} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                            </div>
+                            <div className={formStyles.grid2}>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>STP/ETP Capacity (Liters)</label>
+                                    <input type="number" name="stp_etp_capacity" value={formData.stp_etp_capacity} onChange={handleChange} className={formStyles.input} min="0" />
+                                </div>
+                                <div className={formStyles.field}>
+                                    <label className={formStyles.label}>Canopy (Length – Width)</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input type="number" name="canopy_length" value={formData.canopy_length} onChange={handleChange} className={formStyles.input} placeholder="Len" min="0" />
+                                        <span style={{ alignSelf: 'center', color: '#6b7280' }}>–</span>
+                                        <input type="number" name="canopy_width" value={formData.canopy_width} onChange={handleChange} className={formStyles.input} placeholder="Wid" min="0" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                                    <input type="checkbox" name="fire_noc" checked={formData.fire_noc} onChange={handleChange} style={{ width: '16px', height: '16px' }} />
+                                    Fire NOC
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                                    <input type="checkbox" name="approval_plan" checked={formData.approval_plan} onChange={handleChange} style={{ width: '16px', height: '16px' }} />
+                                    Approval Plan
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                                    <input type="checkbox" name="dock_levellers" checked={formData.dock_levellers} onChange={handleChange} style={{ width: '16px', height: '16px' }} />
+                                    Dock Levellers
+                                </label>
+                            </div>
+                        </>
+                    )}
+                </div>
+
                 {/* Address */}
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Address</h2>
@@ -861,11 +1069,6 @@ export default function EditPropertyPage() {
                 {/* Media */}
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Media</h2>
-
-                    <div className={formStyles.field}>
-                        <label className={formStyles.label}>Video URL</label>
-                        <input type="url" name="video_url" value={formData.video_url} onChange={handleChange} className={formStyles.input} placeholder="https://youtube.com/embed/..." />
-                    </div>
 
                     <div className={formStyles.field}>
                         <label className={formStyles.label}>Property Images</label>

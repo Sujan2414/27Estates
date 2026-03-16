@@ -41,7 +41,7 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
 
     const defaultCommercial = {
         age_of_property: 'New Construction',
-        possession_status: 'Ready To Move',
+        possession_status: 'Immediately/Ready to Move',
         possession_date: '',
         workstation: '',
         cabin: '',
@@ -163,10 +163,10 @@ export default function PropertyDetailsStep({ initialData, onNext, onBack }: Ste
                     <label className={styles.label}>Availability/Possession</label>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <select name="possession_status" value={formData.possession_status} onChange={handleChange} className={styles.select} style={{ flex: 1 }}>
-                            <option value="Ready To Move">Ready To Move</option>
-                            <option value="Under Construction">Under Construction</option>
+                            <option value="Immediately/Ready to Move">Immediately/Ready to Move</option>
+                            <option value="Specify Time">Specify Time</option>
                         </select>
-                        {formData.possession_status === 'Under Construction' && (
+                        {formData.possession_status === 'Specify Time' && (
                             <input type="date" name="possession_date" value={formData.possession_date} onChange={handleChange} className={styles.input} style={{ flex: 1 }} />
                         )}
                     </div>

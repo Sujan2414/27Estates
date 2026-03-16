@@ -24,6 +24,7 @@ export default function ProjectStep2Pricing({ initialData, onNext, onBack }: Ste
         property_type: initialData.property_type || '',
         transaction_type: initialData.transaction_type || '',
         launch_date: initialData.launch_date || '',
+        possession_status: initialData.possession_status || 'Immediately/Ready to Move',
         possession_date: initialData.possession_date || '',
     })
 
@@ -111,17 +112,26 @@ export default function ProjectStep2Pricing({ initialData, onNext, onBack }: Ste
                     <label className={styles.label}>Launch Date</label>
                     <input type="text" name="launch_date" value={formData.launch_date} onChange={handleChange} className={styles.input} placeholder="March 2024" />
                 </div>
-                {category !== 'Plot' ? (
-                    <div className={styles.field}>
-                        <label className={styles.label}>Possession Date</label>
-                        <input type="text" name="possession_date" value={formData.possession_date} onChange={handleChange} className={styles.input} placeholder="December 2026" />
+                <div className={styles.field}>
+                    <label className={styles.label}>Availability/Possession</label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <select name="possession_status" value={formData.possession_status} onChange={handleChange} className={styles.input} style={{ flex: 1 }}>
+                            <option value="Immediately/Ready to Move">Immediately/Ready to Move</option>
+                            <option value="Specify Time">Specify Time</option>
+                        </select>
+                        {formData.possession_status === 'Specify Time' && (
+                            <input
+                                type="text"
+                                name="possession_date"
+                                value={formData.possession_date}
+                                onChange={handleChange}
+                                className={styles.input}
+                                style={{ flex: 1 }}
+                                placeholder={category === 'Plot' ? '12-18 months' : 'December 2026'}
+                            />
+                        )}
                     </div>
-                ) : (
-                    <div className={styles.field}>
-                        <label className={styles.label}>Development Timeline</label>
-                        <input type="text" name="possession_date" value={formData.possession_date} onChange={handleChange} className={styles.input} placeholder="12-18 months" />
-                    </div>
-                )}
+                </div>
             </div>
 
             <div className={styles.actions}>
