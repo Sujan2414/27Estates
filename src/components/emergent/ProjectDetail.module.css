@@ -628,6 +628,11 @@
     z-index: 9999;
 }
 
+/* Hide floating buttons when Browse modal is open */
+:global(body.browse-open) .stickyActionsContainer {
+    display: none;
+}
+
 @media (min-width: 768px) {
     .stickyActionsContainer {
         bottom: 2rem;
