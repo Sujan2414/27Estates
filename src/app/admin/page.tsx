@@ -60,7 +60,7 @@ export default function AdminDashboard() {
         const fetchData = async () => {
             // Fetch counts
             const [propertiesCount, projectsCount, commercialCount, warehouseCount, blogsCount, inquiriesCount, submissionsCount, agentsCount, openingsCount, newAppsCount] = await Promise.all([
-                supabase.from('properties').select('id', { count: 'exact', head: true }),
+                supabase.from('properties').select('id', { count: 'exact', head: true }).not('category', 'in', '("Commercial","Office","Offices","Warehouse")'),
                 supabase.from('projects').select('id', { count: 'exact', head: true }).or('section.eq.residential,section.is.null'),
                 supabase.from('projects').select('id', { count: 'exact', head: true }).eq('section', 'commercial'),
                 supabase.from('projects').select('id', { count: 'exact', head: true }).eq('section', 'warehouse'),
