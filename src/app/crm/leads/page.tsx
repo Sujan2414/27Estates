@@ -3,12 +3,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Search, UserPlus, Phone, Mail, ChevronLeft, ChevronRight, X, Trash2, ArrowLeft, Filter } from 'lucide-react'
+import { Search, UserPlus, Phone, ChevronLeft, ChevronRight, X, Trash2, ArrowLeft, Filter, Download, Star } from 'lucide-react'
 import styles from '../crm.module.css'
 
 interface Lead {
     id: string; name: string; email: string | null; phone: string | null
     source: string; status: string; priority: string; created_at: string
+    score?: number
     properties?: { title: string } | null; projects?: { project_name: string } | null
 }
 
@@ -25,6 +26,19 @@ const statusConfig: Record<string, { color: string; label: string }> = {
 }
 const statuses = ['all', 'new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted', 'lost']
 const sources = ['all', 'website', 'meta_ads', 'google_ads', '99acres', 'magicbricks', 'housing', 'justdial', 'chatbot', 'manual', 'referral']
+const priorities = ['all', 'hot', 'warm', 'cold']
+
+function ScoreDot({ score }: { score: number }) {
+    const color = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#6b7280'
+    return (
+        <span title={`Score: ${score}`} style={{
+            display: 'inline-flex', alignItems: 'center', gap: '3px',
+            fontSize: '0.6875rem', color, fontWeight: 600,
+        }}>
+            <Star size={10} fill={color} stroke="none" />{score}
+        </span>
+    )
+}
 
 export default function LeadsPage() {
     const searchParams = useSearchParams()
@@ -35,28 +49,44 @@ export default function LeadsPage() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [sourceFilter, setSourceFilter] = useState('all')
+    const [priorityFilter, setPriorityFilter] = useState('all')
     const [showFilters, setShowFilters] = useState(false)
-    const [showAddModal, setShowAddModal] = useState(searchParams.get('new') === 'true')
-    const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', source: 'manual', notes: '', priority: 'warm' })
+    const [showAddModal, setShowAddModal] = useState(searchParams?.get('new') === 'true')
+    const [newLead, setNewLead] = useState({
+        name: '', email: '', phone: '', source: 'manual', notes: '',
+        priority: 'warm', preferred_location: '', property_type: '',
+        budget_min: '', budget_max: '',
+    })
     const [saving, setSaving] = useState(false)
+    const [exporting, setExporting] = useState(false)
 
     const fetchLeads = useCallback(async () => {
         setLoading(true)
         const p = new URLSearchParams({ page: String(page), limit: '25' })
         if (statusFilter !== 'all') p.set('status', statusFilter)
         if (sourceFilter !== 'all') p.set('source', sourceFilter)
+        if (priorityFilter !== 'all') p.set('priority', priorityFilter)
         if (search) p.set('search', search)
         const res = await fetch(`/api/crm/leads?${p}`)
         if (res.ok) { const d = await res.json(); setLeads(d.leads || []); setTotal(d.total || 0) }
         setLoading(false)
-    }, [page, statusFilter, sourceFilter, search])
+    }, [page, statusFilter, sourceFilter, priorityFilter, search])
 
     useEffect(() => { fetchLeads() }, [fetchLeads])
 
     const handleAddLead = async () => {
         if (!newLead.name) return; setSaving(true)
-        const res = await fetch('/api/crm/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newLead) })
-        if (res.ok) { setShowAddModal(false); setNewLead({ name: '', email: '', phone: '', source: 'manual', notes: '', priority: 'warm' }); fetchLeads() }
+        const payload = {
+            ...newLead,
+            budget_min: newLead.budget_min ? Number(newLead.budget_min) : undefined,
+            budget_max: newLead.budget_max ? Number(newLead.budget_max) : undefined,
+        }
+        const res = await fetch('/api/crm/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        if (res.ok) {
+            setShowAddModal(false)
+            setNewLead({ name: '', email: '', phone: '', source: 'manual', notes: '', priority: 'warm', preferred_location: '', property_type: '', budget_min: '', budget_max: '' })
+            fetchLeads()
+        }
         setSaving(false)
     }
 
@@ -68,6 +98,24 @@ export default function LeadsPage() {
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation(); if (!confirm('Delete this lead?')) return
         await fetch(`/api/crm/leads/${id}`, { method: 'DELETE' }); fetchLeads()
+    }
+
+    const handleExport = async () => {
+        setExporting(true)
+        const p = new URLSearchParams()
+        if (statusFilter !== 'all') p.set('status', statusFilter)
+        if (sourceFilter !== 'all') p.set('source', sourceFilter)
+        if (priorityFilter !== 'all') p.set('priority', priorityFilter)
+        if (search) p.set('search', search)
+        const res = await fetch(`/api/crm/export?${p}`)
+        if (res.ok) {
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url; a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`
+            a.click(); URL.revokeObjectURL(url)
+        }
+        setExporting(false)
     }
 
     const formatRelative = (d: string) => {
@@ -89,7 +137,12 @@ export default function LeadsPage() {
                         <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>All leads from every platform</p>
                     </div>
                 </div>
-                <button onClick={() => setShowAddModal(true)} className={styles.btnPrimary}><UserPlus size={14} /> Add Lead</button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={handleExport} disabled={exporting} className={styles.btnSecondary}>
+                        <Download size={14} /> {exporting ? 'Exporting...' : 'Export CSV'}
+                    </button>
+                    <button onClick={() => setShowAddModal(true)} className={styles.btnPrimary}><UserPlus size={14} /> Add Lead</button>
+                </div>
             </div>
 
             {/* Search + Filters */}
@@ -105,13 +158,23 @@ export default function LeadsPage() {
             </div>
 
             {showFilters && (
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#161822', borderRadius: '0.5rem', border: '1px solid #1e2030' }}>
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#161822', borderRadius: '0.5rem', border: '1px solid #1e2030', flexWrap: 'wrap' }}>
                     <div>
                         <label className={styles.formLabel}>Source</label>
-                        <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '150px' }}>
+                        <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '140px' }}>
                             {sources.map(s => <option key={s} value={s}>{s === 'all' ? 'All Sources' : sourceLabels[s] || s}</option>)}
                         </select>
                     </div>
+                    <div>
+                        <label className={styles.formLabel}>Priority</label>
+                        <select value={priorityFilter} onChange={e => { setPriorityFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '120px' }}>
+                            {priorities.map(p => <option key={p} value={p}>{p === 'all' ? 'All Priorities' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+                        </select>
+                    </div>
+                    <button onClick={() => { setSourceFilter('all'); setPriorityFilter('all'); setSearch(''); setPage(1) }}
+                        className={styles.btnSecondary} style={{ alignSelf: 'flex-end', fontSize: '0.75rem' }}>
+                        <X size={12} /> Clear
+                    </button>
                 </div>
             )}
 
@@ -133,12 +196,17 @@ export default function LeadsPage() {
                     <div style={{ overflowX: 'auto' }}>
                         <table className={styles.table}>
                             <thead>
-                                <tr><th>Name</th><th>Contact</th><th>Source</th><th>Status</th><th>Priority</th><th>Interest</th><th>Added</th><th></th></tr>
+                                <tr><th>Name</th><th>Contact</th><th>Source</th><th>Status</th><th>Score</th><th>Interest</th><th>Added</th><th></th></tr>
                             </thead>
                             <tbody>
                                 {leads.map(lead => (
                                     <tr key={lead.id} style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/crm/leads/${lead.id}`}>
-                                        <td style={{ fontWeight: 500, color: '#e5e7eb' }}>{lead.name}</td>
+                                        <td>
+                                            <div style={{ fontWeight: 500, color: '#e5e7eb' }}>{lead.name}</div>
+                                            <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>
+                                                {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🟡' : '🔵'} {lead.priority}
+                                            </div>
+                                        </td>
                                         <td>
                                             {lead.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}><Phone size={10} /> {lead.phone}</div>}
                                             {lead.email && <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>{lead.email}</div>}
@@ -154,7 +222,7 @@ export default function LeadsPage() {
                                                 {statuses.filter(s => s !== 'all').map(s => <option key={s} value={s}>{statusConfig[s]?.label || s}</option>)}
                                             </select>
                                         </td>
-                                        <td>{lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🟡' : '🔵'}</td>
+                                        <td>{lead.score != null ? <ScoreDot score={lead.score} /> : <span style={{ color: '#4b5563', fontSize: '0.75rem' }}>—</span>}</td>
                                         <td style={{ fontSize: '0.75rem', color: '#6b7280' }}>{lead.properties?.title || lead.projects?.project_name || '—'}</td>
                                         <td style={{ fontSize: '0.75rem', color: '#4b5563' }}>{formatRelative(lead.created_at)}</td>
                                         <td><button onClick={e => handleDelete(lead.id, e)} className={styles.btnIcon} style={{ color: '#ef4444' }}><Trash2 size={12} /></button></td>
@@ -166,7 +234,7 @@ export default function LeadsPage() {
                     {totalPages > 1 && (
                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', borderTop: '1px solid #1e2030' }}>
                             <button disabled={page <= 1} onClick={() => setPage(page - 1)} className={styles.btnIcon}><ChevronLeft size={16} /></button>
-                            <span style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Page {page} of {totalPages}</span>
+                            <span style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Page {page} of {totalPages} · {total} leads</span>
                             <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className={styles.btnIcon}><ChevronRight size={16} /></button>
                         </div>
                     )}
@@ -210,8 +278,28 @@ export default function LeadsPage() {
                             <div className={styles.formGroup} style={{ flex: 1 }}>
                                 <label className={styles.formLabel}>Priority</label>
                                 <select value={newLead.priority} onChange={e => setNewLead({ ...newLead, priority: e.target.value })} className={styles.formSelect}>
-                                    <option value="hot">Hot</option><option value="warm">Warm</option><option value="cold">Cold</option>
+                                    <option value="hot">🔥 Hot</option><option value="warm">🟡 Warm</option><option value="cold">🔵 Cold</option>
                                 </select>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <div className={styles.formGroup} style={{ flex: 1 }}>
+                                <label className={styles.formLabel}>Preferred Location</label>
+                                <input type="text" value={newLead.preferred_location} onChange={e => setNewLead({ ...newLead, preferred_location: e.target.value })} placeholder="e.g. Whitefield, Bangalore" className={styles.formInput} />
+                            </div>
+                            <div className={styles.formGroup} style={{ flex: 1 }}>
+                                <label className={styles.formLabel}>Property Type</label>
+                                <input type="text" value={newLead.property_type} onChange={e => setNewLead({ ...newLead, property_type: e.target.value })} placeholder="e.g. 2BHK Flat" className={styles.formInput} />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <div className={styles.formGroup} style={{ flex: 1 }}>
+                                <label className={styles.formLabel}>Budget Min (₹)</label>
+                                <input type="number" value={newLead.budget_min} onChange={e => setNewLead({ ...newLead, budget_min: e.target.value })} placeholder="e.g. 5000000" className={styles.formInput} />
+                            </div>
+                            <div className={styles.formGroup} style={{ flex: 1 }}>
+                                <label className={styles.formLabel}>Budget Max (₹)</label>
+                                <input type="number" value={newLead.budget_max} onChange={e => setNewLead({ ...newLead, budget_max: e.target.value })} placeholder="e.g. 12000000" className={styles.formInput} />
                             </div>
                         </div>
                         <div className={styles.formGroup}>

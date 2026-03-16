@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, Clock, MessageSquare, PhoneCall, Send, StickyNote, CheckCircle2, Circle, Plus, Eye, X } from 'lucide-react'
+import {
+    ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, Clock,
+    MessageSquare, PhoneCall, Send, StickyNote, CheckCircle2, Circle,
+    Plus, Eye, Tag, IndianRupee, Star, TrendingUp, CalendarCheck,
+    Home, Edit3, Save, X
+} from 'lucide-react'
 import styles from '../../crm.module.css'
 import type { Lead, LeadActivity, LeadTask } from '@/lib/crm/types'
 
@@ -25,36 +29,102 @@ const activityIcons: Record<string, React.ReactNode> = {
 }
 const statusSteps = ['new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted']
 
+interface SiteVisit {
+    id: string; lead_id: string; visit_date: string; visit_time?: string
+    status: string; outcome?: string; notes?: string
+    properties?: { title: string } | null; projects?: { project_name: string } | null
+}
+
+function ScoreBadge({ score }: { score: number }) {
+    const color = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#6b7280'
+    const label = score >= 70 ? 'Hot' : score >= 40 ? 'Warm' : 'Cold'
+    return (
+        <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '6px 12px', borderRadius: '999px',
+            border: `1px solid ${color}40`, backgroundColor: `${color}15`,
+        }}>
+            <Star size={13} fill={color} stroke="none" />
+            <span style={{ fontSize: '0.875rem', fontWeight: 700, color }}>{score}</span>
+            <span style={{ fontSize: '0.75rem', color, opacity: 0.8 }}>{label}</span>
+        </div>
+    )
+}
+
+const formatINR = (n: number | null | undefined) => {
+    if (!n) return '—'
+    if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)} Cr`
+    if (n >= 100000) return `₹${(n / 100000).toFixed(1)} L`
+    return `₹${n.toLocaleString('en-IN')}`
+}
+
 export default function LeadDetailPage() {
-    const { id } = useParams()
+    const params = useParams()
+    const id = params?.id as string
     const router = useRouter()
     const [lead, setLead] = useState<Lead | null>(null)
     const [activities, setActivities] = useState<LeadActivity[]>([])
     const [tasks, setTasks] = useState<LeadTask[]>([])
+    const [visits, setVisits] = useState<SiteVisit[]>([])
     const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState<'timeline' | 'tasks'>('timeline')
+    const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'visits'>('timeline')
     const [showAddActivity, setShowAddActivity] = useState(false)
     const [showAddTask, setShowAddTask] = useState(false)
+    const [showAddVisit, setShowAddVisit] = useState(false)
+    const [showLostModal, setShowLostModal] = useState(false)
     const [newActivity, setNewActivity] = useState({ type: 'note', title: '', description: '' })
     const [newTask, setNewTask] = useState({ title: '', due_date: '', description: '' })
+    const [newVisit, setNewVisit] = useState({ visit_date: '', visit_time: '', notes: '' })
+    const [lostReason, setLostReason] = useState('')
     const [editing, setEditing] = useState(false)
-    const [editData, setEditData] = useState<Partial<Lead>>({})
+    const [editData, setEditData] = useState<Partial<Lead & { budget_min: number | null; budget_max: number | null; next_follow_up_at: string | null }>>({})
+    const [tagInput, setTagInput] = useState('')
+    const [saving, setSaving] = useState(false)
 
     const fetchLead = async () => {
-        const res = await fetch(`/api/crm/leads/${id}`)
-        if (res.ok) { const d = await res.json(); setLead(d.lead); setActivities(d.activities); setTasks(d.tasks) }
+        const [leadRes, visitsRes] = await Promise.all([
+            fetch(`/api/crm/leads/${id}`),
+            fetch(`/api/crm/site-visits?lead_id=${id}`),
+        ])
+        if (leadRes.ok) { const d = await leadRes.json(); setLead(d.lead); setActivities(d.activities); setTasks(d.tasks) }
+        if (visitsRes.ok) { const d = await visitsRes.json(); setVisits(d.visits || []) }
         setLoading(false)
     }
     useEffect(() => { fetchLead() }, [id])
 
-    const handleStatusChange = async (s: string) => {
-        await fetch(`/api/crm/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: s }) }); fetchLead()
+    const patch = async (body: Record<string, unknown>) => {
+        await fetch(`/api/crm/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        fetchLead()
     }
-    const handlePriorityChange = async (p: string) => {
-        await fetch(`/api/crm/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: p }) }); fetchLead()
+
+    const handleStatusChange = (s: string) => {
+        patch({ status: s })
+    }
+    const handleMarkLost = async () => {
+        await fetch(`/api/crm/leads/${id}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'lost', lost_reason: lostReason }),
+        })
+        setShowLostModal(false); fetchLead()
     }
     const handleSaveEdit = async () => {
-        await fetch(`/api/crm/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editData) }); setEditing(false); fetchLead()
+        setSaving(true)
+        const payload = { ...editData }
+        if (editData.tags && typeof editData.tags === 'string') {
+            payload.tags = (editData.tags as unknown as string).split(',').map((t: string) => t.trim()).filter(Boolean) as unknown as string[]
+        }
+        await fetch(`/api/crm/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        setEditing(false); setSaving(false); fetchLead()
+    }
+    const handleAddTag = async (tag: string) => {
+        if (!tag.trim() || !lead) return
+        const newTags = [...(lead.tags || []), tag.trim()]
+        await patch({ tags: newTags })
+        setTagInput('')
+    }
+    const handleRemoveTag = async (tag: string) => {
+        if (!lead) return
+        await patch({ tags: (lead.tags || []).filter(t => t !== tag) })
     }
     const handleAddActivity = async () => {
         if (!newActivity.title) return
@@ -69,8 +139,18 @@ export default function LeadDetailPage() {
     const handleToggleTask = async (taskId: string, completed: boolean) => {
         await fetch('/api/crm/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: taskId, is_completed: !completed }) }); fetchLead()
     }
+    const handleAddVisit = async () => {
+        if (!newVisit.visit_date) return
+        await fetch('/api/crm/site-visits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newVisit }) })
+        setShowAddVisit(false); setNewVisit({ visit_date: '', visit_time: '', notes: '' }); fetchLead()
+    }
+    const handleVisitStatus = async (visitId: string, status: string, outcome?: string) => {
+        await fetch('/api/crm/site-visits', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: visitId, status, outcome }) })
+        fetchLead()
+    }
 
-    const formatDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    const formatDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    const formatDateTime = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     const formatRelative = (d: string) => {
         const ms = Date.now() - new Date(d).getTime(); const m = Math.floor(ms / 60000); const h = Math.floor(ms / 3600000); const dd = Math.floor(ms / 86400000)
         if (m < 1) return 'Just now'; if (m < 60) return `${m}m ago`; if (h < 24) return `${h}h ago`; if (dd < 7) return `${dd}d ago`; return formatDate(d)
@@ -80,6 +160,7 @@ export default function LeadDetailPage() {
     if (!lead) return <div className={styles.pageContent}><div className={styles.emptyState}>Lead not found</div></div>
 
     const currentStep = statusSteps.indexOf(lead.status)
+    const score = (lead as any).score || 0
 
     return (
         <div className={styles.pageContent}>
@@ -87,18 +168,32 @@ export default function LeadDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <button onClick={() => router.push('/crm/leads')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}><ArrowLeft size={20} /></button>
                 <div style={{ flex: 1 }}>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>{lead.name}</h1>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{sourceLabels[lead.source]} &middot; {formatRelative(lead.created_at)}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>{lead.name}</h1>
+                        <ScoreBadge score={score} />
+                    </div>
+                    <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{sourceLabels[lead.source]} · {formatRelative(lead.created_at)}</p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    {lead.phone && <a href={`tel:${lead.phone}`} className={styles.btnPrimary} style={{ backgroundColor: '#22c55e' }}><Phone size={14} /> Call</a>}
-                    {lead.phone && <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className={styles.btnPrimary} style={{ backgroundColor: '#25D366' }}><MessageSquare size={14} /> WhatsApp</a>}
-                    {lead.email && <a href={`mailto:${lead.email}`} className={styles.btnSecondary}><Mail size={14} /> Email</a>}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {lead.phone && (
+                        <a href={`tel:${lead.phone}`} className={styles.btnPrimary} style={{ backgroundColor: '#22c55e' }}>
+                            <Phone size={14} /> Call
+                        </a>
+                    )}
+                    {lead.phone && (
+                        <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+                            className={styles.btnPrimary} style={{ backgroundColor: '#25D366' }}>
+                            <MessageSquare size={14} /> WhatsApp
+                        </a>
+                    )}
+                    {lead.email && (
+                        <a href={`mailto:${lead.email}`} className={styles.btnSecondary}><Mail size={14} /> Email</a>
+                    )}
                 </div>
             </div>
 
             {/* Status Pipeline */}
-            {lead.status !== 'lost' && (
+            {lead.status !== 'lost' ? (
                 <div className={styles.card} style={{ marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', gap: '0.375rem', overflowX: 'auto' }}>
                         {statusSteps.map((step, i) => (
@@ -110,47 +205,106 @@ export default function LeadDetailPage() {
                             }}>{statusConfig[step]?.label}</button>
                         ))}
                     </div>
-                    <button onClick={() => handleStatusChange('lost')} style={{
-                        marginTop: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', fontSize: '0.6875rem', fontWeight: 500, cursor: 'pointer',
-                        border: '1px solid #ef444440', backgroundColor: lead.status === 'lost' ? '#ef4444' : 'transparent', color: lead.status === 'lost' ? '#fff' : '#ef4444',
+                    <button onClick={() => setShowLostModal(true)} style={{
+                        marginTop: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', fontSize: '0.6875rem',
+                        fontWeight: 500, cursor: 'pointer', border: '1px solid #ef444440',
+                        backgroundColor: 'transparent', color: '#ef4444',
                     }}>Mark as Lost</button>
+                </div>
+            ) : (
+                <div className={styles.card} style={{ marginBottom: '1.5rem', borderColor: '#ef444430', backgroundColor: '#ef444408' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                            <span style={{ color: '#ef4444', fontWeight: 600, fontSize: '0.875rem' }}>Lost</span>
+                            {lead.lost_reason && <span style={{ color: '#6b7280', fontSize: '0.8125rem', marginLeft: '0.5rem' }}>— {lead.lost_reason}</span>}
+                        </div>
+                        <button onClick={() => patch({ status: 'new', lost_reason: null })} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Reopen</button>
+                    </div>
                 </div>
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1.5rem' }}>
-                {/* Left - Info */}
+                {/* Left Column */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Contact Info */}
                     <div className={styles.card}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                             <span className={styles.cardTitle}>Contact Info</span>
-                            <button onClick={() => { setEditing(!editing); setEditData(lead) }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#BFA270', fontSize: '0.75rem' }}>{editing ? 'Cancel' : 'Edit'}</button>
+                            <button onClick={() => { setEditing(!editing); setEditData({ ...lead }) }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#BFA270', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {editing ? <><X size={12} /> Cancel</> : <><Edit3 size={12} /> Edit</>}
+                            </button>
                         </div>
                         {editing ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <input type="text" value={editData.name || ''} onChange={e => setEditData({ ...editData, name: e.target.value })} placeholder="Name" className={styles.formInput} />
                                 <input type="email" value={editData.email || ''} onChange={e => setEditData({ ...editData, email: e.target.value })} placeholder="Email" className={styles.formInput} />
                                 <input type="tel" value={editData.phone || ''} onChange={e => setEditData({ ...editData, phone: e.target.value })} placeholder="Phone" className={styles.formInput} />
-                                <input type="text" value={editData.preferred_location || ''} onChange={e => setEditData({ ...editData, preferred_location: e.target.value })} placeholder="Location" className={styles.formInput} />
-                                <input type="text" value={editData.property_type || ''} onChange={e => setEditData({ ...editData, property_type: e.target.value })} placeholder="Property Type" className={styles.formInput} />
+                                <input type="text" value={editData.preferred_location || ''} onChange={e => setEditData({ ...editData, preferred_location: e.target.value })} placeholder="Preferred Location" className={styles.formInput} />
+                                <input type="text" value={editData.property_type || ''} onChange={e => setEditData({ ...editData, property_type: e.target.value })} placeholder="Property Type (e.g. 2BHK Flat)" className={styles.formInput} />
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <input type="number" value={editData.budget_min || ''} onChange={e => setEditData({ ...editData, budget_min: e.target.value ? Number(e.target.value) : null })} placeholder="Budget Min ₹" className={styles.formInput} />
+                                    <input type="number" value={editData.budget_max || ''} onChange={e => setEditData({ ...editData, budget_max: e.target.value ? Number(e.target.value) : null })} placeholder="Budget Max ₹" className={styles.formInput} />
+                                </div>
+                                <input type="datetime-local" value={editData.next_follow_up_at?.slice(0, 16) || ''} onChange={e => setEditData({ ...editData, next_follow_up_at: e.target.value })} className={styles.formInput} />
                                 <textarea value={editData.notes || ''} onChange={e => setEditData({ ...editData, notes: e.target.value })} placeholder="Notes" rows={3} className={styles.formInput} style={{ resize: 'vertical' }} />
-                                <button onClick={handleSaveEdit} className={styles.btnPrimary}>Save</button>
+                                <button onClick={handleSaveEdit} className={styles.btnPrimary} disabled={saving}>
+                                    <Save size={14} /> {saving ? 'Saving...' : 'Save'}
+                                </button>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 {lead.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}><Phone size={12} style={{ color: '#4b5563' }} /> <span style={{ color: '#e5e7eb' }}>{lead.phone}</span></div>}
                                 {lead.email && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}><Mail size={12} style={{ color: '#4b5563' }} /> <span style={{ color: '#e5e7eb' }}>{lead.email}</span></div>}
-                                {lead.preferred_location && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#6b7280' }}><MapPin size={12} /> {lead.preferred_location}</div>}
-                                {lead.property_type && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#6b7280' }}><Building2 size={12} /> {lead.property_type}</div>}
-                                {lead.notes && <div style={{ fontSize: '0.8125rem', color: '#9ca3af', backgroundColor: '#0f1117', padding: '0.625rem', borderRadius: '0.5rem', marginTop: '0.5rem' }}>{lead.notes}</div>}
+                                {lead.preferred_location && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#9ca3af' }}><MapPin size={12} /> {lead.preferred_location}</div>}
+                                {lead.property_type && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#9ca3af' }}><Building2 size={12} /> {lead.property_type}</div>}
+                                {(lead.budget_min || lead.budget_max) && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#BFA270' }}>
+                                        <IndianRupee size={12} />
+                                        <span>{formatINR(lead.budget_min)} – {formatINR(lead.budget_max)}</span>
+                                    </div>
+                                )}
+                                {lead.next_follow_up_at && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#f59e0b' }}>
+                                        <CalendarCheck size={12} /> Follow-up: {formatDateTime(lead.next_follow_up_at)}
+                                    </div>
+                                )}
+                                {lead.notes && <div style={{ fontSize: '0.8125rem', color: '#9ca3af', backgroundColor: '#0f1117', padding: '0.625rem', borderRadius: '0.5rem', marginTop: '0.25rem' }}>{lead.notes}</div>}
                             </div>
                         )}
                     </div>
 
+                    {/* Tags */}
+                    <div className={styles.card}>
+                        <span className={styles.cardTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.625rem' }}>
+                            <Tag size={14} /> Tags
+                        </span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginBottom: '0.625rem' }}>
+                            {(lead.tags || []).map(tag => (
+                                <span key={tag} style={{
+                                    padding: '3px 8px', borderRadius: '999px', fontSize: '0.6875rem',
+                                    backgroundColor: '#BFA27020', color: '#BFA270', border: '1px solid #BFA27040',
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                }}>
+                                    {tag}
+                                    <button onClick={() => handleRemoveTag(tag)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280', padding: 0, lineHeight: 1 }}><X size={10} /></button>
+                                </span>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.375rem' }}>
+                            <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(tagInput) } }}
+                                placeholder="Add tag..." className={styles.formInput} style={{ flex: 1, padding: '0.25rem 0.5rem', fontSize: '0.8125rem' }} />
+                            <button onClick={() => handleAddTag(tagInput)} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.25rem 0.625rem' }}>Add</button>
+                        </div>
+                    </div>
+
+                    {/* Priority */}
                     <div className={styles.card}>
                         <span className={styles.cardTitle} style={{ display: 'block', marginBottom: '0.75rem' }}>Priority</span>
                         <div style={{ display: 'flex', gap: '0.375rem' }}>
                             {(['hot', 'warm', 'cold'] as const).map(p => (
-                                <button key={p} onClick={() => handlePriorityChange(p)} style={{
+                                <button key={p} onClick={() => patch({ priority: p })} style={{
                                     flex: 1, padding: '0.5rem', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
                                     border: `1px solid ${lead.priority === p ? (p === 'hot' ? '#ef4444' : p === 'warm' ? '#f59e0b' : '#3b82f6') : '#1e2030'}`,
                                     backgroundColor: lead.priority === p ? (p === 'hot' ? '#ef444415' : p === 'warm' ? '#f59e0b15' : '#3b82f615') : '#0f1117',
@@ -160,35 +314,69 @@ export default function LeadDetailPage() {
                         </div>
                     </div>
 
+                    {/* Score Breakdown */}
+                    {(lead as any).score_breakdown && (
+                        <div className={styles.card}>
+                            <span className={styles.cardTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.75rem' }}>
+                                <TrendingUp size={14} /> Score Breakdown
+                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                {Object.entries((lead as any).score_breakdown as Record<string, number>).map(([key, val]) => (
+                                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                        <span style={{ color: '#6b7280', textTransform: 'capitalize' }}>{key}</span>
+                                        <span style={{ color: val > 0 ? '#22c55e' : '#4b5563', fontWeight: 600 }}>+{val}</span>
+                                    </div>
+                                ))}
+                                <div style={{ borderTop: '1px solid #1e2030', marginTop: '0.25rem', paddingTop: '0.25rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', fontWeight: 700 }}>
+                                    <span style={{ color: '#9ca3af' }}>Total</span>
+                                    <span style={{ color: '#fff' }}>{score}/100</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Source */}
                     <div className={styles.card}>
                         <span className={styles.cardTitle} style={{ display: 'block', marginBottom: '0.75rem' }}>Source</span>
                         <div style={{ fontSize: '0.8125rem', color: '#9ca3af', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                             <div><strong style={{ color: '#6b7280' }}>Platform:</strong> {sourceLabels[lead.source]}</div>
                             {lead.source_campaign && <div><strong style={{ color: '#6b7280' }}>Campaign:</strong> {lead.source_campaign}</div>}
-                            {lead.source_form_id && <div><strong style={{ color: '#6b7280' }}>Form:</strong> {lead.source_form_id}</div>}
+                            {lead.source_form_id && <div><strong style={{ color: '#6b7280' }}>Form ID:</strong> {lead.source_form_id}</div>}
+                            {lead.last_contacted_at && <div><strong style={{ color: '#6b7280' }}>Last Contacted:</strong> {formatDate(lead.last_contacted_at)}</div>}
                         </div>
                     </div>
                 </div>
 
-                {/* Right - Timeline + Tasks */}
+                {/* Right Column — Timeline + Tasks + Visits */}
                 <div>
                     <div className={styles.pillTabs} style={{ marginBottom: '1rem' }}>
-                        <button className={`${styles.pillTab} ${activeTab === 'timeline' ? styles.pillTabActive : ''}`} onClick={() => setActiveTab('timeline')}>Timeline ({activities.length})</button>
-                        <button className={`${styles.pillTab} ${activeTab === 'tasks' ? styles.pillTabActive : ''}`} onClick={() => setActiveTab('tasks')}>Tasks ({tasks.filter(t => !t.is_completed).length})</button>
+                        <button className={`${styles.pillTab} ${activeTab === 'timeline' ? styles.pillTabActive : ''}`} onClick={() => setActiveTab('timeline')}>
+                            Timeline ({activities.length})
+                        </button>
+                        <button className={`${styles.pillTab} ${activeTab === 'tasks' ? styles.pillTabActive : ''}`} onClick={() => setActiveTab('tasks')}>
+                            Tasks ({tasks.filter(t => !t.is_completed).length})
+                        </button>
+                        <button className={`${styles.pillTab} ${activeTab === 'visits' ? styles.pillTabActive : ''}`} onClick={() => setActiveTab('visits')}>
+                            Site Visits ({visits.length})
+                        </button>
                     </div>
 
-                    {activeTab === 'timeline' ? (
+                    {/* Timeline */}
+                    {activeTab === 'timeline' && (
                         <div className={styles.card}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                 <span className={styles.cardTitle}>Activity</span>
                                 <button onClick={() => setShowAddActivity(!showAddActivity)} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem' }}><Plus size={12} /> Log</button>
                             </div>
-
                             {showAddActivity && (
                                 <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#0f1117', borderRadius: '0.5rem' }}>
                                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                         <select value={newActivity.type} onChange={e => setNewActivity({ ...newActivity, type: e.target.value })} className={styles.formSelect} style={{ width: 'auto' }}>
-                                            <option value="note">Note</option><option value="call">Call</option><option value="email_sent">Email</option><option value="whatsapp">WhatsApp</option><option value="site_visit">Site Visit</option>
+                                            <option value="note">Note</option>
+                                            <option value="call">Call</option>
+                                            <option value="email_sent">Email</option>
+                                            <option value="whatsapp">WhatsApp</option>
+                                            <option value="site_visit">Site Visit</option>
                                         </select>
                                         <input type="text" value={newActivity.title} onChange={e => setNewActivity({ ...newActivity, title: e.target.value })} placeholder="Title" className={styles.formInput} />
                                     </div>
@@ -199,7 +387,6 @@ export default function LeadDetailPage() {
                                     </div>
                                 </div>
                             )}
-
                             {activities.length > 0 ? activities.map((a, i) => (
                                 <div key={a.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem 0', borderBottom: i < activities.length - 1 ? '1px solid #1e2030' : 'none' }}>
                                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#1e2030', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280', flexShrink: 0 }}>
@@ -208,45 +395,46 @@ export default function LeadDetailPage() {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#e5e7eb' }}>{a.title}</div>
                                         {a.description && <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.125rem' }}>{a.description}</div>}
-                                        <div style={{ fontSize: '0.6875rem', color: '#4b5563', marginTop: '0.25rem' }}>{formatRelative(a.created_at)} &middot; {a.created_by}</div>
+                                        <div style={{ fontSize: '0.6875rem', color: '#4b5563', marginTop: '0.25rem' }}>{formatRelative(a.created_at)} · {a.created_by}</div>
                                     </div>
                                 </div>
                             )) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No activity yet</div>}
                         </div>
-                    ) : (
+                    )}
+
+                    {/* Tasks */}
+                    {activeTab === 'tasks' && (
                         <div className={styles.card}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                 <span className={styles.cardTitle}>Tasks</span>
                                 <button onClick={() => setShowAddTask(!showAddTask)} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem' }}><Plus size={12} /> Add</button>
                             </div>
-
                             {showAddTask && (
                                 <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#0f1117', borderRadius: '0.5rem' }}>
                                     <input type="text" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} placeholder="Task title" className={styles.formInput} style={{ marginBottom: '0.5rem' }} />
                                     <input type="datetime-local" value={newTask.due_date} onChange={e => setNewTask({ ...newTask, due_date: e.target.value })} className={styles.formInput} style={{ marginBottom: '0.5rem' }} />
+                                    <textarea value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} placeholder="Notes (optional)" rows={2} className={styles.formInput} style={{ resize: 'vertical', marginBottom: '0.5rem' }} />
                                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                         <button onClick={() => setShowAddTask(false)} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Cancel</button>
                                         <button onClick={handleAddTask} className={styles.btnPrimary} style={{ fontSize: '0.75rem' }} disabled={!newTask.title || !newTask.due_date}>Save</button>
                                     </div>
                                 </div>
                             )}
-
                             {tasks.length > 0 ? tasks.map(t => {
                                 const overdue = !t.is_completed && new Date(t.due_date) < new Date()
                                 return (
                                     <div key={t.id} style={{
-                                        display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.625rem', borderRadius: '0.375rem', marginBottom: '0.375rem',
-                                        backgroundColor: overdue ? '#ef444410' : '#0f1117', border: `1px solid ${overdue ? '#ef444430' : '#1e2030'}`,
-                                        opacity: t.is_completed ? 0.5 : 1,
+                                        display: 'flex', alignItems: 'flex-start', gap: '0.625rem', padding: '0.625rem', borderRadius: '0.375rem', marginBottom: '0.375rem',
+                                        backgroundColor: overdue ? '#ef444410' : '#0f1117', border: `1px solid ${overdue ? '#ef444430' : '#1e2030'}`, opacity: t.is_completed ? 0.5 : 1,
                                     }}>
-                                        <button onClick={() => handleToggleTask(t.id, t.is_completed)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: t.is_completed ? '#22c55e' : '#4b5563' }}>
+                                        <button onClick={() => handleToggleTask(t.id, t.is_completed)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: t.is_completed ? '#22c55e' : '#4b5563', marginTop: '2px' }}>
                                             {t.is_completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                                         </button>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#e5e7eb', textDecoration: t.is_completed ? 'line-through' : 'none' }}>{t.title}</div>
-                                            <div style={{ fontSize: '0.6875rem', color: overdue ? '#ef4444' : '#4b5563' }}>
-                                                <Calendar size={10} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                                                {formatDate(t.due_date)} {overdue && '(Overdue)'}
+                                            {t.description && <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '2px' }}>{t.description}</div>}
+                                            <div style={{ fontSize: '0.6875rem', color: overdue ? '#ef4444' : '#4b5563', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <Calendar size={10} />{formatDateTime(t.due_date)} {overdue && '· Overdue'}
                                             </div>
                                         </div>
                                     </div>
@@ -254,8 +442,102 @@ export default function LeadDetailPage() {
                             }) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No tasks</div>}
                         </div>
                     )}
+
+                    {/* Site Visits */}
+                    {activeTab === 'visits' && (
+                        <div className={styles.card}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <span className={styles.cardTitle}>Site Visits</span>
+                                <button onClick={() => setShowAddVisit(!showAddVisit)} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem' }}><Plus size={12} /> Schedule</button>
+                            </div>
+                            {showAddVisit && (
+                                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#0f1117', borderRadius: '0.5rem' }}>
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label className={styles.formLabel}>Date *</label>
+                                            <input type="date" value={newVisit.visit_date} onChange={e => setNewVisit({ ...newVisit, visit_date: e.target.value })} className={styles.formInput} />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <label className={styles.formLabel}>Time</label>
+                                            <input type="time" value={newVisit.visit_time} onChange={e => setNewVisit({ ...newVisit, visit_time: e.target.value })} className={styles.formInput} />
+                                        </div>
+                                    </div>
+                                    <textarea value={newVisit.notes} onChange={e => setNewVisit({ ...newVisit, notes: e.target.value })} placeholder="Notes" rows={2} className={styles.formInput} style={{ resize: 'vertical', marginBottom: '0.5rem' }} />
+                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                        <button onClick={() => setShowAddVisit(false)} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Cancel</button>
+                                        <button onClick={handleAddVisit} className={styles.btnPrimary} style={{ fontSize: '0.75rem' }} disabled={!newVisit.visit_date}>Schedule</button>
+                                    </div>
+                                </div>
+                            )}
+                            {visits.length > 0 ? visits.map(v => {
+                                const isPast = new Date(v.visit_date) < new Date()
+                                const statusColor = v.status === 'completed' ? '#22c55e' : v.status === 'no_show' ? '#ef4444' : v.status === 'cancelled' ? '#6b7280' : '#f59e0b'
+                                return (
+                                    <div key={v.id} style={{ padding: '0.75rem', borderRadius: '0.5rem', backgroundColor: '#0f1117', border: '1px solid #1e2030', marginBottom: '0.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <Home size={14} style={{ color: '#6b7280' }} />
+                                                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb' }}>
+                                                        {v.properties?.title || v.projects?.project_name || 'Site Visit'}
+                                                    </span>
+                                                    <span style={{ fontSize: '0.6875rem', color: statusColor, backgroundColor: `${statusColor}20`, padding: '2px 6px', borderRadius: '999px' }}>
+                                                        {v.status}
+                                                    </span>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Calendar size={10} /> {formatDate(v.visit_date)}
+                                                    {v.visit_time && <><Clock size={10} style={{ marginLeft: '6px' }} /> {v.visit_time}</>}
+                                                </div>
+                                                {v.notes && <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px' }}>{v.notes}</div>}
+                                                {v.outcome && <div style={{ fontSize: '0.75rem', color: '#BFA270', marginTop: '4px' }}>Outcome: {v.outcome}</div>}
+                                            </div>
+                                            {v.status === 'scheduled' && isPast && (
+                                                <div style={{ display: 'flex', gap: '0.375rem' }}>
+                                                    <button onClick={() => handleVisitStatus(v.id, 'completed', 'interested')} className={styles.btnPrimary} style={{ fontSize: '0.6875rem', padding: '4px 8px', backgroundColor: '#22c55e' }}>Visited</button>
+                                                    <button onClick={() => handleVisitStatus(v.id, 'no_show')} className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '4px 8px', color: '#ef4444' }}>No Show</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            }) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No site visits scheduled</div>}
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Lost Reason Modal */}
+            {showLostModal && (
+                <div className={styles.modal} onClick={() => setShowLostModal(false)}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#ef4444' }}>Mark as Lost</h3>
+                            <button onClick={() => setShowLostModal(false)} className={styles.btnIcon}><X size={16} /></button>
+                        </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Reason for losing (optional)</label>
+                            <select value={lostReason} onChange={e => setLostReason(e.target.value)} className={styles.formSelect} style={{ marginBottom: '0.5rem' }}>
+                                <option value="">Select reason...</option>
+                                <option value="Budget constraints">Budget constraints</option>
+                                <option value="Chose competitor">Chose competitor</option>
+                                <option value="Not interested anymore">Not interested anymore</option>
+                                <option value="No response">No response</option>
+                                <option value="Requirement changed">Requirement changed</option>
+                                <option value="Price too high">Price too high</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            {lostReason === 'Other' && (
+                                <textarea value={lostReason} onChange={e => setLostReason(e.target.value)} placeholder="Describe reason..." rows={2} className={styles.formInput} style={{ resize: 'vertical' }} />
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setShowLostModal(false)} className={styles.btnSecondary}>Cancel</button>
+                            <button onClick={handleMarkLost} className={styles.btnPrimary} style={{ backgroundColor: '#ef4444' }}>Confirm Lost</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
