@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import PropertyCard from "@/components/emergent/PropertyCard";
 import {
@@ -12,6 +12,7 @@ import {
 import { FaWhatsapp, FaXTwitter } from "react-icons/fa6";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
+import VideoPlayer from "@/components/VideoPlayer";
 import { proxyUrl, proxyUrls } from "@/lib/proxy-url";
 import styles from "@/components/emergent/PropertyDetail.module.css";
 import ImageGalleryModal from "@/components/emergent/ImageGalleryModal";
@@ -136,38 +137,6 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [initialGalleryIndex, setInitialGalleryIndex] = useState(0);
     const [showContactModal, setShowContactModal] = useState(false);
-    const [videoInView, setVideoInView] = useState(false);
-    const videoContainerRef = useRef<HTMLDivElement>(null);
-
-    // Autoplay video when scrolled into view
-    useEffect(() => {
-        const el = videoContainerRef.current;
-        if (!el) return;
-        const observer = new IntersectionObserver(
-            ([entry]) => setVideoInView(entry.isIntersecting),
-            { threshold: 0.5 }
-        );
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, []);
-
-    // Normalise any YouTube/Vimeo URL to embed format + autoplay+mute params
-    function buildVideoSrc(url: string, autoplay: boolean): string {
-        let src = url.trim();
-        // YouTube watch?v= → embed/
-        if (src.includes('youtube.com/watch')) {
-            try { const id = new URL(src).searchParams.get('v'); if (id) src = `https://www.youtube.com/embed/${id}`; } catch {}
-        }
-        // youtu.be shortlink → embed/
-        else if (src.includes('youtu.be/')) {
-            const id = src.split('youtu.be/')[1]?.split('?')[0];
-            if (id) src = `https://www.youtube.com/embed/${id}`;
-        }
-        if (!autoplay) return src;
-        const sep = src.includes('?') ? '&' : '?';
-        if (src.includes('vimeo.com')) return src + sep + 'autoplay=1&muted=1';
-        return src + sep + 'autoplay=1&mute=1';
-    }
 
 
     const openGallery = (index: number) => {
@@ -783,15 +752,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                 {property.video_url && (
                     <div className={styles.sectionContainer}>
                         <h2 className={styles.sectionTitle}>VIDEO</h2>
-                        <div className={styles.videoContainer} ref={videoContainerRef}>
-                            <iframe
-                                className={styles.videoFrame}
-                                src={buildVideoSrc(property.video_url, videoInView)}
-                                title="Property Video"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            ></iframe>
-                        </div>
+                        <VideoPlayer url={property.video_url} title="Property Video" />
                     </div>
                 )}
             </div>
