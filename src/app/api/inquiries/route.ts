@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createLead } from '@/lib/crm/leads';
+import { sendEmailByCategory } from '@/lib/crm/email';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,6 +41,11 @@ export async function POST(request: NextRequest) {
             notes: message,
             property_interest: property_id || undefined,
         }).catch(err => console.error('CRM lead creation failed:', err));
+
+        // Send confirmation email (fire and forget)
+        sendEmailByCategory('confirmation', email, { name }).catch(
+            err => console.error('Confirmation email failed:', err)
+        );
 
         return NextResponse.json(
             { message: 'Inquiry submitted successfully' },

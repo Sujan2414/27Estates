@@ -61,6 +61,44 @@ export async function POST(request: NextRequest) {
         });
 
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://27estates.com';
+        const propertyUrl = `${siteUrl}/properties/${propertyId}`;
+
+        // Try to load the New Property Alert template from DB
+        const { data: alertTemplate } = await supabase
+            .from('email_templates')
+            .select('body_html, subject')
+            .eq('name', 'New Property Alert')
+            .eq('is_active', true)
+            .single();
+
+        function buildEmailHtml(recipientName: string): string {
+            if (alertTemplate) {
+                return alertTemplate.body_html
+                    .replace(/\{\{name\}\}/g, recipientName || 'there')
+                    .replace(/\{\{property_title\}\}/g, propertyTitle)
+                    .replace(/\{\{property_location\}\}/g, propertyLocation || '')
+                    .replace(/\{\{property_price\}\}/g, propertyPrice || 'Contact for price')
+                    .replace(/\{\{property_url\}\}/g, propertyUrl);
+            }
+            // Fallback to inline HTML (supports property image)
+            return `
+                <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+                    <div style="background: #183C38; padding: 32px; text-align: center;">
+                        <h1 style="color: #BFA270; margin: 0; font-size: 24px; font-weight: 500; letter-spacing: 0.05em;">27 ESTATES</h1>
+                    </div>
+                    ${propertyImage ? `<div style="width: 100%; overflow: hidden;"><img src="${propertyImage}" alt="${propertyTitle}" style="width: 100%; height: 300px; object-fit: cover;" /></div>` : ''}
+                    <div style="padding: 32px;">
+                        <p style="color: #BFA270; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px;">New Listing</p>
+                        <h2 style="color: #183C38; font-size: 22px; font-weight: 500; margin: 0 0 16px 0; line-height: 1.3;">${propertyTitle}</h2>
+                        ${propertyLocation ? `<p style="color: #666; font-size: 14px; margin-bottom: 8px;">📍 ${propertyLocation}</p>` : ''}
+                        ${propertyPrice ? `<p style="color: #183C38; font-size: 20px; font-weight: 600; margin-bottom: 24px;">${propertyPrice}</p>` : ''}
+                        <a href="${propertyUrl}" style="display: inline-block; background: #183C38; color: #ffffff; padding: 14px 32px; text-decoration: none; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;">View Property</a>
+                    </div>
+                    <div style="background: #f9f6f3; padding: 24px 32px; text-align: center;">
+                        <p style="color: #999; font-size: 12px; margin: 0;">You're receiving this because you subscribed to 27 Estates updates.</p>
+                    </div>
+                </div>`;
+        }
 
         // Send emails in batches (Resend supports batch sending)
         const batchSize = 50;
@@ -74,50 +112,7 @@ export async function POST(request: NextRequest) {
                     from: `${FROM_NAME} <${FROM_EMAIL}>`,
                     to: recipient.email,
                     subject: `New Listing: ${propertyTitle}`,
-                    html: `
-                        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-                            <div style="background: #183C38; padding: 32px; text-align: center;">
-                                <h1 style="color: #BFA270; margin: 0; font-size: 24px; font-weight: 500; letter-spacing: 0.05em;">27 ESTATES</h1>
-                            </div>
-
-                            ${propertyImage ? `
-                            <div style="width: 100%; overflow: hidden;">
-                                <img src="${propertyImage}" alt="${propertyTitle}" style="width: 100%; height: 300px; object-fit: cover;" />
-                            </div>
-                            ` : ''}
-
-                            <div style="padding: 32px;">
-                                <p style="color: #BFA270; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px;">New Listing</p>
-
-                                <h2 style="color: #183C38; font-size: 22px; font-weight: 500; margin: 0 0 16px 0; line-height: 1.3;">
-                                    ${propertyTitle}
-                                </h2>
-
-                                ${propertyLocation ? `
-                                <p style="color: #666; font-size: 14px; margin-bottom: 8px;">
-                                    📍 ${propertyLocation}
-                                </p>
-                                ` : ''}
-
-                                ${propertyPrice ? `
-                                <p style="color: #183C38; font-size: 20px; font-weight: 600; margin-bottom: 24px;">
-                                    ${propertyPrice}
-                                </p>
-                                ` : ''}
-
-                                <a href="${siteUrl}/properties/${propertyId}"
-                                   style="display: inline-block; background: #183C38; color: #ffffff; padding: 14px 32px; text-decoration: none; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;">
-                                    View Property
-                                </a>
-                            </div>
-
-                            <div style="background: #f9f6f3; padding: 24px 32px; text-align: center;">
-                                <p style="color: #999; font-size: 12px; margin: 0;">
-                                    You're receiving this because you subscribed to 27 Estates updates.
-                                </p>
-                            </div>
-                        </div>
-                    `,
+                    html: buildEmailHtml(recipient.name),
                 })
             );
 

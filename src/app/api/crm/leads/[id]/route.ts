@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { updateLeadStatus } from '@/lib/crm/leads'
+import { sendEmailByCategory } from '@/lib/crm/email'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,6 +59,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         delete body.changed_by
     }
 
+    // Track if a property is being assigned (for email notification)
+    const newPropertyId = body.property_interest as string | undefined
+
     // Update remaining fields
     if (Object.keys(body).length > 0) {
         const { error } = await supabase
@@ -76,11 +80,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         .select(`
             *,
             agents (id, name, email, phone),
-            properties (title, property_id),
+            properties (title, property_id, location, price),
             projects (project_name)
         `)
         .eq('id', id)
         .single()
+
+    // Send "Assigned Property" email if a property was just assigned and lead has email
+    if (newPropertyId && data?.email && data.properties) {
+        const prop = data.properties as { title?: string; property_id?: string; location?: string; price?: string }
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://27estates.com'
+        const agentName = data.agents ? (data.agents as { name?: string }).name || '27 Estates Team' : '27 Estates Team'
+        sendEmailByCategory('property_assigned', data.email, {
+            name: data.name,
+            agent_name: agentName,
+            property_title: prop.title || 'New Property',
+            property_location: prop.location || '',
+            property_price: prop.price ? `₹${prop.price}` : 'Contact for price',
+            property_url: `${siteUrl}/properties/${newPropertyId}`,
+        }, id).catch(err => console.error('Assigned property email failed:', err))
+    }
 
     return NextResponse.json({ lead: data })
 }

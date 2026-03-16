@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NormalizedLead, Lead } from './types'
+import { sendEmailByCategory } from './email'
 
 // Server-side Supabase client for CRM operations
 function getSupabase() {
@@ -68,6 +69,13 @@ export async function createLead(data: NormalizedLead): Promise<Lead | null> {
         metadata: { source: data.source },
         created_by: 'system',
     })
+
+    // Send welcome email if lead has an email address (fire and forget)
+    if (data.email) {
+        sendEmailByCategory('welcome', data.email, { name: data.name }, lead.id).catch(
+            err => console.error('Welcome email failed:', err)
+        )
+    }
 
     return lead
 }

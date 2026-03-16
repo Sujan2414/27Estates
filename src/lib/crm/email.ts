@@ -8,6 +8,29 @@ function getSupabase() {
     )
 }
 
+// Send email using the first active template matching a category
+export async function sendEmailByCategory(
+    category: string,
+    toEmail: string,
+    variables: Record<string, string>,
+    leadId?: string
+) {
+    const supabase = getSupabase()
+
+    const { data: template } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('category', category)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single()
+
+    if (!template) return null
+
+    return sendTemplateEmail(template.id, toEmail, variables, leadId)
+}
+
 // Replace template variables like {{name}}, {{property_title}}, etc.
 function replaceVariables(template: string, variables: Record<string, string>): string {
     let result = template
