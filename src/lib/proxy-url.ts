@@ -4,7 +4,8 @@
  */
 export function proxyUrl(url: string | null | undefined): string {
     if (!url) return ''
-    return url.replace('27estates.jiobase.com', 'ulgashwdsaxaiebtqrvf.supabase.co')
+    return url.replace('27estates.jiobase.com', 'qjesattjnuoogqgiorws.supabase.co')
+             .replace('ulgashwdsaxaiebtqrvf.supabase.co', 'qjesattjnuoogqgiorws.supabase.co')
 }
 
 /**
