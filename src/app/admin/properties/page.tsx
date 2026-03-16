@@ -47,6 +47,7 @@ export default function PropertiesPage() {
         const { data, error } = await supabase
             .from('properties')
             .select('*')
+            .not('category', 'in', '("Commercial","Office","Offices","Warehouse")')
             .order('created_at', { ascending: false })
 
         if (!error && data) {
