@@ -32,8 +32,8 @@ const faqData: FAQItem[] = [
     },
 ]
 
-// Image: real estate agent presenting to a group of buyers
-const GROUP_BUY_HERO_IMAGE = "https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&w=1600&q=80";
+// Stock image: group of people discussing real estate / property deal
+const GROUP_BUY_HERO_IMAGE = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1600&q=80";
 
 interface GroupBuyProps {
     projectName: string
