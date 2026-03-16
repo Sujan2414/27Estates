@@ -44,6 +44,7 @@
     "react-leaflet": "^5.0.0",
     "react-pageflip": "^2.0.3",
     "react-pdf": "^10.3.0",
+    "react-simple-wysiwyg": "^3.4.1",
     "recharts": "^3.7.0",
     "resend": "^6.9.1",
     "sanity": "^5.6.0",

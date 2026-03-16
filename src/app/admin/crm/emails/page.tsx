@@ -1,11 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Mail, Edit3, Trash2, Eye, X, Send } from 'lucide-react'
+import { ArrowLeft, Plus, Mail, Edit3, Trash2, Eye, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import styles from '../../admin.module.css'
 import type { EmailTemplate } from '@/lib/crm/types'
+
+// Dynamically import the WYSIWYG editor (no SSR — it uses browser APIs)
+const Editor = dynamic(
+    () => import('react-simple-wysiwyg').then(m => m.default),
+    { ssr: false, loading: () => <div style={{ height: '300px', border: '1px solid #e5e7eb', borderRadius: '0.5rem', background: '#f9fafb' }} /> }
+)
 
 export default function EmailTemplatesPage() {
     const [templates, setTemplates] = useState<EmailTemplate[]>([])
@@ -205,18 +212,15 @@ export default function EmailTemplatesPage() {
 
                             <div>
                                 <label style={{ fontSize: '0.8125rem', fontWeight: 500, display: 'block', marginBottom: '0.25rem' }}>
-                                    HTML Body <span style={{ color: '#9ca3af', fontWeight: 400 }}>(use {'{{variable}}'} for dynamic content)</span>
+                                    Email Body <span style={{ color: '#9ca3af', fontWeight: 400 }}>(type {'{{name}}'}, {'{{property_title}}'} etc. for dynamic content)</span>
                                 </label>
-                                <textarea
-                                    value={editingTemplate.body_html || ''}
-                                    onChange={e => setEditingTemplate({ ...editingTemplate, body_html: e.target.value })}
-                                    rows={15}
-                                    style={{
-                                        width: '100%', padding: '0.625rem', border: '1px solid #e5e7eb',
-                                        borderRadius: '0.5rem', fontSize: '0.8125rem', fontFamily: 'monospace',
-                                        resize: 'vertical',
-                                    }}
-                                />
+                                <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                                    <Editor
+                                        value={editingTemplate.body_html || ''}
+                                        onChange={e => setEditingTemplate({ ...editingTemplate, body_html: e.target.value })}
+                                        containerProps={{ style: { minHeight: '320px', fontSize: '0.875rem' } }}
+                                    />
+                                </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between' }}>
