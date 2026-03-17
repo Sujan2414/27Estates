@@ -517,6 +517,7 @@
     font-size: 0.8125rem;
     color: #e5e7eb;
     outline: none;
+    color-scheme: dark;
 }
 
 .formInput:focus { border-color: #BFA270; }
