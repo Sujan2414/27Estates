@@ -16,6 +16,11 @@ export default function BlogEditor({ value, onChange }: BlogEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null)
     const isInternalChange = useRef(false)
 
+    // Set paragraph separator to <p> on mount so Enter creates <p> not <div>
+    useEffect(() => {
+        document.execCommand('defaultParagraphSeparator', false, 'p')
+    }, [])
+
     // Sync external value into editor only when it's not an internal change
     useEffect(() => {
         if (editorRef.current && !isInternalChange.current) {
@@ -32,6 +37,26 @@ export default function BlogEditor({ value, onChange }: BlogEditorProps) {
             onChange(editorRef.current.innerHTML)
         }
     }, [onChange])
+
+    // Strip inline font/size styles on paste so content always uses the blog's CSS
+    const handlePaste = useCallback((e: React.ClipboardEvent) => {
+        e.preventDefault()
+        const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain')
+        // Parse pasted HTML and strip style/font/color attributes
+        const div = document.createElement('div')
+        div.innerHTML = text
+        div.querySelectorAll('*').forEach(el => {
+            el.removeAttribute('style')
+            el.removeAttribute('color')
+            el.removeAttribute('face')
+            el.removeAttribute('size')
+            if (el.tagName === 'FONT') {
+                el.replaceWith(...Array.from(el.childNodes))
+            }
+        })
+        document.execCommand('insertHTML', false, div.innerHTML || text)
+        handleInput()
+    }, [handleInput])
 
     const exec = (command: string, val?: string) => {
         editorRef.current?.focus()
@@ -133,6 +158,7 @@ export default function BlogEditor({ value, onChange }: BlogEditorProps) {
                 suppressContentEditableWarning
                 onInput={handleInput}
                 onBlur={handleInput}
+                onPaste={handlePaste}
                 style={{
                     minHeight: '400px',
                     maxHeight: '700px',
