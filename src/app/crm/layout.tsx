@@ -18,7 +18,7 @@ interface Notification {
 }
 
 interface NavItem {
-    name: string; href: string; icon: ElementType; badge?: number
+    name: string; href: string; icon: ElementType; badge?: number; exact?: boolean
 }
 
 interface NavGroup {
@@ -136,7 +136,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
             {
                 id: 'overview', label: 'Overview',
                 items: [
-                    { name: 'Dashboard', href: '/crm', icon: LayoutDashboard },
+                    { name: 'Dashboard', href: '/crm', icon: LayoutDashboard, exact: true },
                     ...(isAdm ? [
                         { name: 'Analytics', href: '/crm/analytics', icon: BarChart3 },
                         { name: 'Reports', href: '/crm/reports', icon: TrendingUp },
@@ -161,7 +161,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
             {
                 id: 'hrm', label: 'HRM',
                 items: [
-                    { name: 'Overview', href: '/crm/hrm', icon: Building2 },
+                    { name: 'Overview', href: '/crm/hrm', icon: Building2, exact: true },
                     // Employees: admin+ only
                     ...(isAdm ? [{ name: 'Employees', href: '/crm/hrm/employees', icon: Users2 }] : []),
                     { name: 'Tasks', href: '/crm/hrm/tasks', icon: ClipboardList },
@@ -250,7 +250,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                         {navGroups.map(group => {
                             const isOpen = openSections.has(group.id)
                             const hasActiveItem = group.items.some(item =>
-                                item.href === '/crm' ? pathname === '/crm' : pathname?.startsWith(item.href)
+                                item.exact ? pathname === item.href : pathname?.startsWith(item.href)
                             )
                             return (
                                 <div key={group.id}>
@@ -275,8 +275,8 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                                     </button>
 
                                     {isOpen && group.items.map(item => {
-                                        const isActive = item.href === '/crm'
-                                            ? pathname === '/crm'
+                                        const isActive = item.exact
+                                            ? pathname === item.href
                                             : pathname?.startsWith(item.href)
                                         return (
                                             <Link

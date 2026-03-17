@@ -62,6 +62,28 @@ export async function POST(request: NextRequest) {
             .single()
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+        if (body.status === 'absent' && !error && data) {
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name, email')
+                    .eq('id', employee_id)
+                    .single()
+                if (profile?.email) {
+                    const { Resend } = await import('resend')
+                    const resend = new Resend(process.env.RESEND_API_KEY)
+                    const dateLabel = new Date(date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                    await resend.emails.send({
+                        from: `27 Estates HR <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
+                        to: profile.email,
+                        subject: `⚠️ Attendance Marked Absent — ${date}`,
+                        html: `<p>Hi ${profile.full_name},</p><p>Your attendance for <strong>${dateLabel}</strong> has been marked as <strong style="color:#ef4444">Absent</strong>.</p><p>If this is incorrect, please submit a <strong>Regularisation Request</strong> through the HR portal.</p><p>— 27 Estates HR</p>`,
+                    })
+                }
+            } catch { /* non-blocking */ }
+        }
+
         return NextResponse.json({ record: data }, { status: 201 })
     } catch {
         return NextResponse.json({ error: 'Failed to save attendance' }, { status: 500 })

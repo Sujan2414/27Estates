@@ -135,6 +135,33 @@ export async function PATCH(request: NextRequest) {
             .single()
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+        // Send email to employee about the decision
+        try {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name, email')
+                .eq('id', data.employee_id)
+                .single()
+            if (profile?.email) {
+                const { Resend } = await import('resend')
+                const resend = new Resend(process.env.RESEND_API_KEY)
+                const dateLabel = new Date(data.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                const isApproved = status === 'approved'
+                await resend.emails.send({
+                    from: `27 Estates HR <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
+                    to: profile.email,
+                    subject: isApproved
+                        ? `✅ Regularisation Approved — ${data.date}`
+                        : `❌ Regularisation Rejected — ${data.date}`,
+                    html: `<p>Hi ${profile.full_name},</p>
+<p>Your regularisation request for <strong>${dateLabel}</strong> has been <strong style="color:${isApproved ? '#22c55e' : '#ef4444'}">${status.toUpperCase()}</strong>.</p>
+${admin_notes ? `<p><strong>Admin Note:</strong> ${admin_notes}</p>` : ''}
+<p>— 27 Estates HR</p>`,
+                })
+            }
+        } catch { /* non-blocking */ }
+
         return NextResponse.json({ regularization: data })
     } catch {
         return NextResponse.json({ error: 'Failed to update regularization' }, { status: 500 })

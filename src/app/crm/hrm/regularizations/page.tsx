@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, CheckCircle2, XCircle, Clock, Shield, AlertCircle } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock, Shield, AlertCircle, ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react'
 import styles from '../../crm.module.css'
 import { useCRMUser, isSuperAdmin, isAdmin } from '../../crm-context'
 
@@ -20,10 +19,42 @@ interface Regularization {
     approver?: { id: string; full_name: string } | null
 }
 
+interface AttendanceRecord {
+    id: string
+    employee_id: string
+    date: string
+    status: string
+    check_in_time?: string
+    check_out_time?: string
+    hours_worked?: number
+}
+
 const STATUS_CONFIG = {
     pending:  { color: '#f59e0b', label: 'Pending' },
     approved: { color: '#22c55e', label: 'Approved' },
     rejected: { color: '#ef4444', label: 'Rejected' },
+}
+
+const ATTENDANCE_COLORS: Record<string, string> = {
+    present: '#22c55e',
+    absent: '#ef4444',
+    late: '#f59e0b',
+    half_day: '#f97316',
+    work_from_home: '#3b82f6',
+}
+
+function getMonthDates(year: number, month: number) {
+    const dates: string[] = []
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    for (let d = 1; d <= daysInMonth; d++) {
+        dates.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`)
+    }
+    return dates
+}
+
+function formatTime(iso?: string | null) {
+    if (!iso) return '—'
+    return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
 }
 
 export default function RegularizationsPage() {
@@ -31,8 +62,22 @@ export default function RegularizationsPage() {
     const isAdminUser = isAdmin(crmUser)
     const isSA = isSuperAdmin(crmUser)
 
+    const [activeTab, setActiveTab] = useState<'calendar' | 'requests'>('calendar')
+
+    // Calendar state
+    const now = new Date()
+    const [calYear, setCalYear] = useState(now.getFullYear())
+    const [calMonth, setCalMonth] = useState(now.getMonth() + 1) // 1-based
+    const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+    const [attendanceLoading, setAttendanceLoading] = useState(false)
+    const [regMap, setRegMap] = useState<Record<string, Regularization>>({}) // date -> reg
+    const [applyModal, setApplyModal] = useState<{ date: string; attRecord?: AttendanceRecord } | null>(null)
+    const [applyReason, setApplyReason] = useState('')
+    const [applying, setApplying] = useState(false)
+
+    // Requests state
     const [regs, setRegs] = useState<Regularization[]>([])
-    const [loading, setLoading] = useState(true)
+    const [reqLoading, setReqLoading] = useState(true)
     const [tableExists, setTableExists] = useState(true)
     const [statusFilter, setStatusFilter] = useState('pending')
     const [processing, setProcessing] = useState<string | null>(null)
@@ -44,14 +89,49 @@ export default function RegularizationsPage() {
         setTimeout(() => setToast(null), 3000)
     }
 
-    const fetchData = useCallback(async () => {
-        setLoading(true)
+    const monthKey = `${calYear}-${String(calMonth).padStart(2, '0')}`
+
+    // Fetch attendance for calendar
+    const fetchAttendance = useCallback(async () => {
+        if (!crmUser) return
+        setAttendanceLoading(true)
+        try {
+            const params = new URLSearchParams({ month: monthKey })
+            if (!isAdminUser) params.set('employee_id', crmUser.id)
+            const res = await fetch(`/api/crm/hrm/attendance?${params}`)
+            if (res.ok) {
+                const d = await res.json()
+                setAttendance(d.attendance || [])
+            }
+        } finally {
+            setAttendanceLoading(false)
+        }
+    }, [crmUser, isAdminUser, monthKey])
+
+    // Fetch regularizations for the month (to overlay on calendar)
+    const fetchMonthRegs = useCallback(async () => {
+        if (!crmUser) return
+        try {
+            const params = new URLSearchParams({ month: monthKey })
+            if (!isAdminUser) params.set('employee_id', crmUser.id)
+            const res = await fetch(`/api/crm/hrm/regularizations?${params}`)
+            if (res.ok) {
+                const d = await res.json()
+                const map: Record<string, Regularization> = {}
+                for (const r of d.regularizations || []) map[r.date] = r
+                setRegMap(map)
+            }
+        } catch { /* silent */ }
+    }, [crmUser, isAdminUser, monthKey])
+
+    // Fetch request list
+    const fetchRequests = useCallback(async () => {
+        if (!crmUser) return
+        setReqLoading(true)
         try {
             const params = new URLSearchParams()
             if (statusFilter !== 'all') params.set('status', statusFilter)
-            // Agents only see their own
-            if (!isAdminUser && crmUser?.id) params.set('employee_id', crmUser.id)
-
+            if (!isAdminUser) params.set('employee_id', crmUser.id)
             const res = await fetch(`/api/crm/hrm/regularizations?${params}`)
             if (res.ok) {
                 const d = await res.json()
@@ -59,11 +139,41 @@ export default function RegularizationsPage() {
                 setTableExists(d.tableExists !== false)
             }
         } finally {
-            setLoading(false)
+            setReqLoading(false)
         }
-    }, [statusFilter, isAdminUser, crmUser?.id])
+    }, [statusFilter, isAdminUser, crmUser])
 
-    useEffect(() => { fetchData() }, [fetchData])
+    useEffect(() => { fetchAttendance(); fetchMonthRegs() }, [fetchAttendance, fetchMonthRegs])
+    useEffect(() => { fetchRequests() }, [fetchRequests])
+
+    const handleApply = async () => {
+        if (!applyModal || !crmUser || !applyReason.trim()) return
+        setApplying(true)
+        try {
+            const res = await fetch('/api/crm/hrm/regularizations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    employee_id: crmUser.id,
+                    date: applyModal.date,
+                    reason: applyReason.trim(),
+                    actual_hours: applyModal.attRecord?.hours_worked || null,
+                }),
+            })
+            const d = await res.json()
+            if (res.ok) {
+                showToast('Regularisation submitted!')
+                setApplyModal(null)
+                setApplyReason('')
+                fetchMonthRegs()
+                fetchRequests()
+            } else {
+                showToast(d.error || 'Failed', false)
+            }
+        } finally {
+            setApplying(false)
+        }
+    }
 
     const handleAction = async (id: string, status: 'approved' | 'rejected') => {
         if (!isSA) return
@@ -76,7 +186,8 @@ export default function RegularizationsPage() {
             })
             if (res.ok) {
                 showToast(`Regularisation ${status}`)
-                await fetchData()
+                await fetchRequests()
+                await fetchMonthRegs()
             } else {
                 const d = await res.json()
                 showToast(d.error || 'Failed', false)
@@ -86,8 +197,6 @@ export default function RegularizationsPage() {
         }
     }
 
-    const pendingCount = regs.filter(r => r.status === 'pending').length
-
     const formatDate = (d: string) =>
         new Date(d).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -95,31 +204,42 @@ export default function RegularizationsPage() {
         new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) +
         ' ' + new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
 
+    const pendingCount = regs.filter(r => r.status === 'pending').length
+
+    // Build calendar grid: days in month grouped by week
+    const monthDates = getMonthDates(calYear, calMonth - 1)
+    const firstDayOfWeek = new Date(`${monthKey}-01`).getDay() // 0=Sun
+    const attendanceByDate = Object.fromEntries(attendance.map(a => [a.date, a]))
+    const today = new Date().toISOString().split('T')[0]
+
+    const prevMonth = () => {
+        if (calMonth === 1) { setCalYear(y => y - 1); setCalMonth(12) }
+        else setCalMonth(m => m - 1)
+    }
+    const nextMonth = () => {
+        if (calMonth === 12) { setCalYear(y => y + 1); setCalMonth(1) }
+        else setCalMonth(m => m + 1)
+    }
+
+    const monthLabel = new Date(`${monthKey}-01`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+
     return (
         <div className={styles.pageContent}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm/hrm/attendance" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
-                    <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>
-                            Regularisations
-                            {pendingCount > 0 && statusFilter !== 'all' && statusFilter !== 'pending' && (
-                                <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', background: '#f59e0b', color: '#0f1117', borderRadius: '999px', padding: '2px 8px', fontWeight: 700 }}>
-                                    {pendingCount} pending
-                                </span>
-                            )}
-                        </h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
-                            {isAdminUser ? 'Manage employee attendance regularisation requests' : 'Your regularisation requests'}
-                        </p>
-                    </div>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>
+                        Regularisations
+                        {pendingCount > 0 && (
+                            <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', background: '#f59e0b', color: '#0f1117', borderRadius: '999px', padding: '2px 8px', fontWeight: 700 }}>
+                                {pendingCount} pending
+                            </span>
+                        )}
+                    </h1>
+                    <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginTop: '0.125rem' }}>
+                        {isAdminUser ? 'Manage employee attendance regularisation requests' : 'View your attendance and submit regularisation requests'}
+                    </p>
                 </div>
-                {!isAdminUser && (
-                    <Link href="/crm/hrm/attendance" className={styles.btnSecondary} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', textDecoration: 'none' }}>
-                        Apply via Attendance →
-                    </Link>
-                )}
             </div>
 
             {!tableExists && (
@@ -131,163 +251,392 @@ export default function RegularizationsPage() {
                 </div>
             )}
 
-            {/* Super admin info banner */}
-            {isSA && pendingCount > 0 && statusFilter === 'pending' && (
-                <div style={{ backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '0.75rem', padding: '0.875rem 1.25rem', marginBottom: '1.25rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                    <Clock size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.8125rem', color: '#d97706', fontWeight: 600 }}>
-                        {pendingCount} regularisation{pendingCount !== 1 ? 's' : ''} awaiting your approval
-                    </span>
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '1px solid #1e2030', paddingBottom: '0' }}>
+                {[
+                    { id: 'calendar', label: 'Attendance Calendar', icon: Calendar },
+                    { id: 'requests', label: 'Requests', icon: List },
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as 'calendar' | 'requests')}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '0.625rem 1rem',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontSize: '0.875rem', fontWeight: activeTab === tab.id ? 600 : 500,
+                            color: activeTab === tab.id ? '#BFA270' : '#6b7280',
+                            borderBottom: activeTab === tab.id ? '2px solid #BFA270' : '2px solid transparent',
+                            marginBottom: '-1px',
+                        }}
+                    >
+                        <tab.icon size={15} />
+                        {tab.label}
+                        {tab.id === 'requests' && pendingCount > 0 && (
+                            <span style={{ fontSize: '0.6875rem', background: '#f59e0b', color: '#0f1117', borderRadius: '999px', padding: '1px 6px', fontWeight: 700 }}>
+                                {pendingCount}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {/* ── CALENDAR TAB ── */}
+            {activeTab === 'calendar' && (
+                <div>
+                    {/* Month nav */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                        <button onClick={prevMonth} className={styles.btnSecondary} style={{ padding: '0.375rem 0.625rem', display: 'flex', alignItems: 'center' }}>
+                            <ChevronLeft size={16} />
+                        </button>
+                        <span style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '1rem' }}>{monthLabel}</span>
+                        <button onClick={nextMonth} className={styles.btnSecondary} style={{ padding: '0.375rem 0.625rem', display: 'flex', alignItems: 'center' }}>
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+
+                    {/* Legend */}
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                        {[
+                            { color: '#22c55e', label: 'Present' },
+                            { color: '#ef4444', label: 'Absent' },
+                            { color: '#f59e0b', label: 'Late' },
+                            { color: '#f97316', label: 'Half Day' },
+                            { color: '#3b82f6', label: 'WFH' },
+                            { color: '#2d3148', label: 'No Record' },
+                        ].map(s => (
+                            <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: s.color }} />
+                                {s.label}
+                            </div>
+                        ))}
+                        {!isAdminUser && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#BFA270' }}>
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#BFA27040', border: '1px solid #BFA270' }} />
+                                Click absent/no-record day to apply regularisation
+                            </div>
+                        )}
+                    </div>
+
+                    {attendanceLoading ? (
+                        <div className={styles.emptyState}>Loading...</div>
+                    ) : (
+                        <div className={styles.card} style={{ padding: '1rem', overflowX: 'auto' }}>
+                            {/* Day-of-week headers */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '4px' }}>
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                                    <div key={d} style={{ textAlign: 'center', fontSize: '0.6875rem', fontWeight: 600, color: d === 'Sun' || d === 'Sat' ? '#3d3f54' : '#6b7280', padding: '4px 0' }}>
+                                        {d}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Calendar grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                                {/* Empty cells before first day */}
+                                {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                                    <div key={`empty-${i}`} />
+                                ))}
+
+                                {monthDates.map(dateStr => {
+                                    const dayOfWeek = new Date(dateStr).getDay()
+                                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+                                    const att = attendanceByDate[dateStr]
+                                    const reg = regMap[dateStr]
+                                    const isToday = dateStr === today
+                                    const isFuture = dateStr > today
+                                    const dayNum = parseInt(dateStr.split('-')[2])
+
+                                    const attColor = att ? (ATTENDANCE_COLORS[att.status] || '#6b7280') : null
+                                    const isAbsent = att?.status === 'absent'
+                                    const canApply = !isAdminUser && !isWeekend && !isFuture && (isAbsent || !att)
+
+                                    let bgColor = '#161822'
+                                    if (isWeekend) bgColor = '#0f1117'
+                                    else if (isToday && !att) bgColor = '#BFA27015'
+                                    else if (attColor) bgColor = `${attColor}15`
+
+                                    let borderColor = isWeekend ? '#1e2030' : (attColor || (isToday ? '#BFA270' : '#1e2030'))
+                                    if (reg) borderColor = STATUS_CONFIG[reg.status].color
+
+                                    return (
+                                        <div
+                                            key={dateStr}
+                                            onClick={() => canApply ? setApplyModal({ date: dateStr, attRecord: att }) : undefined}
+                                            title={att ? `${att.status}${att.hours_worked != null ? ` · ${att.hours_worked.toFixed(1)}h` : ''}${att.check_in_time ? ` · In: ${formatTime(att.check_in_time)}` : ''}${att.check_out_time ? ` · Out: ${formatTime(att.check_out_time)}` : ''}${reg ? `\n📋 Reg: ${reg.status}` : ''}` : (isFuture ? '' : 'No record')}
+                                            style={{
+                                                borderRadius: '0.5rem',
+                                                border: `1px solid ${borderColor}`,
+                                                backgroundColor: bgColor,
+                                                padding: '6px 4px',
+                                                minHeight: '52px',
+                                                cursor: canApply ? 'pointer' : 'default',
+                                                transition: 'border-color 0.15s',
+                                                opacity: isWeekend ? 0.4 : 1,
+                                                position: 'relative',
+                                            }}
+                                            onMouseEnter={e => { if (canApply) (e.currentTarget as HTMLDivElement).style.borderColor = '#BFA270' }}
+                                            onMouseLeave={e => { if (canApply) (e.currentTarget as HTMLDivElement).style.borderColor = borderColor }}
+                                        >
+                                            <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: isToday ? '#BFA270' : '#9ca3af', marginBottom: '4px' }}>
+                                                {dayNum}
+                                            </div>
+                                            {att && (
+                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: attColor || '#6b7280', margin: '0 auto' }} />
+                                            )}
+                                            {!att && !isWeekend && !isFuture && (
+                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2d3148', margin: '0 auto' }} />
+                                            )}
+                                            {reg && (
+                                                <div style={{ position: 'absolute', top: 2, right: 3, fontSize: '0.5rem', color: STATUS_CONFIG[reg.status].color, fontWeight: 700 }}>
+                                                    {reg.status === 'approved' ? '✓' : reg.status === 'rejected' ? '✗' : '…'}
+                                                </div>
+                                            )}
+                                            {canApply && !reg && (
+                                                <div style={{ position: 'absolute', bottom: 2, right: 3, fontSize: '0.5rem', color: '#BFA27070' }}>+</div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* This month's regularisation status summary */}
+                    {Object.keys(regMap).length > 0 && (
+                        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#9ca3af', marginBottom: '0.25rem' }}>
+                                Regularisation Requests This Month
+                            </div>
+                            {Object.values(regMap).map(reg => {
+                                const sConf = STATUS_CONFIG[reg.status]
+                                return (
+                                    <div key={reg.id} className={styles.card} style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                                        <div>
+                                            <span style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>
+                                                {new Date(reg.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                            </span>
+                                            <span style={{ marginLeft: '0.75rem', fontSize: '0.8125rem', color: '#9ca3af' }}>{reg.reason}</span>
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: sConf.color, background: `${sConf.color}15`, padding: '2px 10px', borderRadius: '999px' }}>
+                                            {sConf.label}
+                                        </span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Status filter tabs */}
-            <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                {['pending', 'approved', 'rejected', 'all'].map(s => {
-                    const conf = STATUS_CONFIG[s as keyof typeof STATUS_CONFIG] || { color: '#BFA270', label: 'All' }
-                    const count = s === 'all' ? regs.length : regs.filter(r => r.status === s).length
-                    return (
-                        <button
-                            key={s}
-                            onClick={() => setStatusFilter(s)}
-                            style={{
-                                padding: '0.5rem 0.875rem', borderRadius: '0.5rem', cursor: 'pointer',
-                                border: statusFilter === s ? `1px solid ${conf.color}` : '1px solid #1e2030',
-                                backgroundColor: statusFilter === s ? `${conf.color}15` : '#161822',
-                                color: statusFilter === s ? conf.color : '#6b7280',
-                                fontSize: '0.8125rem', fontWeight: statusFilter === s ? 600 : 500,
-                                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                            }}
-                        >
-                            {s.charAt(0).toUpperCase() + s.slice(1)}
-                            <span style={{ fontSize: '0.6875rem', fontWeight: 600, backgroundColor: statusFilter === s ? `${conf.color}25` : '#1e2030', padding: '1px 6px', borderRadius: '999px', color: statusFilter === s ? conf.color : '#4b5563' }}>
-                                {count}
+            {/* ── REQUESTS TAB ── */}
+            {activeTab === 'requests' && (
+                <div>
+                    {isSA && pendingCount > 0 && statusFilter === 'pending' && (
+                        <div style={{ backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '0.75rem', padding: '0.875rem 1.25rem', marginBottom: '1.25rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <Clock size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.8125rem', color: '#d97706', fontWeight: 600 }}>
+                                {pendingCount} regularisation{pendingCount !== 1 ? 's' : ''} awaiting your approval
                             </span>
-                        </button>
-                    )
-                })}
-            </div>
+                        </div>
+                    )}
 
-            {loading ? (
-                <div className={styles.emptyState}>Loading...</div>
-            ) : regs.length === 0 ? (
-                <div className={styles.emptyState}>
-                    <div style={{ marginBottom: '0.5rem' }}>
-                        {statusFilter === 'pending' ? 'No pending regularisations 🎉' : `No ${statusFilter} requests`}
+                    {/* Status filter tabs */}
+                    <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                        {['pending', 'approved', 'rejected', 'all'].map(s => {
+                            const conf = STATUS_CONFIG[s as keyof typeof STATUS_CONFIG] || { color: '#BFA270', label: 'All' }
+                            const count = s === 'all' ? regs.length : regs.filter(r => r.status === s).length
+                            return (
+                                <button
+                                    key={s}
+                                    onClick={() => setStatusFilter(s)}
+                                    style={{
+                                        padding: '0.5rem 0.875rem', borderRadius: '0.5rem', cursor: 'pointer',
+                                        border: statusFilter === s ? `1px solid ${conf.color}` : '1px solid #1e2030',
+                                        backgroundColor: statusFilter === s ? `${conf.color}15` : '#161822',
+                                        color: statusFilter === s ? conf.color : '#6b7280',
+                                        fontSize: '0.8125rem', fontWeight: statusFilter === s ? 600 : 500,
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                    }}
+                                >
+                                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, backgroundColor: statusFilter === s ? `${conf.color}25` : '#1e2030', padding: '1px 6px', borderRadius: '999px', color: statusFilter === s ? conf.color : '#4b5563' }}>
+                                        {count}
+                                    </span>
+                                </button>
+                            )
+                        })}
                     </div>
-                </div>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {regs.map(reg => {
-                        const sConf = STATUS_CONFIG[reg.status]
-                        const isPending = reg.status === 'pending'
-                        return (
-                            <div
-                                key={reg.id}
-                                className={styles.card}
-                                style={{
-                                    padding: '1.25rem',
-                                    borderLeft: `3px solid ${sConf.color}`,
-                                    background: isPending ? '#1e203050' : '#161822',
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
-                                    {/* Left */}
-                                    <div style={{ flex: 1, minWidth: 200 }}>
-                                        {/* Employee + date */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                                            {isAdminUser && reg.employee && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#BFA270', color: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
-                                                        {reg.employee.full_name.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>{reg.employee.full_name}</div>
-                                                        <div style={{ fontSize: '0.6875rem', color: '#6b7280', textTransform: 'capitalize' }}>{reg.employee.role.replace('_', ' ')}</div>
+
+                    {reqLoading ? (
+                        <div className={styles.emptyState}>Loading...</div>
+                    ) : regs.length === 0 ? (
+                        <div className={styles.emptyState}>
+                            {statusFilter === 'pending' ? 'No pending regularisations 🎉' : `No ${statusFilter} requests`}
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {regs.map(reg => {
+                                const sConf = STATUS_CONFIG[reg.status]
+                                const isPending = reg.status === 'pending'
+                                return (
+                                    <div
+                                        key={reg.id}
+                                        className={styles.card}
+                                        style={{ padding: '1.25rem', borderLeft: `3px solid ${sConf.color}`, background: isPending ? '#1e203050' : '#161822' }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                            <div style={{ flex: 1, minWidth: 200 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                                                    {isAdminUser && reg.employee && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#BFA270', color: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
+                                                                {reg.employee.full_name.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>{reg.employee.full_name}</div>
+                                                                <div style={{ fontSize: '0.6875rem', color: '#6b7280', textTransform: 'capitalize' }}>{reg.employee.role.replace('_', ' ')}</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                                                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#e5e7eb' }}>{formatDate(reg.date)}</span>
+                                                        {reg.actual_hours != null && (
+                                                            <span style={{ fontSize: '0.75rem', color: '#ef4444', background: '#ef444415', padding: '1px 8px', borderRadius: '999px', fontWeight: 600 }}>
+                                                                {reg.actual_hours.toFixed(1)}h logged
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            )}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                                                <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#e5e7eb' }}>{formatDate(reg.date)}</span>
-                                                {reg.actual_hours != null && (
-                                                    <span style={{ fontSize: '0.75rem', color: '#ef4444', background: '#ef444415', padding: '1px 8px', borderRadius: '999px', fontWeight: 600 }}>
-                                                        {reg.actual_hours.toFixed(1)}h logged
+
+                                                <p style={{ fontSize: '0.8125rem', color: '#9ca3af', margin: '0 0 0.5rem', lineHeight: 1.6, maxWidth: 500 }}>
+                                                    {reg.reason}
+                                                </p>
+
+                                                <div style={{ fontSize: '0.6875rem', color: '#4b5563', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                                    <span>Submitted {formatTs(reg.created_at)}</span>
+                                                    {reg.status !== 'pending' && reg.approver && (
+                                                        <span style={{ color: sConf.color }}>
+                                                            {reg.status === 'approved' ? '✓' : '✗'} {reg.status} by {reg.approver.full_name}
+                                                            {reg.approved_at ? ` · ${formatTs(reg.approved_at)}` : ''}
+                                                        </span>
+                                                    )}
+                                                    {reg.admin_notes && (
+                                                        <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Note: {reg.admin_notes}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                                                {!isPending || !isSA ? (
+                                                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: sConf.color, background: `${sConf.color}15`, padding: '4px 12px', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                                                        {reg.status === 'approved' && <CheckCircle2 size={14} />}
+                                                        {reg.status === 'rejected' && <XCircle size={14} />}
+                                                        {reg.status === 'pending' && <Clock size={14} />}
+                                                        {sConf.label}
                                                     </span>
+                                                ) : (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 200 }}>
+                                                        <input
+                                                            placeholder="Admin notes (optional)..."
+                                                            value={notesMap[reg.id] || ''}
+                                                            onChange={e => setNotesMap(m => ({ ...m, [reg.id]: e.target.value }))}
+                                                            style={{ padding: '0.375rem 0.625rem', background: '#0f1117', border: '1px solid #2d3148', borderRadius: '0.375rem', color: '#e5e7eb', fontSize: '0.75rem', outline: 'none' }}
+                                                        />
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button
+                                                                onClick={() => handleAction(reg.id, 'approved')}
+                                                                disabled={processing === reg.id}
+                                                                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '0.5rem 0.75rem', background: '#22c55e', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', opacity: processing === reg.id ? 0.6 : 1 }}
+                                                            >
+                                                                <CheckCircle2 size={14} />
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleAction(reg.id, 'rejected')}
+                                                                disabled={processing === reg.id}
+                                                                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '0.5rem 0.75rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', opacity: processing === reg.id ? 0.6 : 1 }}
+                                                            >
+                                                                <XCircle size={14} />
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Reason */}
-                                        <p style={{ fontSize: '0.8125rem', color: '#9ca3af', margin: '0 0 0.5rem', lineHeight: 1.6, maxWidth: 500 }}>
-                                            {reg.reason}
-                                        </p>
-
-                                        {/* Meta */}
-                                        <div style={{ fontSize: '0.6875rem', color: '#4b5563', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                                            <span>Submitted {formatTs(reg.created_at)}</span>
-                                            {reg.status !== 'pending' && reg.approver && (
-                                                <span style={{ color: sConf.color }}>
-                                                    {reg.status === 'approved' ? '✓' : '✗'} {reg.status} by {reg.approver.full_name}
-                                                    {reg.approved_at ? ` · ${formatTs(reg.approved_at)}` : ''}
-                                                </span>
-                                            )}
-                                            {reg.admin_notes && (
-                                                <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Note: {reg.admin_notes}</span>
-                                            )}
-                                        </div>
                                     </div>
+                                )
+                            })}
+                        </div>
+                    )}
 
-                                    {/* Right: status badge or action buttons */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                                        {!isPending || !isSA ? (
-                                            <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: sConf.color, background: `${sConf.color}15`, padding: '4px 12px', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                                                {reg.status === 'approved' && <CheckCircle2 size={14} />}
-                                                {reg.status === 'rejected' && <XCircle size={14} />}
-                                                {reg.status === 'pending' && <Clock size={14} />}
-                                                {sConf.label}
-                                            </span>
-                                        ) : (
-                                            /* Super admin action area */
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 200 }}>
-                                                <input
-                                                    placeholder="Admin notes (optional)..."
-                                                    value={notesMap[reg.id] || ''}
-                                                    onChange={e => setNotesMap(m => ({ ...m, [reg.id]: e.target.value }))}
-                                                    style={{ padding: '0.375rem 0.625rem', background: '#0f1117', border: '1px solid #2d3148', borderRadius: '0.375rem', color: '#e5e7eb', fontSize: '0.75rem', outline: 'none' }}
-                                                />
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button
-                                                        onClick={() => handleAction(reg.id, 'approved')}
-                                                        disabled={processing === reg.id}
-                                                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '0.5rem 0.75rem', background: '#22c55e', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', opacity: processing === reg.id ? 0.6 : 1 }}
-                                                    >
-                                                        <CheckCircle2 size={14} />
-                                                        Approve
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleAction(reg.id, 'rejected')}
-                                                        disabled={processing === reg.id}
-                                                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '0.5rem 0.75rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', opacity: processing === reg.id ? 0.6 : 1 }}
-                                                    >
-                                                        <XCircle size={14} />
-                                                        Reject
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    })}
+                    {isAdminUser && !isSA && (
+                        <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#1e2030', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#6b7280' }}>
+                            <Shield size={14} />
+                            Only Super Admins can approve or reject regularisation requests.
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Non-super-admin guard for actions */}
-            {isAdminUser && !isSA && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#1e2030', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#6b7280' }}>
-                    <Shield size={14} />
-                    Only Super Admins can approve or reject regularisation requests.
+            {/* ── Apply Regularisation Modal ── */}
+            {applyModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div className={styles.card} style={{ width: '100%', maxWidth: 440, padding: '1.5rem' }}>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>
+                            Apply Regularisation
+                        </h3>
+                        <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginBottom: '1.25rem' }}>
+                            {new Date(applyModal.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            {applyModal.attRecord && (
+                                <span style={{ marginLeft: '0.5rem', color: ATTENDANCE_COLORS[applyModal.attRecord.status] || '#6b7280' }}>
+                                    · {applyModal.attRecord.status.replace('_', ' ')}
+                                    {applyModal.attRecord.hours_worked != null && ` · ${applyModal.attRecord.hours_worked.toFixed(1)}h`}
+                                </span>
+                            )}
+                            {!applyModal.attRecord && <span style={{ marginLeft: '0.5rem', color: '#ef4444' }}>· No attendance record</span>}
+                        </p>
+
+                        <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#9ca3af', display: 'block', marginBottom: '0.5rem' }}>
+                            Reason for Regularisation *
+                        </label>
+                        <textarea
+                            value={applyReason}
+                            onChange={e => setApplyReason(e.target.value)}
+                            placeholder="Explain why you were absent or unable to complete required hours..."
+                            rows={4}
+                            style={{
+                                width: '100%', padding: '0.75rem', background: '#0f1117', border: '1px solid #2d3148',
+                                borderRadius: '0.5rem', color: '#e5e7eb', fontSize: '0.875rem', outline: 'none',
+                                resize: 'vertical', boxSizing: 'border-box',
+                            }}
+                        />
+
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
+                            <button
+                                onClick={() => { setApplyModal(null); setApplyReason('') }}
+                                className={styles.btnSecondary}
+                                style={{ flex: 1 }}
+                                disabled={applying}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleApply}
+                                disabled={applying || !applyReason.trim()}
+                                style={{
+                                    flex: 2, padding: '0.625rem 1rem', background: applyReason.trim() ? '#BFA270' : '#2d3148',
+                                    color: applyReason.trim() ? '#0f1117' : '#4b5563',
+                                    border: 'none', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600,
+                                    cursor: applyReason.trim() && !applying ? 'pointer' : 'not-allowed',
+                                    transition: 'background 0.15s',
+                                }}
+                            >
+                                {applying ? 'Submitting...' : 'Submit Request'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
