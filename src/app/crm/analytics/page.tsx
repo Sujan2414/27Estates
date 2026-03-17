@@ -15,9 +15,6 @@ const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: fa
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
 const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
-const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
-const LineChart = dynamic(() => import('recharts').then(m => m.LineChart), { ssr: false })
-const Line = dynamic(() => import('recharts').then(m => m.Line), { ssr: false })
 
 const statusColors: Record<string, string> = {
     new: '#3b82f6', contacted: '#f59e0b', qualified: '#8b5cf6',
@@ -54,7 +51,7 @@ export default function AnalyticsPage() {
     // Source breakdown
     const sourceData = Object.entries(
         leads.reduce((acc: Record<string, number>, l) => { acc[l.source] = (acc[l.source] || 0) + 1; return acc }, {})
-    ).map(([name, value]) => ({ name: sourceLabels[name] || name, value })).sort((a, b) => b.value - a.value)
+    ).map(([name, value], i) => ({ name: sourceLabels[name] || name, value, fill: COLORS[i % COLORS.length] })).sort((a, b) => b.value - a.value)
 
     // Status breakdown
     const statusData = Object.entries(
@@ -135,9 +132,7 @@ export default function AnalyticsPage() {
                             <div style={{ width: '100%', height: 200 }}>
                                 <ResponsiveContainer>
                                     <PieChart>
-                                        <Pie data={sourceData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
-                                            {sourceData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                                        </Pie>
+                                        <Pie data={sourceData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" />
                                         <Tooltip {...tooltipStyle} />
                                     </PieChart>
                                 </ResponsiveContainer>
@@ -165,11 +160,9 @@ export default function AnalyticsPage() {
                             <ResponsiveContainer>
                                 <BarChart data={statusData} layout="vertical">
                                     <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} allowDecimals={false} />
-                                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af', textTransform: 'capitalize' }} tickLine={false} axisLine={false} width={80} />
+                                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} width={80} />
                                     <Tooltip {...tooltipStyle} />
-                                    <Bar dataKey="value" name="Leads" radius={[0, 4, 4, 0]}>
-                                        {statusData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-                                    </Bar>
+                                    <Bar dataKey="value" name="Leads" radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -182,9 +175,7 @@ export default function AnalyticsPage() {
                     <div style={{ width: '100%', height: 200 }}>
                         <ResponsiveContainer>
                             <PieChart>
-                                <Pie data={priorityData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
-                                    {priorityData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-                                </Pie>
+                                <Pie data={priorityData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" />
                                 <Tooltip {...tooltipStyle} />
                             </PieChart>
                         </ResponsiveContainer>

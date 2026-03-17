@@ -424,7 +424,7 @@
     transition: opacity 0.15s;
 }
 
-.btnPrimary:hover { opacity: 0.9; }
+.btnPrimary:hover { opacity: 0.85; color: #0f1117; }
 
 .btnSecondary {
     display: inline-flex;
