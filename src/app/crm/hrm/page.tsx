@@ -84,9 +84,9 @@ export default function HRMOverviewPage() {
     const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'done').length
 
     const roleDistribution = [
-        { name: 'Agents', value: employees.filter(e => e.role === 'agent').length, color: '#3b82f6' },
-        { name: 'Admins', value: employees.filter(e => e.role === 'admin').length, color: '#BFA270' },
-        { name: 'Super Admins', value: employees.filter(e => e.role === 'super_admin').length, color: '#8b5cf6' },
+        { name: 'Agents', value: employees.filter(e => e.role === 'agent').length, fill: '#3b82f6' },
+        { name: 'Admins', value: employees.filter(e => e.role === 'admin').length, fill: '#BFA270' },
+        { name: 'Super Admins', value: employees.filter(e => e.role === 'super_admin').length, fill: '#8b5cf6' },
     ].filter(r => r.value > 0)
 
     if (loading) return <div className={styles.pageContent}><div className={styles.emptyState}>Loading HRM...</div></div>
@@ -165,9 +165,7 @@ export default function HRMOverviewPage() {
                     {roleDistribution.length > 0 ? (
                         <ResponsiveContainer width="100%" height={180}>
                             <PieChart>
-                                <Pie data={roleDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65} innerRadius={30}>
-                                    {roleDistribution.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                                </Pie>
+                                <Pie data={roleDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65} innerRadius={30} />
                                 <Tooltip {...tooltipStyle} />
                                 <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: '#9ca3af' }} />
                             </PieChart>

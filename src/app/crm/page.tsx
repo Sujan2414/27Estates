@@ -18,7 +18,6 @@ const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: fa
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
 const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
-const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
 
 interface CRMStats {
     total: number
@@ -116,7 +115,9 @@ export default function CRMDashboard() {
 
     // Prepare source pie data with consistent colors
     const sourceData = stats ? Object.entries(stats.bySource).map(([key, value], i) => ({
-        name: sourceConfig[key]?.label || key, value, color: sourceConfig[key]?.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+        name: sourceConfig[key]?.label || key, value,
+        fill: sourceConfig[key]?.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+        color: sourceConfig[key]?.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
     })) : []
 
     return (
@@ -238,11 +239,7 @@ export default function CRMDashboard() {
                                             outerRadius={80}
                                             paddingAngle={3}
                                             dataKey="value"
-                                        >
-                                            {sourceData.map((s, i) => (
-                                                <Cell key={i} fill={s.color} />
-                                            ))}
-                                        </Pie>
+                                        />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' }}
                                             itemStyle={{ color: '#e5e7eb' }}
