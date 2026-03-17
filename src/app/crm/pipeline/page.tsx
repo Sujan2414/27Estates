@@ -2,8 +2,20 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Phone, Mail, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { ArrowLeft, BarChart2, Columns3, Phone, Mail } from 'lucide-react'
 import styles from '../crm.module.css'
+
+const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
+const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
+const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
+const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false })
+const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false })
+const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: false })
+const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
+const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
+const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
+const Legend = dynamic(() => import('recharts').then(m => m.Legend), { ssr: false })
 
 interface Lead {
     id: string; name: string; email: string | null; phone: string | null
@@ -11,8 +23,7 @@ interface Lead {
     projects?: { project_name: string } | null
 }
 
-const statusTabs = [
-    { key: 'all', label: 'All', color: '#BFA270' },
+const STAGES = [
     { key: 'new', label: 'New', color: '#3b82f6' },
     { key: 'contacted', label: 'Contacted', color: '#f59e0b' },
     { key: 'qualified', label: 'Qualified', color: '#8b5cf6' },
@@ -22,269 +33,343 @@ const statusTabs = [
     { key: 'lost', label: 'Lost', color: '#ef4444' },
 ]
 
-const sourceConfig: Record<string, { label: string; color: string; bg: string }> = {
-    website: { label: 'Website', color: '#3b82f6', bg: '#3b82f620' },
-    meta_ads: { label: 'Meta Ads', color: '#ec4899', bg: '#ec489920' },
-    google_ads: { label: 'Google Ads', color: '#f59e0b', bg: '#f59e0b20' },
-    '99acres': { label: '99acres', color: '#ef4444', bg: '#ef444420' },
-    magicbricks: { label: 'MagicBricks', color: '#f97316', bg: '#f9731620' },
-    'housing': { label: 'Housing.com', color: '#06b6d4', bg: '#06b6d420' },
-    justdial: { label: 'JustDial', color: '#8b5cf6', bg: '#8b5cf620' },
-    chatbot: { label: 'Chatbot', color: '#22c55e', bg: '#22c55e20' },
-    whatsapp: { label: 'WhatsApp', color: '#25D366', bg: '#25D36620' },
-    manual: { label: 'Manual', color: '#6b7280', bg: '#6b728020' },
-    referral: { label: 'Referral', color: '#BFA270', bg: '#BFA27020' },
+const sourceConfig: Record<string, { label: string; color: string }> = {
+    website: { label: 'Web', color: '#3b82f6' },
+    meta_ads: { label: 'Meta', color: '#ec4899' },
+    google_ads: { label: 'Google', color: '#f59e0b' },
+    '99acres': { label: '99ac', color: '#ef4444' },
+    magicbricks: { label: 'MB', color: '#f97316' },
+    housing: { label: 'Hsg', color: '#06b6d4' },
+    justdial: { label: 'JD', color: '#8b5cf6' },
+    chatbot: { label: 'Bot', color: '#22c55e' },
+    whatsapp: { label: 'WA', color: '#25D366' },
+    manual: { label: 'Manual', color: '#6b7280' },
+    referral: { label: 'Ref', color: '#BFA270' },
 }
 
-const LIMIT = 25
+const tooltipStyle = {
+    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+}
 
 export default function PipelinePage() {
     const [leads, setLeads] = useState<Lead[]>([])
-    const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState('all')
-    const [search, setSearch] = useState('')
-    const [page, setPage] = useState(1)
-    const [counts, setCounts] = useState<Record<string, number>>({})
-    const [changingStatus, setChangingStatus] = useState<string | null>(null)
+    const [view, setView] = useState<'kanban' | 'analytics'>('kanban')
+    const [draggingId, setDraggingId] = useState<string | null>(null)
+    const [dragOverCol, setDragOverCol] = useState<string | null>(null)
+    const [updating, setUpdating] = useState<string | null>(null)
 
     const fetchLeads = useCallback(async () => {
         setLoading(true)
-        const params = new URLSearchParams({ limit: String(LIMIT), page: String(page) })
-        if (activeTab !== 'all') params.set('status', activeTab)
-        if (search.trim()) params.set('search', search.trim())
-
-        const res = await fetch(`/api/crm/leads?${params}`).catch(() => null)
+        // fetch up to 500 leads for kanban
+        const res = await fetch('/api/crm/leads?limit=500').catch(() => null)
         if (res?.ok) {
             const d = await res.json()
             setLeads(d.leads || [])
-            setTotal(d.total || 0)
         }
         setLoading(false)
-    }, [activeTab, search, page])
-
-    // Fetch status counts once
-    useEffect(() => {
-        fetch('/api/crm/stats').then(r => r.ok ? r.json() : null).then(d => {
-            if (d?.byStatus) {
-                const c: Record<string, number> = { all: d.total || 0 }
-                Object.entries(d.byStatus).forEach(([k, v]) => { c[k] = v as number })
-                setCounts(c)
-            }
-        }).catch(() => {})
     }, [])
 
     useEffect(() => { fetchLeads() }, [fetchLeads])
 
-    const handleStatusChange = async (leadId: string, newStatus: string) => {
-        setChangingStatus(leadId)
+    // Group leads by status into kanban columns
+    const columns = STAGES.reduce((acc, stage) => {
+        acc[stage.key] = leads.filter(l => l.status === stage.key)
+        return acc
+    }, {} as Record<string, Lead[]>)
+
+    const handleDragStart = (e: React.DragEvent, leadId: string) => {
+        setDraggingId(leadId)
+        e.dataTransfer.effectAllowed = 'move'
+    }
+
+    const handleDrop = async (e: React.DragEvent, targetStatus: string) => {
+        e.preventDefault()
+        if (!draggingId) return
+        const lead = leads.find(l => l.id === draggingId)
+        if (!lead || lead.status === targetStatus) { setDraggingId(null); setDragOverCol(null); return }
+
         // Optimistic update
-        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l))
-        await fetch(`/api/crm/leads/${leadId}`, {
+        setLeads(prev => prev.map(l => l.id === draggingId ? { ...l, status: targetStatus } : l))
+        const movedId = draggingId
+        setDraggingId(null)
+        setDragOverCol(null)
+        setUpdating(movedId)
+
+        await fetch(`/api/crm/leads/${movedId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus }),
+            body: JSON.stringify({ status: targetStatus }),
         }).catch(() => {})
-        setChangingStatus(null)
-        // Refresh counts
-        fetch('/api/crm/stats').then(r => r.ok ? r.json() : null).then(d => {
-            if (d?.byStatus) {
-                const c: Record<string, number> = { all: d.total || 0 }
-                Object.entries(d.byStatus).forEach(([k, v]) => { c[k] = v as number })
-                setCounts(c)
-            }
-        }).catch(() => {})
+        setUpdating(null)
     }
 
-    const totalPages = Math.ceil(total / LIMIT)
-
-    const formatRelative = (d: string) => {
+    const formatAge = (d: string) => {
         const ms = Date.now() - new Date(d).getTime()
-        const h = Math.floor(ms / 3600000); const dd = Math.floor(ms / 86400000)
-        if (h < 1) return 'Just now'; if (h < 24) return `${h}h ago`; if (dd < 7) return `${dd}d ago`
-        return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+        const dd = Math.floor(ms / 86400000)
+        if (dd < 1) return 'Today'
+        if (dd === 1) return '1d'
+        if (dd < 30) return `${dd}d`
+        return `${Math.floor(dd / 30)}mo`
     }
+
+    const totalLeads = leads.length
+    const convertedCount = columns['converted']?.length || 0
+    const lostCount = columns['lost']?.length || 0
+    const activeCount = ['new', 'contacted', 'qualified', 'negotiation', 'site_visit'].reduce((s, k) => s + (columns[k]?.length || 0), 0)
+    const winRate = totalLeads > 0 ? Math.round((convertedCount / totalLeads) * 100) : 0
+
+    const funnelData = STAGES.map(s => ({ name: s.label, count: columns[s.key]?.length || 0, color: s.color }))
+
+    // Source distribution for pie chart
+    const sourceData = Object.entries(
+        leads.reduce((acc: Record<string, number>, l) => { acc[l.source] = (acc[l.source] || 0) + 1; return acc }, {})
+    ).map(([key, value]) => ({ name: sourceConfig[key]?.label || key, value, color: sourceConfig[key]?.color || '#6b7280' }))
+        .sort((a, b) => b.value - a.value).slice(0, 7)
 
     return (
-        <div className={styles.pageContent}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
-                <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Pipeline</h1>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
-                        Manage leads across stages &middot; {total.toLocaleString('en-IN')} leads
-                    </p>
+        <div className={styles.pageContent} style={{ maxWidth: '100%' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                    <div>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Pipeline</h1>
+                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+                            Drag leads between stages · {totalLeads.toLocaleString('en-IN')} total
+                        </p>
+                    </div>
+                </div>
+                <div className={styles.pillTabs}>
+                    <button
+                        className={`${styles.pillTab} ${view === 'kanban' ? styles.pillTabActive : ''}`}
+                        onClick={() => setView('kanban')}
+                    >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Columns3 size={13} /> Kanban
+                        </span>
+                    </button>
+                    <button
+                        className={`${styles.pillTab} ${view === 'analytics' ? styles.pillTabActive : ''}`}
+                        onClick={() => setView('analytics')}
+                    >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <BarChart2 size={13} /> Analytics
+                        </span>
+                    </button>
                 </div>
             </div>
 
-            {/* Status Tabs with counts */}
-            <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                {statusTabs.map(tab => {
-                    const count = counts[tab.key] || 0
-                    const isActive = activeTab === tab.key
-                    return (
-                        <button
-                            key={tab.key}
-                            onClick={() => { setActiveTab(tab.key); setPage(1) }}
-                            style={{
-                                padding: '0.5rem 0.875rem',
-                                borderRadius: '0.5rem',
-                                border: isActive ? `1px solid ${tab.color}` : '1px solid #1e2030',
-                                backgroundColor: isActive ? `${tab.color}15` : '#161822',
-                                color: isActive ? tab.color : '#6b7280',
-                                fontSize: '0.8125rem',
-                                fontWeight: isActive ? 600 : 500,
-                                cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                transition: 'all 0.15s',
-                            }}
-                        >
-                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: tab.color }} />
-                            {tab.label}
-                            <span style={{
-                                fontSize: '0.6875rem', fontWeight: 600,
-                                backgroundColor: isActive ? `${tab.color}25` : '#1e2030',
-                                padding: '0.0625rem 0.4375rem', borderRadius: '999px',
-                                color: isActive ? tab.color : '#4b5563',
-                            }}>
-                                {count}
-                            </span>
-                        </button>
-                    )
-                })}
-            </div>
+            {loading ? (
+                <div className={styles.emptyState}>Loading pipeline...</div>
+            ) : view === 'kanban' ? (
+                /* ── KANBAN BOARD ─────────────────────────────────── */
+                <div className={styles.kanbanBoard}>
+                    {STAGES.map(stage => {
+                        const cards = columns[stage.key] || []
+                        const isDragOver = dragOverCol === stage.key
+                        return (
+                            <div
+                                key={stage.key}
+                                className={`${styles.kanbanColumn} ${isDragOver ? styles.kanbanColumnDragOver : ''}`}
+                                onDragOver={e => { e.preventDefault(); setDragOverCol(stage.key) }}
+                                onDragLeave={e => {
+                                    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverCol(null)
+                                }}
+                                onDrop={e => handleDrop(e, stage.key)}
+                            >
+                                {/* Column Header */}
+                                <div className={styles.kanbanColumnHeader}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: stage.color, flexShrink: 0 }} />
+                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb' }}>{stage.label}</span>
+                                    </div>
+                                    <span style={{
+                                        fontSize: '0.6875rem', fontWeight: 700,
+                                        backgroundColor: `${stage.color}20`, color: stage.color,
+                                        padding: '2px 8px', borderRadius: '999px',
+                                    }}>{cards.length}</span>
+                                </div>
 
-            {/* Search */}
-            <div style={{ position: 'relative', maxWidth: '320px', marginBottom: '1rem' }}>
-                <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
-                <input
-                    className={styles.searchInput}
-                    placeholder="Search by name, email, phone..."
-                    value={search}
-                    onChange={e => { setSearch(e.target.value); setPage(1) }}
-                />
-            </div>
-
-            {/* Leads Table */}
-            <div className={styles.card}>
-                {loading ? (
-                    <div className={styles.emptyState} style={{ padding: '2rem' }}>Loading...</div>
-                ) : leads.length > 0 ? (
-                    <>
-                        <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th>Lead</th>
-                                    <th>Source</th>
-                                    <th>Status</th>
-                                    <th>Priority</th>
-                                    <th>Interest</th>
-                                    <th>Added</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {leads.map(lead => {
-                                    const src = sourceConfig[lead.source]
-                                    const statusColor = statusTabs.find(t => t.key === lead.status)?.color || '#6b7280'
-                                    return (
-                                        <tr key={lead.id} style={{ cursor: 'pointer' }}
-                                            onClick={() => window.location.href = `/crm/leads/${lead.id}`}>
-                                            <td>
-                                                <div style={{ fontWeight: 500, color: '#e5e7eb' }}>{lead.name}</div>
-                                                <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.6875rem', color: '#6b7280', marginTop: '2px' }}>
-                                                    {lead.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Phone size={9} />{lead.phone}</span>}
-                                                    {lead.email && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Mail size={9} />{lead.email}</span>}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className={styles.badge} style={{
-                                                    backgroundColor: src?.bg || '#1e2030',
-                                                    color: src?.color || '#9ca3af',
+                                {/* Cards */}
+                                <div className={styles.kanbanColumnBody}>
+                                    {cards.map(lead => (
+                                        <div
+                                            key={lead.id}
+                                            draggable
+                                            onDragStart={e => handleDragStart(e, lead.id)}
+                                            onDragEnd={() => { setDraggingId(null); setDragOverCol(null) }}
+                                            className={`${styles.kanbanCard} ${draggingId === lead.id ? styles.kanbanCardDragging : ''}`}
+                                            onClick={() => { if (!draggingId) window.location.href = `/crm/leads/${lead.id}` }}
+                                            style={{ opacity: updating === lead.id ? 0.5 : 1 }}
+                                        >
+                                            {/* Priority + Source row */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                <span style={{
+                                                    fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                                                    color: lead.priority === 'hot' ? '#ef4444' : lead.priority === 'warm' ? '#f59e0b' : '#6b7280',
                                                 }}>
-                                                    {src?.label || lead.source}
+                                                    {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🟡' : '🔵'} {lead.priority}
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <select
-                                                    value={lead.status}
-                                                    onClick={e => e.stopPropagation()}
-                                                    onChange={e => handleStatusChange(lead.id, e.target.value)}
-                                                    disabled={changingStatus === lead.id}
-                                                    style={{
-                                                        backgroundColor: `${statusColor}15`,
-                                                        color: statusColor,
-                                                        border: `1px solid ${statusColor}40`,
-                                                        borderRadius: '0.375rem',
-                                                        padding: '0.25rem 0.5rem',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: 600,
-                                                        cursor: 'pointer',
-                                                        outline: 'none',
-                                                    }}
-                                                >
-                                                    {statusTabs.filter(t => t.key !== 'all').map(t => (
-                                                        <option key={t.key} value={t.key}>{t.label}</option>
-                                                    ))}
-                                                </select>
-                                            </td>
-                                            <td style={{ fontSize: '0.8125rem' }}>
-                                                {lead.priority === 'hot' ? '🔥 Hot' : lead.priority === 'warm' ? '🟡 Warm' : '🔵 Cold'}
-                                            </td>
-                                            <td>
-                                                {lead.projects?.project_name ? (
-                                                    <span style={{ fontSize: '0.75rem', color: '#BFA270' }}>{lead.projects.project_name}</span>
-                                                ) : (
-                                                    <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>—</span>
-                                                )}
-                                            </td>
-                                            <td style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
-                                                {formatRelative(lead.created_at)}
-                                            </td>
-                                        </tr>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
+                                                <span style={{
+                                                    fontSize: '0.625rem', fontWeight: 600,
+                                                    backgroundColor: `${sourceConfig[lead.source]?.color || '#6b7280'}20`,
+                                                    color: sourceConfig[lead.source]?.color || '#9ca3af',
+                                                    padding: '1px 6px', borderRadius: '999px',
+                                                }}>
+                                                    {sourceConfig[lead.source]?.label || lead.source}
+                                                </span>
+                                            </div>
 
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '0.75rem', borderTop: '1px solid #1e2030',
-                            }}>
-                                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                                    Showing {((page - 1) * LIMIT) + 1}–{Math.min(page * LIMIT, total)} of {total.toLocaleString('en-IN')}
-                                </span>
-                                <div style={{ display: 'flex', gap: '0.375rem' }}>
-                                    <button
-                                        className={styles.btnIcon}
-                                        disabled={page <= 1}
-                                        onClick={() => setPage(p => p - 1)}
-                                        style={{ opacity: page <= 1 ? 0.3 : 1 }}
-                                    >
-                                        <ChevronLeft size={14} />
-                                    </button>
-                                    <span style={{ fontSize: '0.75rem', color: '#9ca3af', padding: '0 0.5rem', display: 'flex', alignItems: 'center' }}>
-                                        {page} / {totalPages}
-                                    </span>
-                                    <button
-                                        className={styles.btnIcon}
-                                        disabled={page >= totalPages}
-                                        onClick={() => setPage(p => p + 1)}
-                                        style={{ opacity: page >= totalPages ? 0.3 : 1 }}
-                                    >
-                                        <ChevronRight size={14} />
-                                    </button>
+                                            {/* Name */}
+                                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb', marginBottom: '0.375rem', lineHeight: 1.3 }}>
+                                                {lead.name}
+                                            </div>
+
+                                            {/* Contact info */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '0.5rem' }}>
+                                                {lead.phone && (
+                                                    <span style={{ fontSize: '0.6875rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <Phone size={9} /> {lead.phone}
+                                                    </span>
+                                                )}
+                                                {lead.email && (
+                                                    <span style={{ fontSize: '0.6875rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        <Mail size={9} /> {lead.email}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Footer: project + age */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                {lead.projects?.project_name ? (
+                                                    <span style={{ fontSize: '0.625rem', color: '#BFA270', fontWeight: 500 }}>
+                                                        {lead.projects.project_name}
+                                                    </span>
+                                                ) : <span />}
+                                                <span style={{ fontSize: '0.625rem', color: '#4b5563' }}>{formatAge(lead.created_at)}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {cards.length === 0 && (
+                                        <div style={{
+                                            padding: '1.5rem 0.75rem', textAlign: 'center',
+                                            color: '#374151', fontSize: '0.75rem',
+                                            border: '1px dashed #2d3148', borderRadius: '0.5rem',
+                                            marginTop: '0.25rem',
+                                        }}>
+                                            Drop leads here
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        )}
-                    </>
-                ) : (
-                    <div className={styles.emptyState}>
-                        {search ? 'No leads match your search.' : 'No leads in this stage yet.'}
+                        )
+                    })}
+                </div>
+            ) : (
+                /* ── ANALYTICS VIEW ───────────────────────────────── */
+                <div>
+                    {/* Stats */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                        {[
+                            { label: 'Total Leads', value: totalLeads, color: '#e5e7eb' },
+                            { label: 'Active', value: activeCount, color: '#BFA270' },
+                            { label: 'Converted', value: convertedCount, color: '#22c55e' },
+                            { label: 'Lost', value: lostCount, color: '#ef4444' },
+                            { label: 'Win Rate', value: `${winRate}%`, color: '#8b5cf6' },
+                        ].map(s => (
+                            <div key={s.label} className={styles.statCard}>
+                                <div className={styles.statLabel}>{s.label}</div>
+                                <div className={styles.statValue} style={{ color: s.color, fontSize: '1.75rem' }}>{s.value}</div>
+                            </div>
+                        ))}
                     </div>
-                )}
-            </div>
+
+                    <div className={styles.chartsGrid}>
+                        {/* Funnel */}
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
+                                <span className={styles.cardTitle}>Pipeline Funnel</span>
+                                <span className={styles.cardSubtitle}>Stage conversion breakdown</span>
+                            </div>
+                            <div className={styles.funnel}>
+                                {funnelData.map(d => {
+                                    const maxCount = Math.max(...funnelData.map(x => x.count), 1)
+                                    const pct = Math.round((d.count / maxCount) * 100)
+                                    const convPct = totalLeads > 0 ? Math.round((d.count / totalLeads) * 100) : 0
+                                    return (
+                                        <div key={d.name} className={styles.funnelStep}>
+                                            <span className={styles.funnelLabel}>{d.name}</span>
+                                            <div style={{ flex: 1 }}>
+                                                <div
+                                                    className={styles.funnelBar}
+                                                    style={{ width: `${Math.max(pct, 5)}%`, backgroundColor: d.color }}
+                                                >
+                                                    {d.count}
+                                                </div>
+                                            </div>
+                                            <span className={styles.funnelCount}>{convPct}%</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Stage bar chart */}
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
+                                <span className={styles.cardTitle}>Leads by Stage</span>
+                            </div>
+                            <ResponsiveContainer width="100%" height={220}>
+                                <BarChart data={funnelData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <Tooltip {...tooltipStyle} />
+                                    <Bar dataKey="count" name="Leads" radius={[4, 4, 0, 0]}>
+                                        {funnelData.map((entry, i) => (
+                                            <Cell key={i} fill={entry.color} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Source breakdown pie */}
+                    <div className={styles.card} style={{ marginTop: '1rem' }}>
+                        <div className={styles.cardHeader}>
+                            <span className={styles.cardTitle}>Lead Sources</span>
+                            <span className={styles.cardSubtitle}>Where pipeline leads come from</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'center' }}>
+                            <ResponsiveContainer width="100%" height={220}>
+                                <PieChart>
+                                    <Pie data={sourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
+                                        {sourceData.map((entry, i) => (
+                                            <Cell key={i} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip {...tooltipStyle} />
+                                    <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: '#9ca3af' }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {sourceData.map(s => (
+                                    <div key={s.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: s.color, flexShrink: 0 }} />
+                                            <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{s.name}</span>
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#e5e7eb' }}>{s.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

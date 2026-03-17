@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createLead } from '@/lib/crm/leads'
+import { assignLead } from './assign/route'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get('source')
     const priority = searchParams.get('priority')
     const search = searchParams.get('search')
-    const agent = searchParams.get('agent')
+    const assignedTo = searchParams.get('assigned_to')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = (page - 1) * limit
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
         .from('leads')
         .select(`
             *,
-            agents (name, email, phone),
+            assignee:assigned_to (id, full_name),
             properties (title, property_id),
             projects (project_name)
         `, { count: 'exact' })
@@ -33,7 +34,8 @@ export async function GET(request: NextRequest) {
     if (status && status !== 'all') query = query.eq('status', status)
     if (source && source !== 'all') query = query.eq('source', source)
     if (priority && priority !== 'all') query = query.eq('priority', priority)
-    if (agent) query = query.eq('assigned_agent_id', agent)
+    if (assignedTo === 'unassigned') query = query.is('assigned_to', null)
+    else if (assignedTo) query = query.eq('assigned_to', assignedTo)
     if (search) {
         query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`)
     }
@@ -74,6 +76,9 @@ export async function POST(request: NextRequest) {
         if (!lead) {
             return NextResponse.json({ error: 'Duplicate lead detected' }, { status: 409 })
         }
+
+        // Auto-assign via round-robin (fire and forget — don't block response)
+        assignLead(lead.id).catch(() => {})
 
         return NextResponse.json({ lead }, { status: 201 })
     } catch {

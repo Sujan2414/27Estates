@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getConnector } from '@/lib/crm/connectors'
 import { createLead, processWebhook } from '@/lib/crm/leads'
+import { assignLead } from '@/app/api/crm/leads/assign/route'
 
 // Universal webhook endpoint: /api/crm/webhook/[platform]
 // e.g., /api/crm/webhook/meta_ads, /api/crm/webhook/google_ads, etc.
@@ -72,6 +73,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Log successful processing
     await processWebhook(platform, 'lead_created', payload, lead.id, 'processed')
+
+    // Auto-assign via round-robin (non-blocking)
+    assignLead(lead.id).catch(() => {})
 
     return NextResponse.json({ message: 'Lead created', lead_id: lead.id }, { status: 201 })
 }

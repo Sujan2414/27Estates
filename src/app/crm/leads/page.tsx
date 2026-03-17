@@ -2,16 +2,55 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
-import { Search, UserPlus, Phone, ChevronLeft, ChevronRight, X, Trash2, ArrowLeft, Filter, Download, Star } from 'lucide-react'
+import {
+    Search, UserPlus, Phone, ChevronLeft, ChevronRight, X, Trash2, ArrowLeft,
+    Filter, Download, Star, Calendar, BarChart2, List, Users, AlertTriangle,
+    CheckCircle2, PhoneOff, Clock, RefreshCw, UserCheck,
+} from 'lucide-react'
 import styles from '../crm.module.css'
+import { useCRMUser, isAdmin, isSuperAdmin } from '../crm-context'
+
+const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
+const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
+const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
+const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false })
+const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false })
+const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: false })
+const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
+
+const tooltipStyle = {
+    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+}
 
 interface Lead {
     id: string; name: string; email: string | null; phone: string | null
     source: string; status: string; priority: string; created_at: string
     score?: number
-    properties?: { title: string } | null; projects?: { project_name: string } | null
+    assigned_to?: string | null
+    assigned_at?: string | null
+    scheduled_call_at?: string | null
+    last_activity_at?: string | null
+    escalated_at?: string | null
+    escalation_count?: number
+    properties?: { title: string } | null
+    projects?: { project_name: string } | null
+    assignee?: { id: string; full_name: string } | null
 }
+
+interface Schedule {
+    id: string; lead_id: string; agent_id: string; scheduled_at: string; status: string
+    outcome?: string | null; notes?: string | null
+    postpone_requested_at?: string | null
+    postpone_approved_by?: string | null
+    actual_called_at?: string | null
+    lead?: { id: string; name: string; phone: string | null; email: string | null; status: string; priority: string; score?: number; source: string }
+    agent?: { id: string; full_name: string; role: string }
+}
+
+interface Employee { id: string; full_name: string; role: string }
 
 const sourceLabels: Record<string, string> = {
     website: 'Website', meta_ads: 'Meta Ads', google_ads: 'Google Ads',
@@ -24,6 +63,15 @@ const statusConfig: Record<string, { color: string; label: string }> = {
     site_visit: { color: '#06b6d4', label: 'Site Visit' }, converted: { color: '#22c55e', label: 'Converted' },
     lost: { color: '#ef4444', label: 'Lost' },
 }
+const scheduleStatusConfig: Record<string, { color: string; label: string }> = {
+    pending: { color: '#3b82f6', label: 'Pending' },
+    called: { color: '#22c55e', label: 'Called' },
+    no_answer: { color: '#6b7280', label: 'No Answer' },
+    postpone_requested: { color: '#f59e0b', label: 'Postpone Requested' },
+    postponed: { color: '#8b5cf6', label: 'Postponed' },
+    escalated: { color: '#ef4444', label: 'Escalated' },
+    reassigned: { color: '#06b6d4', label: 'Reassigned' },
+}
 const statuses = ['all', 'new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted', 'lost']
 const sources = ['all', 'website', 'meta_ads', 'google_ads', '99acres', 'magicbricks', 'housing', 'justdial', 'chatbot', 'manual', 'referral']
 const priorities = ['all', 'hot', 'warm', 'cold']
@@ -31,17 +79,34 @@ const priorities = ['all', 'hot', 'warm', 'cold']
 function ScoreDot({ score }: { score: number }) {
     const color = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#6b7280'
     return (
-        <span title={`Score: ${score}`} style={{
-            display: 'inline-flex', alignItems: 'center', gap: '3px',
-            fontSize: '0.6875rem', color, fontWeight: 600,
-        }}>
+        <span title={`Score: ${score}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.6875rem', color, fontWeight: 600 }}>
             <Star size={10} fill={color} stroke="none" />{score}
         </span>
     )
 }
 
+function formatRelative(d: string) {
+    const ms = Date.now() - new Date(d).getTime()
+    const h = Math.floor(ms / 3600000); const dd = Math.floor(ms / 86400000)
+    if (h < 1) return 'Just now'; if (h < 24) return `${h}h`; if (dd < 7) return `${dd}d`
+    return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+}
+
+function formatTime(iso: string) {
+    return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+}
+
+function formatDateTime(iso: string) {
+    return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ' ' + formatTime(iso)
+}
+
 export default function LeadsPage() {
     const searchParams = useSearchParams()
+    const crmUser = useCRMUser()
+    const isAdminUser = isAdmin(crmUser)
+    const isSA = isSuperAdmin(crmUser)
+
+    const [view, setView] = useState<'list' | 'schedule' | 'analytics'>('list')
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
     const [total, setTotal] = useState(0)
@@ -50,15 +115,34 @@ export default function LeadsPage() {
     const [statusFilter, setStatusFilter] = useState('all')
     const [sourceFilter, setSourceFilter] = useState('all')
     const [priorityFilter, setPriorityFilter] = useState('all')
+    const [agentFilter, setAgentFilter] = useState('all')
     const [showFilters, setShowFilters] = useState(false)
     const [showAddModal, setShowAddModal] = useState(searchParams?.get('new') === 'true')
-    const [newLead, setNewLead] = useState({
-        name: '', email: '', phone: '', source: 'manual', notes: '',
-        priority: 'warm', preferred_location: '', property_type: '',
-        budget_min: '', budget_max: '',
-    })
+    const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', source: 'manual', notes: '', priority: 'warm', preferred_location: '', property_type: '', budget_min: '', budget_max: '' })
     const [saving, setSaving] = useState(false)
     const [exporting, setExporting] = useState(false)
+    const [employees, setEmployees] = useState<Employee[]>([])
+    const [assigning, setAssigning] = useState<string | null>(null)
+    const [escalating, setEscalating] = useState(false)
+    const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+
+    // Schedule state
+    const [schedules, setSchedules] = useState<Schedule[]>([])
+    const [schedulesLoading, setSchedulesLoading] = useState(false)
+    const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split('T')[0])
+    const [scheduleAgentFilter, setScheduleAgentFilter] = useState('all')
+    const [showOutcomeModal, setShowOutcomeModal] = useState(false)
+    const [activeSchedule, setActiveSchedule] = useState<Schedule | null>(null)
+    const [outcomeForm, setOutcomeForm] = useState({ outcome: 'interested', notes: '' })
+    const [outcomeSubmitting, setOutcomeSubmitting] = useState(false)
+    const [showAssignModal, setShowAssignModal] = useState(false)
+    const [assignLeadId, setAssignLeadId] = useState('')
+    const [assignAgentId, setAssignAgentId] = useState('')
+
+    const showToast = (msg: string, ok = true) => {
+        setToast({ msg, ok })
+        setTimeout(() => setToast(null), 3500)
+    }
 
     const fetchLeads = useCallback(async () => {
         setLoading(true)
@@ -66,26 +150,43 @@ export default function LeadsPage() {
         if (statusFilter !== 'all') p.set('status', statusFilter)
         if (sourceFilter !== 'all') p.set('source', sourceFilter)
         if (priorityFilter !== 'all') p.set('priority', priorityFilter)
+        if (agentFilter !== 'all') p.set('assigned_to', agentFilter)
+        else if (!isAdminUser && crmUser?.id) p.set('assigned_to', crmUser.id)
         if (search) p.set('search', search)
         const res = await fetch(`/api/crm/leads?${p}`)
         if (res.ok) { const d = await res.json(); setLeads(d.leads || []); setTotal(d.total || 0) }
         setLoading(false)
-    }, [page, statusFilter, sourceFilter, priorityFilter, search])
+    }, [page, statusFilter, sourceFilter, priorityFilter, agentFilter, search, isAdminUser, crmUser?.id])
+
+    const fetchSchedules = useCallback(async () => {
+        setSchedulesLoading(true)
+        const p = new URLSearchParams({ date: scheduleDate, all: 'true' })
+        if (!isAdminUser && crmUser?.id) p.set('agent_id', crmUser.id)
+        else if (scheduleAgentFilter !== 'all') p.set('agent_id', scheduleAgentFilter)
+        const res = await fetch(`/api/crm/leads/schedule?${p}`)
+        if (res.ok) { const d = await res.json(); setSchedules(d.schedules || []) }
+        setSchedulesLoading(false)
+    }, [scheduleDate, scheduleAgentFilter, isAdminUser, crmUser?.id])
+
+    const fetchEmployees = useCallback(async () => {
+        if (!isAdminUser) return
+        const res = await fetch('/api/crm/hrm/employees')
+        if (res.ok) { const d = await res.json(); setEmployees(d.employees || []) }
+    }, [isAdminUser])
 
     useEffect(() => { fetchLeads() }, [fetchLeads])
+    useEffect(() => { if (view === 'schedule') fetchSchedules() }, [view, fetchSchedules])
+    useEffect(() => { fetchEmployees() }, [fetchEmployees])
 
     const handleAddLead = async () => {
         if (!newLead.name) return; setSaving(true)
-        const payload = {
-            ...newLead,
-            budget_min: newLead.budget_min ? Number(newLead.budget_min) : undefined,
-            budget_max: newLead.budget_max ? Number(newLead.budget_max) : undefined,
-        }
+        const payload = { ...newLead, budget_min: newLead.budget_min ? Number(newLead.budget_min) : undefined, budget_max: newLead.budget_max ? Number(newLead.budget_max) : undefined }
         const res = await fetch('/api/crm/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         if (res.ok) {
             setShowAddModal(false)
             setNewLead({ name: '', email: '', phone: '', source: 'manual', notes: '', priority: 'warm', preferred_location: '', property_type: '', budget_min: '', budget_max: '' })
             fetchLeads()
+            showToast('Lead added & assigned automatically')
         }
         setSaving(false)
     }
@@ -105,146 +206,464 @@ export default function LeadsPage() {
         const p = new URLSearchParams()
         if (statusFilter !== 'all') p.set('status', statusFilter)
         if (sourceFilter !== 'all') p.set('source', sourceFilter)
-        if (priorityFilter !== 'all') p.set('priority', priorityFilter)
         if (search) p.set('search', search)
         const res = await fetch(`/api/crm/export?${p}`)
         if (res.ok) {
             const blob = await res.blob()
             const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url; a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`
-            a.click(); URL.revokeObjectURL(url)
+            const a = document.createElement('a'); a.href = url; a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(url)
         }
         setExporting(false)
     }
 
-    const formatRelative = (d: string) => {
-        const ms = Date.now() - new Date(d).getTime()
-        const h = Math.floor(ms / 3600000); const dd = Math.floor(ms / 86400000)
-        if (h < 1) return 'Just now'; if (h < 24) return `${h}h`; if (dd < 7) return `${dd}d`
-        return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    const handleManualAssign = async () => {
+        if (!assignLeadId || !assignAgentId) return
+        setAssigning(assignLeadId)
+        const res = await fetch('/api/crm/leads/assign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: assignLeadId, agent_id: assignAgentId }) })
+        const d = await res.json()
+        if (res.ok) { showToast('Lead assigned'); setShowAssignModal(false); fetchLeads() }
+        else showToast(d.error || 'Failed', false)
+        setAssigning(null)
+    }
+
+    const handleEscalationCheck = async () => {
+        setEscalating(true)
+        const res = await fetch('/api/crm/leads/escalate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'check_unattended' }) })
+        const d = await res.json()
+        showToast(`Escalated ${d.escalated || 0} unattended leads`)
+        fetchLeads()
+        setEscalating(false)
+    }
+
+    const handleScheduleAction = async (id: string, action: string, extra: Record<string, unknown> = {}) => {
+        const res = await fetch('/api/crm/leads/schedule', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action, ...extra }) })
+        const d = await res.json()
+        if (res.ok) { showToast('Updated'); fetchSchedules() }
+        else showToast(d.error || 'Failed', false)
+    }
+
+    const handleLogOutcome = async () => {
+        if (!activeSchedule) return
+        setOutcomeSubmitting(true)
+        const res = await fetch('/api/crm/leads/schedule', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: activeSchedule.id, status: 'called', outcome: outcomeForm.outcome, notes: outcomeForm.notes }),
+        })
+        const d = await res.json()
+        if (res.ok) { showToast('Call logged'); setShowOutcomeModal(false); fetchSchedules() }
+        else showToast(d.error || 'Failed', false)
+        setOutcomeSubmitting(false)
     }
 
     const totalPages = Math.ceil(total / 25)
 
+    // Analytics computed
+    const statusCounts = Object.entries(statusConfig).map(([k, v]) => ({
+        name: v.label, count: leads.filter(l => l.status === k).length, color: v.color,
+    }))
+    const sourceCounts = Object.entries(sourceLabels).map(([k, v]) => ({
+        name: v, count: leads.filter(l => l.source === k).length, color: '#BFA270',
+    })).filter(s => s.count > 0).sort((a, b) => b.count - a.count)
+    const agentPerf = employees.map(e => {
+        const assigned = leads.filter(l => l.assigned_to === e.id)
+        return {
+            name: e.full_name.split(' ')[0],
+            assigned: assigned.length,
+            contacted: assigned.filter(l => !['new'].includes(l.status)).length,
+            converted: assigned.filter(l => l.status === 'converted').length,
+        }
+    }).filter(e => e.assigned > 0)
+
+    const escalatedLeads = leads.filter(l => l.escalated_at)
+    const unassignedLeads = leads.filter(l => !l.assigned_to && !['converted', 'lost'].includes(l.status))
+
+    const filteredSchedules = schedules.filter(s => {
+        if (!isAdminUser) return s.agent_id === crmUser?.id
+        if (scheduleAgentFilter !== 'all') return s.agent_id === scheduleAgentFilter
+        return true
+    })
+
+    const todayScheduleByAgent = isAdminUser
+        ? employees.reduce((acc, e) => {
+            acc[e.id] = { name: e.full_name, slots: filteredSchedules.filter(s => s.agent_id === e.id) }
+            return acc
+        }, {} as Record<string, { name: string; slots: Schedule[] }>)
+        : {}
+
     return (
         <div className={styles.pageContent}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Leads ({total})</h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>All leads from every platform</p>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>
+                            Leads
+                            {escalatedLeads.length > 0 && (
+                                <span style={{ marginLeft: '0.5rem', fontSize: '0.8125rem', background: '#ef4444', color: 'white', borderRadius: '999px', padding: '2px 8px', fontWeight: 700 }}>
+                                    ⚠ {escalatedLeads.length} escalated
+                                </span>
+                            )}
+                        </h1>
+                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{total} leads · {unassignedLeads.length} unassigned</p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={handleExport} disabled={exporting} className={styles.btnSecondary}>
-                        <Download size={14} /> {exporting ? 'Exporting...' : 'Export CSV'}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {isAdminUser && (
+                        <button onClick={handleEscalationCheck} disabled={escalating} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>
+                            <AlertTriangle size={12} /> {escalating ? '...' : 'Check Escalations'}
+                        </button>
+                    )}
+                    <button onClick={handleExport} disabled={exporting} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>
+                        <Download size={12} /> Export
                     </button>
                     <button onClick={() => setShowAddModal(true)} className={styles.btnPrimary}><UserPlus size={14} /> Add Lead</button>
                 </div>
             </div>
 
-            {/* Search + Filters */}
-            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ flex: 1, position: 'relative' }}>
-                    <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
-                    <input type="text" placeholder="Search name, email, phone..." value={search}
-                        onChange={e => { setSearch(e.target.value); setPage(1) }} className={styles.searchInput} />
-                </div>
-                <button onClick={() => setShowFilters(!showFilters)} className={showFilters ? styles.btnPrimary : styles.btnSecondary}>
-                    <Filter size={14} /> Filters
+            {/* View Tabs */}
+            <div className={styles.pillTabs} style={{ marginBottom: '1.25rem' }}>
+                <button className={`${styles.pillTab} ${view === 'list' ? styles.pillTabActive : ''}`} onClick={() => setView('list')}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><List size={13} /> All Leads</span>
+                </button>
+                <button className={`${styles.pillTab} ${view === 'schedule' ? styles.pillTabActive : ''}`} onClick={() => setView('schedule')}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={13} /> Schedule</span>
+                </button>
+                <button className={`${styles.pillTab} ${view === 'analytics' ? styles.pillTabActive : ''}`} onClick={() => setView('analytics')}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><BarChart2 size={13} /> Analytics</span>
                 </button>
             </div>
 
-            {showFilters && (
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#161822', borderRadius: '0.5rem', border: '1px solid #1e2030', flexWrap: 'wrap' }}>
-                    <div>
-                        <label className={styles.formLabel}>Source</label>
-                        <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '140px' }}>
-                            {sources.map(s => <option key={s} value={s}>{s === 'all' ? 'All Sources' : sourceLabels[s] || s}</option>)}
-                        </select>
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* ALL LEADS VIEW */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {view === 'list' && (
+                <>
+                    {/* Search + Filters */}
+                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
+                            <input type="text" placeholder="Search name, email, phone..." value={search}
+                                onChange={e => { setSearch(e.target.value); setPage(1) }} className={styles.searchInput} />
+                        </div>
+                        <button onClick={() => setShowFilters(!showFilters)} className={showFilters ? styles.btnPrimary : styles.btnSecondary}><Filter size={14} /> Filters</button>
                     </div>
-                    <div>
-                        <label className={styles.formLabel}>Priority</label>
-                        <select value={priorityFilter} onChange={e => { setPriorityFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '120px' }}>
-                            {priorities.map(p => <option key={p} value={p}>{p === 'all' ? 'All Priorities' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-                        </select>
-                    </div>
-                    <button onClick={() => { setSourceFilter('all'); setPriorityFilter('all'); setSearch(''); setPage(1) }}
-                        className={styles.btnSecondary} style={{ alignSelf: 'flex-end', fontSize: '0.75rem' }}>
-                        <X size={12} /> Clear
-                    </button>
-                </div>
-            )}
 
-            {/* Status Tabs */}
-            <div className={styles.pillTabs} style={{ marginBottom: '1rem' }}>
-                {statuses.map(s => (
-                    <button key={s} className={`${styles.pillTab} ${statusFilter === s ? styles.pillTabActive : ''}`}
-                        onClick={() => { setStatusFilter(s); setPage(1) }}>
-                        {s === 'all' ? 'All' : statusConfig[s]?.label || s}
-                    </button>
-                ))}
-            </div>
-
-            {/* Table */}
-            {loading ? (
-                <div className={styles.emptyState}>Loading...</div>
-            ) : leads.length > 0 ? (
-                <div className={styles.card} style={{ padding: 0, overflow: 'hidden' }}>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className={styles.table}>
-                            <thead>
-                                <tr><th>Name</th><th>Contact</th><th>Source</th><th>Status</th><th>Score</th><th>Interest</th><th>Added</th><th></th></tr>
-                            </thead>
-                            <tbody>
-                                {leads.map(lead => (
-                                    <tr key={lead.id} style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/crm/leads/${lead.id}`}>
-                                        <td>
-                                            <div style={{ fontWeight: 500, color: '#e5e7eb' }}>{lead.name}</div>
-                                            <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>
-                                                {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🟡' : '🔵'} {lead.priority}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {lead.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}><Phone size={10} /> {lead.phone}</div>}
-                                            {lead.email && <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>{lead.email}</div>}
-                                        </td>
-                                        <td><span className={styles.badge} style={{ backgroundColor: '#1e2030', color: '#9ca3af' }}>{sourceLabels[lead.source] || lead.source}</span></td>
-                                        <td>
-                                            <select value={lead.status} onClick={e => e.stopPropagation()} onChange={e => handleStatusChange(lead.id, e.target.value)}
-                                                style={{
-                                                    padding: '0.2rem 0.4rem', borderRadius: '0.375rem', fontSize: '0.6875rem', fontWeight: 600,
-                                                    border: '1px solid #2d3148', cursor: 'pointer',
-                                                    backgroundColor: `${statusConfig[lead.status]?.color}20`, color: statusConfig[lead.status]?.color,
-                                                }}>
-                                                {statuses.filter(s => s !== 'all').map(s => <option key={s} value={s}>{statusConfig[s]?.label || s}</option>)}
-                                            </select>
-                                        </td>
-                                        <td>{lead.score != null ? <ScoreDot score={lead.score} /> : <span style={{ color: '#4b5563', fontSize: '0.75rem' }}>—</span>}</td>
-                                        <td style={{ fontSize: '0.75rem', color: '#6b7280' }}>{lead.properties?.title || lead.projects?.project_name || '—'}</td>
-                                        <td style={{ fontSize: '0.75rem', color: '#4b5563' }}>{formatRelative(lead.created_at)}</td>
-                                        <td><button onClick={e => handleDelete(lead.id, e)} className={styles.btnIcon} style={{ color: '#ef4444' }}><Trash2 size={12} /></button></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    {totalPages > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', borderTop: '1px solid #1e2030' }}>
-                            <button disabled={page <= 1} onClick={() => setPage(page - 1)} className={styles.btnIcon}><ChevronLeft size={16} /></button>
-                            <span style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Page {page} of {totalPages} · {total} leads</span>
-                            <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className={styles.btnIcon}><ChevronRight size={16} /></button>
+                    {showFilters && (
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', padding: '0.75rem', backgroundColor: '#161822', borderRadius: '0.5rem', border: '1px solid #1e2030', flexWrap: 'wrap' }}>
+                            <div>
+                                <label className={styles.formLabel}>Source</label>
+                                <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '140px' }}>
+                                    {sources.map(s => <option key={s} value={s}>{s === 'all' ? 'All Sources' : sourceLabels[s] || s}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={styles.formLabel}>Priority</label>
+                                <select value={priorityFilter} onChange={e => { setPriorityFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '120px' }}>
+                                    {priorities.map(p => <option key={p} value={p}>{p === 'all' ? 'All' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+                                </select>
+                            </div>
+                            {isAdminUser && (
+                                <div>
+                                    <label className={styles.formLabel}>Agent</label>
+                                    <select value={agentFilter} onChange={e => { setAgentFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '160px' }}>
+                                        <option value="all">All Agents</option>
+                                        <option value="unassigned">Unassigned</option>
+                                        {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            <button onClick={() => { setSourceFilter('all'); setPriorityFilter('all'); setAgentFilter('all'); setSearch(''); setPage(1) }}
+                                className={styles.btnSecondary} style={{ alignSelf: 'flex-end', fontSize: '0.75rem' }}>
+                                <X size={12} /> Clear
+                            </button>
                         </div>
                     )}
-                </div>
-            ) : (
-                <div className={styles.card}><div className={styles.emptyState}>
-                    <p style={{ color: '#e5e7eb', fontWeight: 500, marginBottom: '0.5rem' }}>No leads found</p>
-                    <p style={{ fontSize: '0.8125rem' }}>{search ? 'Try adjusting your search.' : 'Add leads manually or connect ad platforms.'}</p>
-                </div></div>
+
+                    {/* Status Tabs */}
+                    <div className={styles.pillTabs} style={{ marginBottom: '1rem' }}>
+                        {statuses.map(s => (
+                            <button key={s} className={`${styles.pillTab} ${statusFilter === s ? styles.pillTabActive : ''}`}
+                                onClick={() => { setStatusFilter(s); setPage(1) }}>
+                                {s === 'all' ? 'All' : statusConfig[s]?.label || s}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Leads Table */}
+                    {loading ? (
+                        <div className={styles.emptyState}>Loading...</div>
+                    ) : leads.length > 0 ? (
+                        <div className={styles.card} style={{ padding: 0, overflow: 'hidden' }}>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Contact</th>
+                                            <th>Source</th>
+                                            <th>Status</th>
+                                            <th>Score</th>
+                                            <th>Assigned To</th>
+                                            <th>Next Call</th>
+                                            <th>Added</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {leads.map(lead => {
+                                            const isEscalated = !!lead.escalated_at
+                                            const isOverdue = lead.scheduled_call_at && new Date(lead.scheduled_call_at) < new Date() && !['contacted', 'qualified', 'negotiation', 'site_visit', 'converted'].includes(lead.status)
+                                            return (
+                                                <tr key={lead.id} style={{ cursor: 'pointer', background: isEscalated ? '#ef444408' : undefined }}
+                                                    onClick={() => window.location.href = `/crm/leads/${lead.id}`}>
+                                                    <td>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            {isEscalated && <AlertTriangle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />}
+                                                            <div>
+                                                                <div style={{ fontWeight: 500, color: '#e5e7eb' }}>{lead.name}</div>
+                                                                <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>
+                                                                    {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🟡' : '🔵'} {lead.priority}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        {lead.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}><Phone size={10} /> {lead.phone}</div>}
+                                                        {lead.email && <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>{lead.email}</div>}
+                                                    </td>
+                                                    <td><span className={styles.badge} style={{ backgroundColor: '#1e2030', color: '#9ca3af' }}>{sourceLabels[lead.source] || lead.source}</span></td>
+                                                    <td>
+                                                        <select value={lead.status} onClick={e => e.stopPropagation()} onChange={e => handleStatusChange(lead.id, e.target.value)}
+                                                            style={{ padding: '0.2rem 0.4rem', borderRadius: '0.375rem', fontSize: '0.6875rem', fontWeight: 600, border: '1px solid #2d3148', cursor: 'pointer', backgroundColor: `${statusConfig[lead.status]?.color}20`, color: statusConfig[lead.status]?.color }}>
+                                                            {statuses.filter(s => s !== 'all').map(s => <option key={s} value={s}>{statusConfig[s]?.label || s}</option>)}
+                                                        </select>
+                                                    </td>
+                                                    <td>{lead.score != null ? <ScoreDot score={lead.score} /> : <span style={{ color: '#4b5563', fontSize: '0.75rem' }}>—</span>}</td>
+                                                    <td onClick={e => e.stopPropagation()}>
+                                                        {lead.assignee ? (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#BFA270', color: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700, flexShrink: 0 }}>
+                                                                    {lead.assignee.full_name.charAt(0)}
+                                                                </div>
+                                                                <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{lead.assignee.full_name.split(' ')[0]}</span>
+                                                                {isAdminUser && (
+                                                                    <button onClick={() => { setAssignLeadId(lead.id); setAssignAgentId(lead.assigned_to || ''); setShowAssignModal(true) }}
+                                                                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#4b5563', padding: '0 2px' }}>
+                                                                        <RefreshCw size={10} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            isAdminUser ? (
+                                                                <button onClick={() => { setAssignLeadId(lead.id); setAssignAgentId(''); setShowAssignModal(true) }}
+                                                                    style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#f59e0b', background: '#f59e0b10', border: '1px solid #f59e0b30', borderRadius: '0.375rem', padding: '2px 8px', cursor: 'pointer' }}>
+                                                                    <Users size={10} style={{ display: 'inline', marginRight: 3 }} /> Assign
+                                                                </button>
+                                                            ) : <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>—</span>
+                                                        )}
+                                                    </td>
+                                                    <td style={{ fontSize: '0.75rem', color: isOverdue ? '#ef4444' : '#6b7280' }}>
+                                                        {lead.scheduled_call_at ? (
+                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                {isOverdue && <Clock size={10} />}
+                                                                {formatDateTime(lead.scheduled_call_at)}
+                                                            </span>
+                                                        ) : '—'}
+                                                    </td>
+                                                    <td style={{ fontSize: '0.75rem', color: '#4b5563' }}>{formatRelative(lead.created_at)}</td>
+                                                    <td><button onClick={e => handleDelete(lead.id, e)} className={styles.btnIcon} style={{ color: '#ef4444' }}><Trash2 size={12} /></button></td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {totalPages > 1 && (
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', borderTop: '1px solid #1e2030' }}>
+                                    <button disabled={page <= 1} onClick={() => setPage(page - 1)} className={styles.btnIcon}><ChevronLeft size={16} /></button>
+                                    <span style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Page {page} of {totalPages} · {total} leads</span>
+                                    <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className={styles.btnIcon}><ChevronRight size={16} /></button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className={styles.card}><div className={styles.emptyState}>
+                            <p style={{ color: '#e5e7eb', fontWeight: 500, marginBottom: '0.5rem' }}>No leads found</p>
+                            <p style={{ fontSize: '0.8125rem' }}>{search ? 'Try adjusting your search.' : 'Add leads manually or connect ad platforms.'}</p>
+                        </div></div>
+                    )}
+                </>
             )}
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* SCHEDULE VIEW */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {view === 'schedule' && (
+                <>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className={styles.formInput} style={{ width: 'auto' }} />
+                        {isAdminUser && (
+                            <select className={styles.formSelect} style={{ width: 'auto', minWidth: 160 }} value={scheduleAgentFilter} onChange={e => setScheduleAgentFilter(e.target.value)}>
+                                <option value="all">All Agents</option>
+                                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                            </select>
+                        )}
+                        <button onClick={fetchSchedules} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}><RefreshCw size={12} /> Refresh</button>
+                        {schedules.filter(s => s.status === 'postpone_requested').length > 0 && (
+                            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#f59e0b', background: '#f59e0b15', padding: '4px 10px', borderRadius: '0.5rem', border: '1px solid #f59e0b30' }}>
+                                {schedules.filter(s => s.status === 'postpone_requested').length} postpone requests pending
+                            </span>
+                        )}
+                    </div>
+
+                    {schedulesLoading ? (
+                        <div className={styles.emptyState}>Loading schedule...</div>
+                    ) : filteredSchedules.length === 0 ? (
+                        <div className={styles.emptyState}>No calls scheduled for {scheduleDate}</div>
+                    ) : isAdminUser && scheduleAgentFilter === 'all' ? (
+                        // Admin: grouped by agent
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            {Object.entries(todayScheduleByAgent).filter(([, v]) => v.slots.length > 0).map(([agentId, { name, slots }]) => (
+                                <div key={agentId}>
+                                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#BFA270', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <UserCheck size={14} /> {name}
+                                        <span style={{ fontSize: '0.6875rem', color: '#6b7280', fontWeight: 400 }}>· {slots.length} calls</span>
+                                    </div>
+                                    <ScheduleSlotList slots={slots} isAdmin={isAdminUser} isSA={isSA} crmUserId={crmUser?.id}
+                                        onAction={handleScheduleAction}
+                                        onLogOutcome={s => { setActiveSchedule(s); setOutcomeForm({ outcome: 'interested', notes: '' }); setShowOutcomeModal(true) }}
+                                        employees={employees}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        // Agent view or filtered
+                        <ScheduleSlotList slots={filteredSchedules} isAdmin={isAdminUser} isSA={isSA} crmUserId={crmUser?.id}
+                            onAction={handleScheduleAction}
+                            onLogOutcome={s => { setActiveSchedule(s); setOutcomeForm({ outcome: 'interested', notes: '' }); setShowOutcomeModal(true) }}
+                            employees={employees}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* ANALYTICS VIEW */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {view === 'analytics' && (
+                <>
+                    {/* Stat cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                        {Object.entries(statusConfig).map(([k, v]) => (
+                            <div key={k} className={styles.statCard}>
+                                <div className={styles.statLabel}>{v.label}</div>
+                                <div className={styles.statValue} style={{ color: v.color, fontSize: '1.5rem' }}>{leads.filter(l => l.status === k).length}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className={styles.chartsGrid}>
+                        {/* Status distribution */}
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}><span className={styles.cardTitle}>Status Distribution</span></div>
+                            <ResponsiveContainer width="100%" height={220}>
+                                <BarChart data={statusCounts} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <Tooltip {...tooltipStyle} />
+                                    <Bar dataKey="count" name="Leads" radius={[4, 4, 0, 0]}>
+                                        {statusCounts.map((e, i) => <Cell key={i} fill={e.color} />)}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Source breakdown */}
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}><span className={styles.cardTitle}>Lead Sources</span></div>
+                            {sourceCounts.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {sourceCounts.slice(0, 8).map(s => {
+                                        const pct = total > 0 ? Math.round((s.count / total) * 100) : 0
+                                        return (
+                                            <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <span style={{ fontSize: '0.75rem', color: '#9ca3af', width: '90px', flexShrink: 0 }}>{s.name}</span>
+                                                <div style={{ flex: 1, height: '6px', backgroundColor: '#1e2030', borderRadius: '3px' }}>
+                                                    <div style={{ height: '100%', width: `${pct}%`, backgroundColor: '#BFA270', borderRadius: '3px' }} />
+                                                </div>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#BFA270', width: '36px', textAlign: 'right' }}>{s.count}</span>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            ) : <div className={styles.emptyState}>No data</div>}
+                        </div>
+
+                        {/* Agent performance (admin only) */}
+                        {isAdminUser && agentPerf.length > 0 && (
+                            <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
+                                <div className={styles.cardHeader}><span className={styles.cardTitle}>Agent Performance</span></div>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '1px solid #1e2030' }}>
+                                                <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#6b7280', fontWeight: 600 }}>Agent</th>
+                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Assigned</th>
+                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Contacted</th>
+                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Converted</th>
+                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Conv. Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {agentPerf.map(a => {
+                                                const convRate = a.assigned > 0 ? Math.round((a.converted / a.assigned) * 100) : 0
+                                                return (
+                                                    <tr key={a.name} style={{ borderBottom: '1px solid #1e2030' }}>
+                                                        <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500, color: '#e5e7eb' }}>{a.name}</td>
+                                                        <td style={{ textAlign: 'center', padding: '0.5rem', color: '#9ca3af' }}>{a.assigned}</td>
+                                                        <td style={{ textAlign: 'center', padding: '0.5rem', color: '#f59e0b' }}>{a.contacted}</td>
+                                                        <td style={{ textAlign: 'center', padding: '0.5rem', color: '#22c55e', fontWeight: 700 }}>{a.converted}</td>
+                                                        <td style={{ textAlign: 'center', padding: '0.5rem', fontWeight: 700, color: convRate >= 20 ? '#22c55e' : convRate >= 10 ? '#f59e0b' : '#ef4444' }}>
+                                                            {convRate}%
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Escalation summary */}
+                    {escalatedLeads.length > 0 && (
+                        <div className={styles.card} style={{ marginTop: '1rem', borderLeft: '3px solid #ef4444' }}>
+                            <div className={styles.cardHeader}><span className={styles.cardTitle} style={{ color: '#ef4444' }}>⚠ Escalated Leads ({escalatedLeads.length})</span></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {escalatedLeads.slice(0, 5).map(l => (
+                                    <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: '#1e2030', borderRadius: '0.5rem' }}>
+                                        <div>
+                                            <span style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>{l.name}</span>
+                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem' }}>{l.phone}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <span style={{ fontSize: '0.6875rem', color: '#ef4444' }}>Escalated {l.escalated_at ? formatRelative(l.escalated_at) : ''} ago · #{l.escalation_count || 1}</span>
+                                            <Link href={`/crm/leads/${l.id}`} style={{ fontSize: '0.75rem', color: '#BFA270' }}>View →</Link>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* MODALS */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
 
             {/* Add Lead Modal */}
             {showAddModal && (
@@ -285,7 +704,7 @@ export default function LeadsPage() {
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
                             <div className={styles.formGroup} style={{ flex: 1 }}>
                                 <label className={styles.formLabel}>Preferred Location</label>
-                                <input type="text" value={newLead.preferred_location} onChange={e => setNewLead({ ...newLead, preferred_location: e.target.value })} placeholder="e.g. Whitefield, Bangalore" className={styles.formInput} />
+                                <input type="text" value={newLead.preferred_location} onChange={e => setNewLead({ ...newLead, preferred_location: e.target.value })} placeholder="e.g. Whitefield" className={styles.formInput} />
                             </div>
                             <div className={styles.formGroup} style={{ flex: 1 }}>
                                 <label className={styles.formLabel}>Property Type</label>
@@ -295,24 +714,222 @@ export default function LeadsPage() {
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
                             <div className={styles.formGroup} style={{ flex: 1 }}>
                                 <label className={styles.formLabel}>Budget Min (₹)</label>
-                                <input type="number" value={newLead.budget_min} onChange={e => setNewLead({ ...newLead, budget_min: e.target.value })} placeholder="e.g. 5000000" className={styles.formInput} />
+                                <input type="number" value={newLead.budget_min} onChange={e => setNewLead({ ...newLead, budget_min: e.target.value })} className={styles.formInput} />
                             </div>
                             <div className={styles.formGroup} style={{ flex: 1 }}>
                                 <label className={styles.formLabel}>Budget Max (₹)</label>
-                                <input type="number" value={newLead.budget_max} onChange={e => setNewLead({ ...newLead, budget_max: e.target.value })} placeholder="e.g. 12000000" className={styles.formInput} />
+                                <input type="number" value={newLead.budget_max} onChange={e => setNewLead({ ...newLead, budget_max: e.target.value })} className={styles.formInput} />
                             </div>
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>Notes</label>
                             <textarea value={newLead.notes} onChange={e => setNewLead({ ...newLead, notes: e.target.value })} rows={3} className={styles.formInput} style={{ resize: 'vertical' }} />
                         </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: '#1e2030', borderRadius: '0.5rem' }}>
+                            ⚡ Lead will be auto-assigned via round-robin after creation
+                        </div>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                             <button onClick={() => setShowAddModal(false)} className={styles.btnSecondary}>Cancel</button>
-                            <button onClick={handleAddLead} className={styles.btnPrimary} disabled={saving || !newLead.name}>{saving ? 'Saving...' : 'Add Lead'}</button>
+                            <button onClick={handleAddLead} className={styles.btnPrimary} disabled={saving || !newLead.name}>{saving ? 'Saving...' : 'Add & Assign Lead'}</button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Manual Assign Modal */}
+            {showAssignModal && (
+                <div className={styles.modal} onClick={() => setShowAssignModal(false)}>
+                    <div className={styles.modalContent} style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb' }}>Assign Lead</h3>
+                            <button onClick={() => setShowAssignModal(false)} className={styles.btnIcon}><X size={16} /></button>
+                        </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Assign to Agent</label>
+                            <select value={assignAgentId} onChange={e => setAssignAgentId(e.target.value)} className={styles.formSelect}>
+                                <option value="">— Round-robin (auto) —</option>
+                                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.role})</option>)}
+                            </select>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                            <button onClick={() => setShowAssignModal(false)} className={styles.btnSecondary}>Cancel</button>
+                            <button onClick={handleManualAssign} className={styles.btnPrimary} disabled={!!assigning}>
+                                {assigning ? 'Assigning...' : 'Assign'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Log Call Outcome Modal */}
+            {showOutcomeModal && activeSchedule && (
+                <div className={styles.modal} onClick={() => setShowOutcomeModal(false)}>
+                    <div className={styles.modalContent} style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb' }}>Log Call — {activeSchedule.lead?.name}</h3>
+                            <button onClick={() => setShowOutcomeModal(false)} className={styles.btnIcon}><X size={16} /></button>
+                        </div>
+                        <div style={{ marginBottom: '1rem', padding: '0.5rem 0.75rem', background: '#1e2030', borderRadius: '0.5rem', fontSize: '0.8125rem', color: '#9ca3af' }}>
+                            Scheduled: {formatDateTime(activeSchedule.scheduled_at)}
+                            {activeSchedule.lead?.phone && <div style={{ marginTop: '0.25rem' }}><Phone size={11} style={{ display: 'inline', marginRight: 4 }} />{activeSchedule.lead.phone}</div>}
+                        </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Outcome *</label>
+                            <select value={outcomeForm.outcome} onChange={e => setOutcomeForm({ ...outcomeForm, outcome: e.target.value })} className={styles.formSelect}>
+                                <option value="interested">Interested</option>
+                                <option value="not_interested">Not Interested</option>
+                                <option value="callback">Callback Requested</option>
+                                <option value="no_answer">No Answer</option>
+                                <option value="converted">Converted</option>
+                            </select>
+                        </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Notes</label>
+                            <textarea value={outcomeForm.notes} onChange={e => setOutcomeForm({ ...outcomeForm, notes: e.target.value })} rows={3} className={styles.formInput} style={{ resize: 'vertical' }} placeholder="What did the lead say? Next steps?" />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            <button className={styles.btnSecondary} onClick={() => setShowOutcomeModal(false)}>Cancel</button>
+                            <button className={styles.btnPrimary} onClick={handleLogOutcome} disabled={outcomeSubmitting}>
+                                {outcomeSubmitting ? 'Saving...' : 'Log Call'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast */}
+            {toast && (
+                <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', padding: '0.75rem 1.25rem', background: toast.ok ? '#183C38' : '#dc2626', color: 'white', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', fontSize: '0.875rem', fontWeight: 500, zIndex: 9999 }}>
+                    {toast.msg}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Schedule Slot List Component
+// ─────────────────────────────────────────────────────────────────
+function ScheduleSlotList({
+    slots, isAdmin, isSA, crmUserId, onAction, onLogOutcome, employees,
+}: {
+    slots: Schedule[]; isAdmin: boolean; isSA: boolean; crmUserId?: string
+    onAction: (id: string, action: string, extra?: Record<string, unknown>) => void
+    onLogOutcome: (s: Schedule) => void
+    employees: Employee[]
+}) {
+    const [reassignId, setReassignId] = useState<string | null>(null)
+    const [reassignAgentId, setReassignAgentId] = useState('')
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            {slots.map(slot => {
+                const sConf = scheduleStatusConfig[slot.status] || { color: '#6b7280', label: slot.status }
+                const isPending = slot.status === 'pending'
+                const isPostponeReq = slot.status === 'postpone_requested'
+                const isOverdue = new Date(slot.scheduled_at) < new Date() && isPending
+                const canAct = !isAdmin ? slot.agent_id === crmUserId : true
+
+                return (
+                    <div key={slot.id} className={styles.card} style={{
+                        padding: '1rem 1.25rem',
+                        borderLeft: `3px solid ${isPostponeReq ? '#f59e0b' : isOverdue ? '#ef4444' : sConf.color}`,
+                        background: isPostponeReq ? '#f59e0b08' : isOverdue ? '#ef444408' : '#161822',
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            {/* Left: lead info */}
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.375rem', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '1rem', fontWeight: 700, color: '#e5e7eb' }}>{slot.lead?.name || '—'}</span>
+                                    {slot.lead?.priority === 'hot' && <span style={{ fontSize: '0.6875rem' }}>🔥</span>}
+                                    {slot.lead?.priority === 'warm' && <span style={{ fontSize: '0.6875rem' }}>🟡</span>}
+                                    {isOverdue && <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#ef4444', background: '#ef444415', padding: '2px 6px', borderRadius: '4px' }}>OVERDUE</span>}
+                                    {isPostponeReq && <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#f59e0b', background: '#f59e0b15', padding: '2px 6px', borderRadius: '4px' }}>POSTPONE REQUESTED</span>}
+                                </div>
+                                {slot.lead?.phone && (
+                                    <a href={`tel:${slot.lead.phone}`} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.875rem', color: '#22c55e', fontWeight: 600, textDecoration: 'none', marginBottom: '0.25rem' }}>
+                                        <Phone size={13} /> {slot.lead.phone}
+                                    </a>
+                                )}
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                        <Clock size={11} /> {new Date(slot.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                    </span>
+                                    {isAdmin && slot.agent && (
+                                        <span style={{ color: '#BFA270' }}>Agent: {slot.agent.full_name.split(' ')[0]}</span>
+                                    )}
+                                    {slot.outcome && <span style={{ color: '#22c55e' }}>✓ {slot.outcome}</span>}
+                                    {slot.notes && <span style={{ fontStyle: 'italic', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{slot.notes}"</span>}
+                                </div>
+                            </div>
+
+                            {/* Right: actions */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', alignItems: 'flex-end' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: sConf.color, background: `${sConf.color}15`, padding: '3px 10px', borderRadius: '999px' }}>
+                                    {sConf.label}
+                                </span>
+
+                                {/* Pending actions for own slots or admin */}
+                                {isPending && canAct && (
+                                    <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                        <button onClick={() => onLogOutcome(slot)}
+                                            style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', background: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e40', borderRadius: '0.375rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                            <CheckCircle2 size={11} /> Called
+                                        </button>
+                                        <button onClick={() => onAction(slot.id, null as unknown as string, { status: 'no_answer' })}
+                                            style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', background: '#6b728020', color: '#9ca3af', border: '1px solid #6b728040', borderRadius: '0.375rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                            <PhoneOff size={11} /> No Answer
+                                        </button>
+                                        {!isAdmin && (
+                                            <button onClick={() => onAction(slot.id, 'request_postpone')}
+                                                style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', background: '#f59e0b10', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: '0.375rem', cursor: 'pointer' }}>
+                                                Postpone Request
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Admin: approve/reject postpone */}
+                                {isPostponeReq && isAdmin && (
+                                    <div style={{ display: 'flex', gap: '0.375rem' }}>
+                                        <button onClick={() => onAction(slot.id, 'approve_postpone', { approved_by: crmUserId })}
+                                            style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', background: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e40', borderRadius: '0.375rem', cursor: 'pointer' }}>
+                                            ✓ Approve Postpone
+                                        </button>
+                                        <button onClick={() => onAction(slot.id, 'reject_postpone')}
+                                            style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440', borderRadius: '0.375rem', cursor: 'pointer' }}>
+                                            ✗ Reject
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Admin: reassign */}
+                                {isAdmin && (isPending || isPostponeReq) && (
+                                    reassignId === slot.id ? (
+                                        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+                                            <select value={reassignAgentId} onChange={e => setReassignAgentId(e.target.value)}
+                                                style={{ fontSize: '0.75rem', background: '#0f1117', border: '1px solid #2d3148', borderRadius: '0.375rem', color: '#e5e7eb', padding: '3px 6px' }}>
+                                                <option value="">Select agent...</option>
+                                                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name.split(' ')[0]}</option>)}
+                                            </select>
+                                            <button onClick={() => { if (reassignAgentId) { onAction(slot.id, 'reassign', { new_agent_id: reassignAgentId }); setReassignId(null) } }}
+                                                style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#BFA270', color: '#0f1117', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 700 }}>
+                                                Go
+                                            </button>
+                                            <button onClick={() => setReassignId(null)} style={{ fontSize: '0.75rem', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer' }}>✕</button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => { setReassignId(slot.id); setReassignAgentId('') }}
+                                            style={{ fontSize: '0.6875rem', color: '#6b7280', background: 'none', border: '1px solid #2d3148', padding: '2px 8px', borderRadius: '0.375rem', cursor: 'pointer' }}>
+                                            Reassign
+                                        </button>
+                                    )
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })}
         </div>
     )
 }
