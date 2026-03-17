@@ -56,9 +56,14 @@ const sourceConfig: Record<string, { label: string; color: string; bg: string }>
     justdial: { label: 'JustDial', color: '#8b5cf6', bg: '#8b5cf620' },
     chatbot: { label: 'Chatbot', color: '#22c55e', bg: '#22c55e20' },
     whatsapp: { label: 'WhatsApp', color: '#25D366', bg: '#25D36620' },
-    manual: { label: 'Manual', color: '#6b7280', bg: '#6b728020' },
+    manual: { label: 'Manual', color: '#a78bfa', bg: '#a78bfa20' },
     referral: { label: 'Referral', color: '#BFA270', bg: '#BFA27020' },
+    b2bbricks: { label: 'B2BBricks', color: '#fb7185', bg: '#fb718520' },
+    sulekha: { label: 'Sulekha', color: '#34d399', bg: '#34d39920' },
+    commonfloor: { label: 'CommonFloor', color: '#60a5fa', bg: '#60a5fa20' },
 }
+
+const FALLBACK_COLORS = ['#fb923c', '#4ade80', '#f472b6', '#38bdf8', '#a3e635', '#fbbf24', '#c084fc', '#2dd4bf']
 
 const statusConfig: Record<string, { color: string; label: string }> = {
     new: { color: '#3b82f6', label: 'New' },
@@ -113,8 +118,8 @@ export default function CRMDashboard() {
     const maxFunnel = Math.max(...funnelSteps.map(s => stats?.byStatus[s] || 0), 1)
 
     // Prepare source pie data with consistent colors
-    const sourceData = stats ? Object.entries(stats.bySource).map(([key, value]) => ({
-        name: sourceConfig[key]?.label || key, value, color: sourceConfig[key]?.color || '#6b7280',
+    const sourceData = stats ? Object.entries(stats.bySource).map(([key, value], i) => ({
+        name: sourceConfig[key]?.label || key, value, color: sourceConfig[key]?.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
     })) : []
 
     return (

@@ -19,7 +19,8 @@ import {
     Menu,
     X,
     Landmark,
-    Warehouse
+    Warehouse,
+    LineChart
 } from 'lucide-react'
 import styles from './admin.module.css'
 
@@ -88,6 +89,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: 'Agents', href: '/admin/agents', icon: Users, roles: ['admin', 'super_admin'] },
         { name: 'Users', href: '/admin/users', icon: Users, roles: ['admin', 'super_admin'] },
         { name: 'Owners/Developers', href: '/admin/owners', icon: Contact, roles: ['admin', 'super_admin', 'agent'] },
+        { name: 'CRM', href: '/crm', icon: LineChart, roles: ['admin', 'super_admin', 'agent'] },
     ]
 
     const userRole = (user as any)?.role || 'agent'
