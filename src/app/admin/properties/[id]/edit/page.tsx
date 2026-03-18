@@ -232,7 +232,7 @@ export default function EditPropertyPage() {
             agent_id: data.agent_id || '',
             owner_id: data.owner_id || '',
             video_url: data.video_url || '',
-            keyword: data.keyword || '',
+            keyword: data.keywords || '',
             // Availability — normalise legacy values
             possession_status: (data.possession_status === 'Ready To Move' || data.possession_status === 'Under Construction')
                 ? (data.possession_status === 'Ready To Move' ? 'Immediately/Ready to Move' : 'Specify Time')
@@ -453,7 +453,7 @@ export default function EditPropertyPage() {
                 agent_id: formData.agent_id || null,
                 owner_id: formData.owner_id || null,
                 video_url: formData.video_url || null,
-                keyword: formData.keyword || null,
+                keywords: formData.keyword || null,
                 // Availability
                 possession_status: formData.possession_status || null,
                 possession_date: formData.possession_status === 'Specify Time' ? (formData.possession_date || null) : null,
