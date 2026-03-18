@@ -37,6 +37,7 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
         terrace_area: initialData.terrace_area || '',
         plot_size: initialData.plot_size || '',
         bathrooms: initialData.bathrooms || '',
+        balconies: initialData.balconies || '',
         floors: initialData.floors || '',
         parking_count: initialData.parking_count || '',
         price: initialData.price || '',
@@ -194,6 +195,16 @@ export default function PropertyAreaStep({ initialData, onNext, onBack }: StepPr
                         <div className={styles.field}>
                             <label className={styles.label}>Terrace Area</label>
                             <input type="number" name="terrace_area" value={formData.terrace_area} onChange={handleChange} className={styles.input} />
+                        </div>
+                    </div>
+                    <div className={styles.grid2}>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Bathrooms</label>
+                            <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={styles.input} min="0" />
+                        </div>
+                        <div className={styles.field}>
+                            <label className={styles.label}>Balconies</label>
+                            <input type="number" name="balconies" value={formData.balconies} onChange={handleChange} className={styles.input} min="0" />
                         </div>
                     </div>
                     {/* Plot area for residential types that include land */}

@@ -99,7 +99,7 @@ export default function EditPropertyPage() {
         // Availability
         possession_status: 'Immediately/Ready to Move',
         possession_date: '',
-        age_of_property: 'New Construction',
+        property_age: 'New Construction',
         // Commercial features
         workstation: '',
         cabin: '',
@@ -230,7 +230,7 @@ export default function EditPropertyPage() {
                 ? (data.possession_status === 'Ready To Move' ? 'Immediately/Ready to Move' : 'Specify Time')
                 : (data.possession_status || 'Immediately/Ready to Move'),
             possession_date: data.possession_date || '',
-            age_of_property: data.age_of_property || 'New Construction',
+            property_age: data.property_age || 'New Construction',
             // Commercial features
             workstation: data.workstation?.toString() || '',
             cabin: data.cabin?.toString() || '',
@@ -445,7 +445,7 @@ export default function EditPropertyPage() {
                 // Availability
                 possession_status: formData.possession_status || null,
                 possession_date: formData.possession_status === 'Specify Time' ? (formData.possession_date || null) : null,
-                age_of_property: formData.age_of_property || null,
+                property_age: formData.property_age || null,
                 // Commercial features
                 workstation: formData.workstation ? parseInt(formData.workstation) : null,
                 cabin: formData.cabin ? parseInt(formData.cabin) : null,
@@ -823,7 +823,7 @@ export default function EditPropertyPage() {
                         {formData.category !== 'Plot' && (
                             <div className={formStyles.field}>
                                 <label className={formStyles.label}>Age of Property</label>
-                                <select name="age_of_property" value={formData.age_of_property} onChange={handleChange} className={formStyles.select}>
+                                <select name="property_age" value={formData.property_age} onChange={handleChange} className={formStyles.select}>
                                     <option value="New Construction">New Construction</option>
                                     <option value="Less than 5 years">Less than 5 years</option>
                                     <option value="5 to 10 years">5 to 10 years</option>
