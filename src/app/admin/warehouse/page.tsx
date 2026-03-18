@@ -155,14 +155,6 @@ export default function WarehousePage() {
                                         {project.min_price ? `${project.min_price}${project.max_price ? ` - ${project.max_price}` : ''}` : 'Request for Details'}
                                     </span>
                                     <div className={propertyStyles.actions}>
-                                        <button
-                                            className={propertyStyles.actionBtn}
-                                            onClick={() => toggleFeatured(project.id, project.is_featured)}
-                                            title={project.is_featured ? 'Remove from featured' : 'Mark as featured'}
-                                            style={{ color: project.is_featured ? '#f59e0b' : undefined }}
-                                        >
-                                            ★
-                                        </button>
                                         <Link href={`/admin/projects/${project.id}/edit`} className={propertyStyles.actionBtn}>
                                             <Pencil size={16} />
                                         </Link>
