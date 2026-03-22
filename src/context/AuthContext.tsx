@@ -26,31 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
 
-    // Check auth session on mount, handle "remember me" logic
+    // Check auth session on mount — always trust the session until the user explicitly signs out
     useEffect(() => {
         const checkSession = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-
-                if (session?.user) {
-                    const rememberMe = localStorage.getItem('rememberMe');
-                    const sessionActive = sessionStorage.getItem('session_active');
-
-                    if (!rememberMe && !sessionActive) {
-                        // Browser was closed and reopened without "Remember Me"
-                        // Sign out to enforce session-only persistence
-                        await supabase.auth.signOut();
-                        setUser(null);
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Mark this browser tab/window as having an active session
-                    sessionStorage.setItem('session_active', 'true');
-                    setUser(session.user);
-                } else {
-                    setUser(null);
-                }
+                setUser(session?.user ?? null);
             } catch (error) {
                 console.error('Error checking session:', error);
             } finally {
@@ -62,9 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user) {
-                sessionStorage.setItem('session_active', 'true');
-            }
             setUser(session?.user ?? null);
             setLoading(false);
         });
@@ -94,8 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             await supabase.auth.signOut();
             setUser(null);
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('session_active');
         } catch (error) {
             console.error('Error signing out for guest mode:', error);
         }
@@ -106,8 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             await supabase.auth.signOut();
             setUser(null);
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('session_active');
             router.push('/');
         } catch (error) {
             console.error('Error signing out:', error);

@@ -20,7 +20,6 @@ export default function LoginPage() {
 function LoginContent() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -41,16 +40,10 @@ function LoginContent() {
             if (signInError) throw signInError;
 
             if (data.user) {
-                // Store remember me preference and persist session if checked
-                if (rememberMe) {
-                    localStorage.setItem('rememberMe', 'true');
-                    // Set long-lived cookie so session survives browser restarts
-                    await fetch('/api/auth/session', { method: 'POST' });
-                } else {
-                    localStorage.removeItem('rememberMe');
-                }
+                // Always persist session — user stays logged in until they sign out
+                await fetch('/api/auth/session', { method: 'POST' });
 
-                // Sync profile — ensure user's profile row exists with correct data
+                // Sync profile row
                 const meta = data.user.user_metadata || {};
                 await supabase.from('profiles').upsert({
                     id: data.user.id,
@@ -65,8 +58,6 @@ function LoginContent() {
                 });
 
                 const redirectTo = searchParams?.get('redirect') || '/properties';
-                // Mark session as active so AuthContext doesn't sign out
-                sessionStorage.setItem('session_active', 'true');
                 router.push(redirectTo);
             }
         } catch (err: any) {
@@ -106,41 +97,11 @@ function LoginContent() {
                     placeholder="Password"
                 />
 
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    margin: '12px 0 20px',
-                }}>
-                    <label style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        color: '#555',
-                        userSelect: 'none',
-                        whiteSpace: 'nowrap',
-                    }}>
-                        <input
-                            type="checkbox"
-                            checked={rememberMe}
-                            onChange={(e) => setRememberMe(e.target.checked)}
-                            style={{
-                                width: '16px',
-                                height: '16px',
-                                accentColor: 'var(--dark-turquoise, #183C38)',
-                                cursor: 'pointer',
-                            }}
-                        />
-                        Remember me
-                    </label>
-                </div>
-
                 <button
                     type="submit"
                     className="auth-button"
                     disabled={loading}
+                    style={{ marginTop: '20px' }}
                 >
                     {loading ? 'Signing In...' : 'Sign In'}
                 </button>
