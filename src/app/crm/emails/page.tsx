@@ -1,11 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Mail, Edit3, Trash2, Eye, X, Send } from 'lucide-react'
+import { ArrowLeft, Plus, Mail, Edit3, Trash2, Eye, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { wrapWithBrandedTemplate, extractInnerContent } from '@/lib/email-template'
 import styles from '../crm.module.css'
 import type { EmailTemplate } from '@/lib/crm/types'
+
+// Load rich editor client-side only (uses browser APIs)
+const RichEmailEditor = dynamic(() => import('@/components/crm/RichEmailEditor'), { ssr: false })
 
 const categoryColors: Record<string, string> = {
     welcome: '#22c55e', follow_up: '#f59e0b', property_alert: '#3b82f6',
@@ -17,6 +22,7 @@ export default function EmailTemplatesPage() {
     const [loading, setLoading] = useState(true)
     const [showEditor, setShowEditor] = useState(false)
     const [editingTemplate, setEditingTemplate] = useState<Partial<EmailTemplate> | null>(null)
+    const [innerContent, setInnerContent] = useState('')   // what the rich editor works with
     const [previewHtml, setPreviewHtml] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
     const supabase = createClient()
@@ -29,23 +35,42 @@ export default function EmailTemplatesPage() {
 
     useEffect(() => { fetchTemplates() }, [])
 
+    const openNew = () => {
+        setEditingTemplate({ name: '', subject: '', body_html: '', category: 'general', variables: [] })
+        setInnerContent('')
+        setShowEditor(true)
+    }
+
+    const openEdit = (t: EmailTemplate) => {
+        setEditingTemplate({ ...t })
+        setInnerContent(extractInnerContent(t.body_html))
+        setShowEditor(true)
+    }
+
     const handleSave = async () => {
-        if (!editingTemplate?.name || !editingTemplate?.subject || !editingTemplate?.body_html) return
+        if (!editingTemplate?.name || !editingTemplate?.subject || !innerContent.trim()) return
         setSaving(true)
-        if (editingTemplate.id) {
-            await supabase.from('email_templates').update({
-                name: editingTemplate.name, subject: editingTemplate.subject,
-                body_html: editingTemplate.body_html, category: editingTemplate.category || 'general',
-                variables: editingTemplate.variables || [],
-            }).eq('id', editingTemplate.id)
-        } else {
-            await supabase.from('email_templates').insert({
-                name: editingTemplate.name, subject: editingTemplate.subject,
-                body_html: editingTemplate.body_html, category: editingTemplate.category || 'general',
-                variables: editingTemplate.variables || [],
-            })
+
+        const fullHtml = wrapWithBrandedTemplate(innerContent)
+        const payload = {
+            name: editingTemplate.name,
+            subject: editingTemplate.subject,
+            body_html: fullHtml,
+            category: editingTemplate.category || 'general',
+            variables: editingTemplate.variables || [],
         }
-        setShowEditor(false); setEditingTemplate(null); setSaving(false); fetchTemplates()
+
+        if (editingTemplate.id) {
+            await supabase.from('email_templates').update(payload).eq('id', editingTemplate.id)
+        } else {
+            await supabase.from('email_templates').insert(payload)
+        }
+
+        setShowEditor(false)
+        setEditingTemplate(null)
+        setInnerContent('')
+        setSaving(false)
+        fetchTemplates()
     }
 
     const handleDelete = async (id: string) => {
@@ -53,6 +78,8 @@ export default function EmailTemplatesPage() {
         await supabase.from('email_templates').delete().eq('id', id)
         fetchTemplates()
     }
+
+    const closeEditor = () => { setShowEditor(false); setEditingTemplate(null); setInnerContent('') }
 
     return (
         <div className={styles.pageContent}>
@@ -64,7 +91,7 @@ export default function EmailTemplatesPage() {
                         <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Manage automated email templates</p>
                     </div>
                 </div>
-                <button onClick={() => { setEditingTemplate({ name: '', subject: '', body_html: '', category: 'general', variables: [] }); setShowEditor(true) }} className={styles.btnPrimary}>
+                <button onClick={openNew} className={styles.btnPrimary}>
                     <Plus size={14} /> New Template
                 </button>
             </div>
@@ -96,9 +123,9 @@ export default function EmailTemplatesPage() {
                                     )}
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.375rem' }}>
-                                    <button onClick={() => setPreviewHtml(t.body_html)} className={styles.btnIcon}><Eye size={14} /></button>
-                                    <button onClick={() => { setEditingTemplate({ ...t }); setShowEditor(true) }} className={styles.btnIcon}><Edit3 size={14} /></button>
-                                    <button onClick={() => handleDelete(t.id)} className={styles.btnIcon} style={{ color: '#ef4444' }}><Trash2 size={14} /></button>
+                                    <button onClick={() => setPreviewHtml(t.body_html)} className={styles.btnIcon} title="Preview"><Eye size={14} /></button>
+                                    <button onClick={() => openEdit(t)} className={styles.btnIcon} title="Edit"><Edit3 size={14} /></button>
+                                    <button onClick={() => handleDelete(t.id)} className={styles.btnIcon} style={{ color: '#ef4444' }} title="Delete"><Trash2 size={14} /></button>
                                 </div>
                             </div>
                         </div>
@@ -109,53 +136,77 @@ export default function EmailTemplatesPage() {
                     <div className={styles.emptyState}>
                         <p style={{ color: 'var(--crm-text-secondary)', fontWeight: 500, marginBottom: '0.5rem' }}>No email templates yet</p>
                         <p style={{ fontSize: '0.8125rem', marginBottom: '1rem' }}>Create templates for welcome emails, follow-ups, and alerts.</p>
-                        <button onClick={() => { setEditingTemplate({ name: '', subject: '', body_html: '', category: 'general', variables: [] }); setShowEditor(true) }} className={styles.btnPrimary}>
-                            <Plus size={14} /> Create First Template
-                        </button>
+                        <button onClick={openNew} className={styles.btnPrimary}><Plus size={14} /> Create First Template</button>
                     </div>
                 </div>
             )}
 
             {/* Editor Modal */}
             {showEditor && editingTemplate && (
-                <div className={styles.modal} onClick={() => setShowEditor(false)}>
-                    <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '700px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div className={styles.modal} onClick={closeEditor}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}
+                        style={{ maxWidth: '780px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>
                                 {editingTemplate.id ? 'Edit Template' : 'New Template'}
                             </h3>
-                            <button onClick={() => setShowEditor(false)} className={styles.btnIcon}><X size={16} /></button>
+                            <button onClick={closeEditor} className={styles.btnIcon}><X size={16} /></button>
                         </div>
+
+                        {/* Name + Category */}
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{ flex: 2 }}>
                                 <label className={styles.formLabel}>Template Name</label>
-                                <input type="text" value={editingTemplate.name || ''} onChange={e => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                                <input type="text" value={editingTemplate.name || ''}
+                                    onChange={e => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
                                     placeholder="e.g., Welcome Email" className={styles.formInput} />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <label className={styles.formLabel}>Category</label>
-                                <select value={editingTemplate.category || 'general'} onChange={e => setEditingTemplate({ ...editingTemplate, category: e.target.value })} className={styles.formSelect}>
-                                    <option value="welcome">Welcome</option><option value="follow_up">Follow Up</option>
-                                    <option value="property_alert">Property Alert</option><option value="site_visit">Site Visit</option>
+                                <select value={editingTemplate.category || 'general'}
+                                    onChange={e => setEditingTemplate({ ...editingTemplate, category: e.target.value })}
+                                    className={styles.formSelect}>
+                                    <option value="welcome">Welcome</option>
+                                    <option value="follow_up">Follow Up</option>
+                                    <option value="property_alert">Property Alert</option>
+                                    <option value="site_visit">Site Visit</option>
                                     <option value="general">General</option>
                                 </select>
                             </div>
                         </div>
+
+                        {/* Subject */}
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>Subject Line</label>
-                            <input type="text" value={editingTemplate.subject || ''} onChange={e => setEditingTemplate({ ...editingTemplate, subject: e.target.value })}
-                                placeholder="e.g., Welcome to 27 Estates - {{name}}" className={styles.formInput} />
+                            <input type="text" value={editingTemplate.subject || ''}
+                                onChange={e => setEditingTemplate({ ...editingTemplate, subject: e.target.value })}
+                                placeholder="e.g., Welcome to 27 Estates, {{name}}!" className={styles.formInput} />
                         </div>
+
+                        {/* Rich editor */}
                         <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>HTML Body <span style={{ color: 'var(--crm-text-dim)' }}>(use {'{{variable}}'} for dynamic content)</span></label>
-                            <textarea value={editingTemplate.body_html || ''} onChange={e => setEditingTemplate({ ...editingTemplate, body_html: e.target.value })}
-                                rows={15} className={styles.formInput} style={{ fontFamily: 'monospace', fontSize: '0.75rem', resize: 'vertical' }} />
+                            <label className={styles.formLabel} style={{ marginBottom: '6px' }}>
+                                Email Body
+                                <span style={{ fontWeight: 400, color: 'var(--crm-text-dim)', marginLeft: '8px', fontSize: '0.75rem' }}>
+                                    The 27 Estates header &amp; footer are added automatically
+                                </span>
+                            </label>
+                            <RichEmailEditor value={innerContent} onChange={setInnerContent} />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <button onClick={() => setPreviewHtml(editingTemplate.body_html || '')} className={styles.btnSecondary}><Eye size={14} /> Preview</button>
+
+                        {/* Actions */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                            <button
+                                onClick={() => setPreviewHtml(wrapWithBrandedTemplate(innerContent))}
+                                className={styles.btnSecondary}
+                            >
+                                <Eye size={14} /> Preview
+                            </button>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button onClick={() => setShowEditor(false)} className={styles.btnSecondary}>Cancel</button>
-                                <button onClick={handleSave} className={styles.btnPrimary} disabled={saving}>{saving ? 'Saving...' : 'Save Template'}</button>
+                                <button onClick={closeEditor} className={styles.btnSecondary}>Cancel</button>
+                                <button onClick={handleSave} className={styles.btnPrimary} disabled={saving}>
+                                    {saving ? 'Saving…' : 'Save Template'}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -166,14 +217,15 @@ export default function EmailTemplatesPage() {
             {previewHtml && (
                 <div className={styles.modal} onClick={() => setPreviewHtml(null)}>
                     <div onClick={e => e.stopPropagation()} style={{
-                        backgroundcolor: 'var(--crm-text-primary)', borderRadius: '1rem', padding: '1.5rem',
-                        maxWidth: '650px', width: '100%', maxHeight: '80vh', overflow: 'auto',
+                        background: '#fff', borderRadius: '1rem', padding: '1.5rem',
+                        maxWidth: '680px', width: '100%', maxHeight: '85vh', overflow: 'auto',
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                             <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#111' }}>Email Preview</h3>
                             <button onClick={() => setPreviewHtml(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={20} /></button>
                         </div>
-                        <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', overflow: 'hidden' }} dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                        <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', overflow: 'hidden' }}
+                            dangerouslySetInnerHTML={{ __html: previewHtml }} />
                     </div>
                 </div>
             )}
