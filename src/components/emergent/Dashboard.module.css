@@ -1320,13 +1320,18 @@
 }
 
 @media (max-width: 767px) {
-    /* Listing toggle: restore buttons on mobile, compact sizing */
-    .sectionHeaderRight .listingToggle {
+    /* Listing toggle: compact sizing on mobile for all toggles */
+    .listingToggle {
         display: flex !important;
     }
-    .sectionHeaderRight .listingBtn {
-        padding: 0.375rem 0.625rem !important;
-        font-size: 0.75rem !important;
+    .listingBtn {
+        padding: 0.35rem 0.6rem !important;
+        font-size: 0.72rem !important;
+        border-radius: 6px !important;
+    }
+    .sectionHeader {
+        flex-wrap: wrap;
+        gap: 0.5rem;
     }
     /* Category chips hidden on mobile — replaced by select */
     .categoryFilterRow {
