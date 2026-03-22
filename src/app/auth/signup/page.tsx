@@ -32,58 +32,26 @@ function SignUpContent() {
     const searchParams = useSearchParams();
     const supabase = createClient();
 
-    // Once the "check your email" screen is showing, listen for confirmation
-    // across tabs so we can redirect automatically.
+    // Poll every 3 seconds to detect confirmation — works cross-device (phone → laptop).
     useEffect(() => {
-        if (!emailSent) return;
+        if (!emailSent || !email) return;
 
         const redirectTo = searchParams?.get('redirect') || '/properties';
 
-        const handleConfirmed = () => {
-            sessionStorage.setItem('session_active', 'true');
-            router.push(redirectTo);
-        };
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/auth/check-confirmed?email=${encodeURIComponent(email)}`);
+                const { confirmed } = await res.json();
+                if (confirmed) {
+                    clearInterval(interval);
+                    router.push(redirectTo);
+                }
+            } catch { /* ignore network errors, keep polling */ }
+        }, 3000);
 
-        // 1. Supabase auth state change — fires cross-tab because Supabase
-        //    syncs its session via localStorage storage events.
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-                handleConfirmed();
-            }
-        });
-
-        // 2. BroadcastChannel — explicit signal from the /auth/confirmed page.
-        let channel: BroadcastChannel | null = null;
-        try {
-            channel = new BroadcastChannel('auth_confirmation');
-            channel.addEventListener('message', (e) => {
-                if (e.data?.type === 'email_confirmed') handleConfirmed();
-            });
-        } catch {
-            // BroadcastChannel not supported; fall back to localStorage storage event.
-            const handleStorage = (e: StorageEvent) => {
-                if (e.key === 'email_confirmed') handleConfirmed();
-            };
-            window.addEventListener('storage', handleStorage);
-        }
-
-        // 3. Visibility change — when the user switches back to this tab after
-        //    confirming in another tab/window, check the session directly.
-        const handleVisibility = async () => {
-            if (!document.hidden) {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) handleConfirmed();
-            }
-        };
-        document.addEventListener('visibilitychange', handleVisibility);
-
-        return () => {
-            subscription.unsubscribe();
-            channel?.close();
-            document.removeEventListener('visibilitychange', handleVisibility);
-        };
+        return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [emailSent]);
+    }, [emailSent, email]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
