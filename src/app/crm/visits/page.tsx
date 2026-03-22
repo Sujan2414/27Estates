@@ -22,13 +22,13 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
     scheduled: { label: 'Scheduled', color: '#f59e0b', icon: <Clock size={14} /> },
     completed: { label: 'Completed', color: '#22c55e', icon: <CheckCircle2 size={14} /> },
     no_show: { label: 'No Show', color: '#ef4444', icon: <XCircle size={14} /> },
-    cancelled: { label: 'Cancelled', color: '#6b7280', icon: <AlertCircle size={14} /> },
+    cancelled: { label: 'Cancelled', color: 'var(--crm-text-faint)', icon: <AlertCircle size={14} /> },
 }
 
 const outcomeConfig: Record<string, { label: string; color: string }> = {
     interested: { label: 'Interested', color: '#22c55e' },
     not_interested: { label: 'Not Interested', color: '#ef4444' },
-    closed: { label: 'Closed Deal', color: '#BFA270' },
+    closed: { label: 'Closed Deal', color: 'var(--crm-accent)' },
     follow_up: { label: 'Follow Up', color: '#3b82f6' },
 }
 
@@ -91,10 +91,10 @@ export default function VisitsPage() {
         <div className={styles.pageContent}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Site Visits</h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Track and manage all scheduled site visits</p>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Site Visits</h1>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Track and manage all scheduled site visits</p>
                     </div>
                 </div>
             </div>
@@ -113,7 +113,7 @@ export default function VisitsPage() {
                 <div style={{ marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                         <button onClick={() => setWeekOffset(w => w - 1)} className={styles.btnSecondary} style={{ padding: '0.375rem 0.625rem' }}><ChevronLeft size={16} /></button>
-                        <span style={{ color: '#e5e7eb', fontWeight: 600, fontSize: '0.875rem' }}>
+                        <span style={{ color: 'var(--crm-text-secondary)', fontWeight: 600, fontSize: '0.875rem' }}>
                             {weekDates[0].toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} – {weekDates[6].toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                         <button onClick={() => setWeekOffset(w => w + 1)} className={styles.btnSecondary} style={{ padding: '0.375rem 0.625rem' }}><ChevronRight size={16} /></button>
@@ -126,8 +126,8 @@ export default function VisitsPage() {
                             const isT = isToday(date)
                             return (
                                 <div key={i} style={{
-                                    backgroundColor: isT ? '#BFA27010' : '#161822',
-                                    border: `1px solid ${isT ? '#BFA27040' : '#1e2030'}`,
+                                    backgroundColor: isT ? '#BFA27010' : 'var(--crm-surface)',
+                                    border: `1px solid ${isT ? '#BFA27040' : 'var(--crm-border)'}`,
                                     borderRadius: '0.5rem', padding: '0.625rem', minHeight: '100px',
                                 }}>
                                     <div style={{ fontSize: '0.6875rem', color: isT ? '#BFA270' : '#4b5563', fontWeight: isT ? 700 : 500, marginBottom: '0.5rem' }}>
@@ -142,10 +142,10 @@ export default function VisitsPage() {
                                                 borderLeft: `3px solid ${statusConfig[v.status]?.color}`,
                                                 fontSize: '0.6875rem',
                                             }}>
-                                                <div style={{ color: '#e5e7eb', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <div style={{ color: 'var(--crm-text-secondary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                     {v.leads?.name}
                                                 </div>
-                                                {v.visit_time && <div style={{ color: '#6b7280' }}>{formatTime(v.visit_time)}</div>}
+                                                {v.visit_time && <div style={{ color: 'var(--crm-text-faint)' }}>{formatTime(v.visit_time)}</div>}
                                             </div>
                                         </Link>
                                     ))}
@@ -162,7 +162,7 @@ export default function VisitsPage() {
                 visits.length === 0 ? (
                     <div className={styles.card}><div className={styles.emptyState}>
                         <CalendarCheck size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.3 }} />
-                        <p style={{ color: '#e5e7eb', fontWeight: 500 }}>No {viewMode === 'upcoming' ? 'upcoming ' : ''}visits</p>
+                        <p style={{ color: 'var(--crm-text-secondary)', fontWeight: 500 }}>No {viewMode === 'upcoming' ? 'upcoming ' : ''}visits</p>
                         <p style={{ fontSize: '0.8125rem', marginTop: '0.25rem' }}>Schedule visits from a lead&apos;s profile page</p>
                     </div></div>
                 ) : (
@@ -176,7 +176,7 @@ export default function VisitsPage() {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.375rem' }}>
-                                                <span style={{ fontSize: '1rem', fontWeight: 600, color: '#e5e7eb' }}>{v.leads?.name || 'Unknown'}</span>
+                                                <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{v.leads?.name || 'Unknown'}</span>
                                                 <span style={{
                                                     display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.6875rem', fontWeight: 600,
                                                     color: sc?.color, backgroundColor: `${sc?.color}20`,
@@ -187,7 +187,7 @@ export default function VisitsPage() {
                                                 {oc && <span style={{ fontSize: '0.6875rem', color: oc.color, backgroundColor: `${oc.color}20`, padding: '2px 8px', borderRadius: '999px' }}>{oc.label}</span>}
                                             </div>
 
-                                            <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.8125rem', color: '#6b7280' }}>
+                                            <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                     <CalendarCheck size={12} /> {formatDate(v.visit_date)}
                                                 </span>
@@ -196,12 +196,12 @@ export default function VisitsPage() {
                                             </div>
 
                                             {(v.properties?.title || v.projects?.project_name) && (
-                                                <div style={{ fontSize: '0.75rem', color: '#BFA270', marginTop: '0.25rem' }}>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--crm-accent)', marginTop: '0.25rem' }}>
                                                     📍 {v.properties?.title || v.projects?.project_name}
                                                 </div>
                                             )}
 
-                                            {v.notes && <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.375rem', fontStyle: 'italic' }}>{v.notes}</div>}
+                                            {v.notes && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '0.375rem', fontStyle: 'italic' }}>{v.notes}</div>}
                                         </div>
 
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', alignItems: 'flex-end' }}>
@@ -222,7 +222,7 @@ export default function VisitsPage() {
                                             )}
                                             {v.status === 'scheduled' && !past && (
                                                 <button onClick={() => handleUpdateStatus(v.id, 'cancelled')} disabled={updatingId === v.id}
-                                                    className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '0.375rem 0.625rem', color: '#6b7280' }}>
+                                                    className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '0.375rem 0.625rem', color: 'var(--crm-text-faint)' }}>
                                                     Cancel
                                                 </button>
                                             )}

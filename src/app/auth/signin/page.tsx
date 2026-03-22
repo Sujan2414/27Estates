@@ -41,17 +41,13 @@ function LoginContent() {
             if (signInError) throw signInError;
 
             if (data.user) {
-                // Store remember me preference
+                // Store remember me preference and persist session if checked
                 if (rememberMe) {
                     localStorage.setItem('rememberMe', 'true');
+                    // Set long-lived cookie so session survives browser restarts
+                    await fetch('/api/auth/session', { method: 'POST' });
                 } else {
                     localStorage.removeItem('rememberMe');
-                    // Instruct the server to convert the auth cookie to a Session cookie
-                    await fetch('/api/auth/session', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ rememberMe: false })
-                    });
                 }
 
                 // Sync profile — ensure user's profile row exists with correct data

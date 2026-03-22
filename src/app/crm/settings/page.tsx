@@ -18,10 +18,10 @@ export default function SettingsPage() {
     return (
         <div className={styles.pageContent}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Settings</h1>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>CRM configuration and API keys</p>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Settings</h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>CRM configuration and API keys</p>
                 </div>
             </div>
 
@@ -32,8 +32,8 @@ export default function SettingsPage() {
                         <button key={s.key} onClick={() => setActiveSection(s.key)}
                             className={styles.navItem}
                             style={{
-                                backgroundColor: activeSection === s.key ? '#1e2030' : 'transparent',
-                                color: activeSection === s.key ? '#BFA270' : '#9ca3af',
+                                backgroundColor: activeSection === s.key ? 'var(--crm-elevated)' : 'transparent',
+                                color: activeSection === s.key ? 'var(--crm-accent)' : 'var(--crm-text-muted)',
                             }}>
                             <s.icon size={14} /> {s.label}
                         </button>
@@ -44,7 +44,7 @@ export default function SettingsPage() {
                 <div className={styles.card}>
                     {activeSection === 'general' && (
                         <div>
-                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb', marginBottom: '1rem' }}>General Settings</h2>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', marginBottom: '1rem' }}>General Settings</h2>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Company Name</label>
                                 <input type="text" defaultValue="27 Estates" className={styles.formInput} />
@@ -66,9 +66,9 @@ export default function SettingsPage() {
 
                     {activeSection === 'api' && (
                         <div>
-                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb', marginBottom: '0.5rem' }}>API Keys & Secrets</h2>
-                            <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginBottom: '1.5rem' }}>
-                                These are configured via environment variables. Update them in your <code style={{ color: '#BFA270' }}>.env.local</code> file or Vercel dashboard.
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', marginBottom: '0.5rem' }}>API Keys & Secrets</h2>
+                            <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', marginBottom: '1.5rem' }}>
+                                These are configured via environment variables. Update them in your <code style={{ color: 'var(--crm-accent)' }}>.env.local</code> file or Vercel dashboard.
                             </p>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -81,10 +81,10 @@ export default function SettingsPage() {
                                 ].map(item => (
                                     <div key={item.name} style={{
                                         padding: '1rem', borderRadius: '0.5rem',
-                                        backgroundColor: '#0f1117', border: '1px solid #1e2030',
+                                        backgroundColor: 'var(--crm-bg)', border: '1px solid var(--crm-border)',
                                     }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e5e7eb' }}>{item.name}</span>
+                                            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{item.name}</span>
                                             <span className={styles.badge} style={{
                                                 backgroundColor: item.status ? '#22c55e20' : '#f59e0b20',
                                                 color: item.status ? '#22c55e' : '#f59e0b',
@@ -94,7 +94,7 @@ export default function SettingsPage() {
                                         </div>
                                         <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
                                             {item.vars.map(v => (
-                                                <code key={v} style={{ padding: '0.125rem 0.375rem', backgroundColor: '#1e2030', borderRadius: '4px', fontSize: '0.6875rem', color: '#6b7280' }}>{v}</code>
+                                                <code key={v} style={{ padding: '0.125rem 0.375rem', backgroundColor: 'var(--crm-elevated)', borderRadius: '4px', fontSize: '0.6875rem', color: 'var(--crm-text-faint)' }}>{v}</code>
                                             ))}
                                         </div>
                                     </div>
@@ -105,25 +105,25 @@ export default function SettingsPage() {
 
                     {activeSection === 'chatbot' && (
                         <div>
-                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb', marginBottom: '1rem' }}>Chatbot Settings</h2>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', marginBottom: '1rem' }}>Chatbot Settings</h2>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Model</label>
                                 <input type="text" defaultValue="gpt-5.2-chat" className={styles.formInput} disabled />
-                                <p style={{ fontSize: '0.6875rem', color: '#4b5563', marginTop: '0.25rem' }}>Set via AZURE_OPENAI_DEPLOYMENT env var</p>
+                                <p style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', marginTop: '0.25rem' }}>Set via AZURE_OPENAI_DEPLOYMENT env var</p>
                             </div>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Max Tokens per Response</label>
                                 <input type="number" defaultValue="500" className={styles.formInput} disabled />
-                                <p style={{ fontSize: '0.6875rem', color: '#4b5563', marginTop: '0.25rem' }}>Change in src/app/api/chat/route.ts</p>
+                                <p style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', marginTop: '0.25rem' }}>Change in src/app/api/chat/route.ts</p>
                             </div>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Temperature</label>
                                 <input type="text" defaultValue="0.7" className={styles.formInput} disabled />
-                                <p style={{ fontSize: '0.6875rem', color: '#4b5563', marginTop: '0.25rem' }}>0 = deterministic, 1 = creative</p>
+                                <p style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', marginTop: '0.25rem' }}>0 = deterministic, 1 = creative</p>
                             </div>
-                            <div style={{ padding: '1rem', backgroundColor: '#0f1117', borderRadius: '0.5rem', border: '1px solid #1e2030', marginTop: '1rem' }}>
-                                <p style={{ fontSize: '0.8125rem', color: '#9ca3af', lineHeight: 1.6 }}>
-                                    The chatbot system prompt is configured in <code style={{ color: '#BFA270' }}>src/app/api/chat/route.ts</code>.
+                            <div style={{ padding: '1rem', backgroundColor: 'var(--crm-bg)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)', marginTop: '1rem' }}>
+                                <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', lineHeight: 1.6 }}>
+                                    The chatbot system prompt is configured in <code style={{ color: 'var(--crm-accent)' }}>src/app/api/chat/route.ts</code>.
                                     It automatically loads property and project data from your database to answer visitor questions.
                                 </p>
                             </div>
@@ -132,7 +132,7 @@ export default function SettingsPage() {
 
                     {activeSection === 'email' && (
                         <div>
-                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb', marginBottom: '1rem' }}>Email Settings</h2>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', marginBottom: '1rem' }}>Email Settings</h2>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>From Name</label>
                                 <input type="text" defaultValue="27 Estates" className={styles.formInput} disabled />
@@ -140,12 +140,12 @@ export default function SettingsPage() {
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>From Email</label>
                                 <input type="email" defaultValue="contact@27estates.com" className={styles.formInput} disabled />
-                                <p style={{ fontSize: '0.6875rem', color: '#4b5563', marginTop: '0.25rem' }}>Set via RESEND_FROM_EMAIL env var</p>
+                                <p style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', marginTop: '0.25rem' }}>Set via RESEND_FROM_EMAIL env var</p>
                             </div>
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Cron Schedule (Email Queue)</label>
                                 <input type="text" defaultValue="Every 15 minutes" className={styles.formInput} disabled />
-                                <p style={{ fontSize: '0.6875rem', color: '#4b5563', marginTop: '0.25rem' }}>
+                                <p style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', marginTop: '0.25rem' }}>
                                     Configure in vercel.json: {`{"crons": [{"path": "/api/cron/email-queue", "schedule": "*/15 * * * *"}]}`}
                                 </p>
                             </div>

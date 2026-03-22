@@ -20,8 +20,8 @@ const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.Respons
 const Legend = dynamic(() => import('recharts').then(m => m.Legend), { ssr: false })
 
 const tooltipStyle = {
-    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
-    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+    contentStyle: { backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border-subtle)', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: 'var(--crm-text-secondary)' }, labelStyle: { color: 'var(--crm-text-muted)' },
 }
 
 interface Leave {
@@ -179,12 +179,12 @@ export default function LeavesPage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm/hrm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                    <Link href="/crm/hrm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>
                             {isAdminUser ? 'Leave Management' : 'My Leaves'}
                         </h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>
                             {isAdminUser
                                 ? `${pendingCount > 0 ? `${pendingCount} pending · ` : ''}${leaves.length} total requests`
                                 : `FY ${currentFY} · ${leaves.length} requests`
@@ -196,7 +196,7 @@ export default function LeavesPage() {
                     {isSA && (
                         <Link
                             href="/crm/hrm/allocations"
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 0.875rem', border: '1px solid #BFA270', borderRadius: '0.5rem', color: '#BFA270', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none', background: 'transparent' }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 0.875rem', border: '1px solid #BFA270', borderRadius: '0.5rem', color: 'var(--crm-accent)', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none', background: 'transparent' }}
                         >
                             <Settings size={14} />
                             Set Allocations
@@ -223,8 +223,8 @@ export default function LeavesPage() {
             {!tableExists && (
                 <div style={{ backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '0.75rem' }}>
                     <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.8125rem', color: '#9ca3af' }}>
-                        Run <code style={{ backgroundColor: '#1e2030', padding: '1px 6px', borderRadius: '4px' }}>supabase/hrm-schema.sql</code> to enable leave management.
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
+                        Run <code style={{ backgroundColor: 'var(--crm-elevated)', padding: '1px 6px', borderRadius: '4px' }}>supabase/hrm-schema.sql</code> to enable leave management.
                     </span>
                 </div>
             )}
@@ -241,14 +241,14 @@ export default function LeavesPage() {
                                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: lt?.color || '#9ca3af', marginBottom: '0.5rem', textTransform: 'capitalize' }}>
                                     {lt?.label || b.leave_type}
                                 </div>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e5e7eb', lineHeight: 1 }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-secondary)', lineHeight: 1 }}>
                                     {b.balance_days}
-                                    <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 400 }}> / {b.allocated_days}</span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', fontWeight: 400 }}> / {b.allocated_days}</span>
                                 </div>
-                                <div style={{ fontSize: '0.6875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginBottom: '0.5rem' }}>
                                     {b.used_days} used
                                 </div>
-                                <div style={{ height: 4, background: '#1e2030', borderRadius: 2, overflow: 'hidden' }}>
+                                <div style={{ height: 4, background: 'var(--crm-elevated)', borderRadius: 2, overflow: 'hidden' }}>
                                     <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: 2, transition: 'width 0.3s' }} />
                                 </div>
                             </div>
@@ -262,7 +262,7 @@ export default function LeavesPage() {
                     {/* Status filter tabs */}
                     <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                         {['all', 'pending', 'approved', 'rejected'].map(s => {
-                            const conf = STATUS_CONFIG[s] || { color: '#BFA270', label: 'All' }
+                            const conf = STATUS_CONFIG[s] || { color: 'var(--crm-accent)', label: 'All' }
                             const count = s === 'all' ? leaves.length : leaves.filter(l => l.status === s).length
                             return (
                                 <button
@@ -270,15 +270,15 @@ export default function LeavesPage() {
                                     onClick={() => setStatusFilter(s)}
                                     style={{
                                         padding: '0.5rem 0.875rem', borderRadius: '0.5rem', cursor: 'pointer',
-                                        border: statusFilter === s ? `1px solid ${conf.color}` : '1px solid #1e2030',
-                                        backgroundColor: statusFilter === s ? `${conf.color}15` : '#161822',
-                                        color: statusFilter === s ? conf.color : '#6b7280',
+                                        border: statusFilter === s ? `1px solid ${conf.color}` : '1px solid var(--crm-border)',
+                                        backgroundColor: statusFilter === s ? `${conf.color}15` : 'var(--crm-surface)',
+                                        color: statusFilter === s ? conf.color : 'var(--crm-text-muted)',
                                         fontSize: '0.8125rem', fontWeight: statusFilter === s ? 600 : 500,
                                         display: 'flex', alignItems: 'center', gap: '0.5rem',
                                     }}
                                 >
                                     {s.charAt(0).toUpperCase() + s.slice(1)}
-                                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, backgroundColor: statusFilter === s ? `${conf.color}25` : '#1e2030', padding: '1px 6px', borderRadius: '999px', color: statusFilter === s ? conf.color : '#4b5563' }}>
+                                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, backgroundColor: statusFilter === s ? `${conf.color}25` : 'var(--crm-elevated)', padding: '1px 6px', borderRadius: '999px', color: statusFilter === s ? conf.color : 'var(--crm-text-dim)' }}>
                                         {count}
                                     </span>
                                 </button>
@@ -315,12 +315,12 @@ export default function LeavesPage() {
                                                 {isAdminUser && (
                                                     <td>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#BFA270', color: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
+                                                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--crm-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
                                                                 {leave.employee?.full_name?.charAt(0) || '?'}
                                                             </div>
                                                             <div>
-                                                                <div style={{ fontWeight: 500, color: '#e5e7eb' }}>{leave.employee?.full_name || '—'}</div>
-                                                                <div style={{ fontSize: '0.6875rem', color: '#6b7280' }}>{leave.employee?.role}</div>
+                                                                <div style={{ fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{leave.employee?.full_name || '—'}</div>
+                                                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)' }}>{leave.employee?.role}</div>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -332,8 +332,8 @@ export default function LeavesPage() {
                                                 </td>
                                                 <td style={{ whiteSpace: 'nowrap' }}>{formatDate(leave.start_date)}</td>
                                                 <td style={{ whiteSpace: 'nowrap' }}>{formatDate(leave.end_date)}</td>
-                                                <td style={{ fontWeight: 700, color: '#e5e7eb', textAlign: 'center' }}>{days}</td>
-                                                <td style={{ color: '#9ca3af', maxWidth: '200px' }}>
+                                                <td style={{ fontWeight: 700, color: 'var(--crm-text-secondary)', textAlign: 'center' }}>{days}</td>
+                                                <td style={{ color: 'var(--crm-text-muted)', maxWidth: '200px' }}>
                                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                                                         {leave.reason || '—'}
                                                     </span>
@@ -366,7 +366,7 @@ export default function LeavesPage() {
                                                             </div>
                                                         ) : (
                                                             leave.approver && (
-                                                                <span style={{ fontSize: '0.6875rem', color: '#4b5563' }}>by {leave.approver.full_name}</span>
+                                                                <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)' }}>by {leave.approver.full_name}</span>
                                                             )
                                                         )}
                                                     </td>
@@ -384,11 +384,11 @@ export default function LeavesPage() {
                 <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                         {[
-                            { label: 'Total Requests', value: leaves.length, color: '#e5e7eb' },
+                            { label: 'Total Requests', value: leaves.length, color: 'var(--crm-text-secondary)' },
                             { label: 'Pending', value: pendingCount, color: '#f59e0b' },
                             { label: 'Approved', value: approvedCount, color: '#22c55e' },
                             { label: 'Rejected', value: leaves.filter(l => l.status === 'rejected').length, color: '#ef4444' },
-                            { label: 'Total Days', value: leaves.filter(l => l.status === 'approved').reduce((s, l) => s + (l.total_days || l.days_count || calcDays(l.start_date, l.end_date)), 0), color: '#BFA270' },
+                            { label: 'Total Days', value: leaves.filter(l => l.status === 'approved').reduce((s, l) => s + (l.total_days || l.days_count || calcDays(l.start_date, l.end_date)), 0), color: 'var(--crm-accent)' },
                         ].map(s => (
                             <div key={s.label} className={styles.statCard}>
                                 <div className={styles.statLabel}>{s.label}</div>
@@ -407,7 +407,7 @@ export default function LeavesPage() {
                                             {byType.map((e, i) => <Cell key={i} fill={e.color} />)}
                                         </Pie>
                                         <Tooltip {...tooltipStyle} />
-                                        <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: '#9ca3af' }} />
+                                        <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             ) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No data</div>}
@@ -418,8 +418,8 @@ export default function LeavesPage() {
                             {byEmployee.length > 0 ? (
                                 <ResponsiveContainer width="100%" height={220}>
                                     <BarChart data={byEmployee} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                                        <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
+                                        <YAxis tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
                                         <Tooltip {...tooltipStyle} />
                                         <Bar dataKey="approved" name="Approved" fill="#22c55e" radius={[4, 4, 0, 0]} />
                                         <Bar dataKey="pending" name="Pending" fill="#f59e0b" radius={[4, 4, 0, 0]} />
@@ -436,8 +436,8 @@ export default function LeavesPage() {
                 <div className={styles.modal}>
                     <div className={styles.modalContent}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#fff' }}>Apply for Leave</h2>
-                            <button onClick={() => setShowApplyModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}><X size={18} /></button>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Apply for Leave</h2>
+                            <button onClick={() => setShowApplyModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-faint)' }}><X size={18} /></button>
                         </div>
 
                         {/* Admin can pick any employee; agent applies for themselves */}
@@ -477,7 +477,7 @@ export default function LeavesPage() {
                         </div>
 
                         {form.start_date && form.end_date && (
-                            <div style={{ marginBottom: '1rem', padding: '0.5rem 0.75rem', backgroundColor: '#BFA27010', borderRadius: '0.5rem', fontSize: '0.8125rem', color: '#BFA270', fontWeight: 600 }}>
+                            <div style={{ marginBottom: '1rem', padding: '0.5rem 0.75rem', backgroundColor: '#BFA27010', borderRadius: '0.5rem', fontSize: '0.8125rem', color: 'var(--crm-accent)', fontWeight: 600 }}>
                                 {calcDays(form.start_date, form.end_date)} day(s) leave
                             </div>
                         )}

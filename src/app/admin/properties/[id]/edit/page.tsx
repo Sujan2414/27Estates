@@ -145,6 +145,9 @@ export default function EditPropertyPage() {
         deposit_refundable: false
     })
 
+    // Suitable For
+    const [suitableFor, setSuitableFor] = useState<string[]>([])
+
     // Amenities
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
     const [amenitySearch, setAmenitySearch] = useState('')
@@ -284,6 +287,9 @@ export default function EditPropertyPage() {
         // Parse amenities using helper
         setSelectedAmenities(flattenAmenities(data.amenities))
 
+        // Parse suitable_for
+        setSuitableFor(Array.isArray(data.suitable_for) ? data.suitable_for : (data.suitable_for ? [data.suitable_for] : []))
+
         // Parse images - filter out null/undefined entries
         const rawImages = data.images || []
         const cleanImages = rawImages.filter((img: unknown) => typeof img === 'string' && img.trim() !== '')
@@ -314,6 +320,10 @@ export default function EditPropertyPage() {
     const fetchOwners = async () => {
         const { data } = await supabase.from('owners').select('id, name, phone, company').order('name')
         if (data) setOwners(data)
+    }
+
+    const toggleSuitableFor = (val: string) => {
+        setSuitableFor(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val])
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -454,6 +464,7 @@ export default function EditPropertyPage() {
                 owner_id: formData.owner_id || null,
                 video_url: formData.video_url || null,
                 keywords: formData.keyword || null,
+                suitable_for: suitableFor.length > 0 ? suitableFor : null,
                 // Availability
                 possession_status: formData.possession_status || null,
                 possession_date: formData.possession_status === 'Specify Time' ? (formData.possession_date || null) : null,
@@ -860,6 +871,23 @@ export default function EditPropertyPage() {
                             </div>
                         </div>
                     </div>
+
+                    {!['Warehouse', 'Plot'].includes(formData.category) && (
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Suitable For</label>
+                            <div style={{ display: 'flex', gap: '16px', paddingTop: '6px', flexWrap: 'wrap' }}>
+                                {(['Commercial', 'Office', 'Offices'].includes(formData.category)
+                                    ? ['Company', 'Startup', 'MNC']
+                                    : ['Family', 'Bachelor', 'Company']
+                                ).map(opt => (
+                                    <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                                        <input type="checkbox" checked={suitableFor.includes(opt)} onChange={() => toggleSuitableFor(opt)} />
+                                        {opt}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className={formStyles.field}>
                         <label className={formStyles.label}>Video URL (YouTube/Vimeo)</label>

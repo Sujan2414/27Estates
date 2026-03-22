@@ -17,8 +17,8 @@ const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: fa
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
 
 const tooltipStyle = {
-    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
-    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+    contentStyle: { backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border-subtle)', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: 'var(--crm-text-secondary)' }, labelStyle: { color: 'var(--crm-text-muted)' },
 }
 
 interface Task {
@@ -31,14 +31,14 @@ interface Task {
 interface Employee { id: string; full_name: string; role: string }
 
 const COLUMNS = [
-    { key: 'todo', label: 'To Do', color: '#6b7280' },
+    { key: 'todo', label: 'To Do', color: 'var(--crm-text-faint)' },
     { key: 'in_progress', label: 'In Progress', color: '#f59e0b' },
     { key: 'review', label: 'Review', color: '#8b5cf6' },
     { key: 'done', label: 'Done', color: '#22c55e' },
 ]
 
 const PRIORITIES = [
-    { key: 'low', label: 'Low', color: '#6b7280' },
+    { key: 'low', label: 'Low', color: 'var(--crm-text-faint)' },
     { key: 'medium', label: 'Medium', color: '#f59e0b' },
     { key: 'high', label: 'High', color: '#f97316' },
     { key: 'urgent', label: 'Urgent', color: '#ef4444' },
@@ -160,7 +160,7 @@ export default function TasksPage() {
         if (diff < 0) return { label: `${Math.abs(diff)}d overdue`, color: '#ef4444' }
         if (diff === 0) return { label: 'Due today', color: '#f59e0b' }
         if (diff === 1) return { label: 'Due tomorrow', color: '#f59e0b' }
-        return { label: `${diff}d left`, color: '#6b7280' }
+        return { label: `${diff}d left`, color: 'var(--crm-text-faint)' }
     }
 
     // Analytics data
@@ -178,10 +178,10 @@ export default function TasksPage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm/hrm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                    <Link href="/crm/hrm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Task Board</h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{tasks.length} tasks · drag to update status</p>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Task Board</h1>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>{tasks.length} tasks · drag to update status</p>
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -204,8 +204,8 @@ export default function TasksPage() {
             {!tableExists && (
                 <div style={{ backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '0.75rem' }}>
                     <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                    <div style={{ fontSize: '0.8125rem', color: '#9ca3af' }}>
-                        Run <code style={{ backgroundColor: '#1e2030', padding: '1px 6px', borderRadius: '4px' }}>supabase/hrm-schema.sql</code> to enable task management.
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
+                        Run <code style={{ backgroundColor: 'var(--crm-elevated)', padding: '1px 6px', borderRadius: '4px' }}>supabase/hrm-schema.sql</code> to enable task management.
                     </div>
                 </div>
             )}
@@ -261,7 +261,7 @@ export default function TasksPage() {
                                 <div className={styles.kanbanColumnHeader}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: col.color }} />
-                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb' }}>{col.label}</span>
+                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{col.label}</span>
                                     </div>
                                     <span style={{ fontSize: '0.6875rem', fontWeight: 700, backgroundColor: `${col.color}20`, color: col.color, padding: '2px 8px', borderRadius: '999px' }}>{cards.length}</span>
                                 </div>
@@ -286,19 +286,19 @@ export default function TasksPage() {
                                                         {task.priority}
                                                     </span>
                                                     {task.category && task.category !== 'general' && (
-                                                        <span style={{ fontSize: '0.625rem', color: '#6b7280', backgroundColor: '#1e2030', padding: '1px 5px', borderRadius: '3px' }}>
+                                                        <span style={{ fontSize: '0.625rem', color: 'var(--crm-text-faint)', backgroundColor: 'var(--crm-elevated)', padding: '1px 5px', borderRadius: '3px' }}>
                                                             {task.category}
                                                         </span>
                                                     )}
                                                 </div>
 
                                                 {/* Title */}
-                                                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb', marginBottom: '0.375rem', lineHeight: 1.4 }}>
+                                                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', marginBottom: '0.375rem', lineHeight: 1.4 }}>
                                                     {task.title}
                                                 </div>
 
                                                 {task.description && (
-                                                    <div style={{ fontSize: '0.6875rem', color: '#6b7280', marginBottom: '0.5rem', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                                    <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginBottom: '0.5rem', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                                                         {task.description}
                                                     </div>
                                                 )}
@@ -307,12 +307,12 @@ export default function TasksPage() {
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
                                                     {task.assignee ? (
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#BFA270', color: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700 }}>
+                                                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundcolor: 'var(--crm-accent)', color: 'var(--crm-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700 }}>
                                                                 {task.assignee.full_name.charAt(0)}
                                                             </div>
-                                                            <span style={{ fontSize: '0.6875rem', color: '#9ca3af' }}>{task.assignee.full_name.split(' ')[0]}</span>
+                                                            <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-muted)' }}>{task.assignee.full_name.split(' ')[0]}</span>
                                                         </div>
-                                                    ) : <span style={{ fontSize: '0.6875rem', color: '#4b5563' }}>Unassigned</span>}
+                                                    ) : <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)' }}>Unassigned</span>}
 
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                         {due && (
@@ -321,7 +321,7 @@ export default function TasksPage() {
                                                         {canDelete(task) && (
                                                             <button
                                                                 onClick={e => { e.stopPropagation(); handleDelete(task.id) }}
-                                                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#4b5563', padding: '2px', display: 'flex', alignItems: 'center' }}
+                                                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-dim)', padding: '2px', display: 'flex', alignItems: 'center' }}
                                                                 title="Delete task"
                                                             >
                                                                 <Trash2 size={11} />
@@ -348,7 +348,7 @@ export default function TasksPage() {
                 <div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                         {[
-                            { label: 'Total Tasks', value: tasks.length, color: '#e5e7eb' },
+                            { label: 'Total Tasks', value: tasks.length, color: 'var(--crm-text-secondary)' },
                             { label: 'In Progress', value: tasks.filter(t => t.status === 'in_progress').length, color: '#f59e0b' },
                             { label: 'In Review', value: tasks.filter(t => t.status === 'review').length, color: '#8b5cf6' },
                             { label: 'Done', value: tasks.filter(t => t.status === 'done').length, color: '#22c55e' },
@@ -366,11 +366,13 @@ export default function TasksPage() {
                             <div className={styles.cardHeader}><span className={styles.cardTitle}>By Status</span></div>
                             <ResponsiveContainer width="100%" height={200}>
                                 <BarChart data={byStatus} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="count" name="Tasks" radius={[4, 4, 0, 0]}>
-                                        {byStatus.map((e, i) => <Cell key={i} fill={e.color} />)}
+                                        {byStatus.map((e, i) => (
+                                            <Cell key={i} fill={e.color === 'var(--crm-text-faint)' ? '#9ca3af' : e.color} />
+                                        ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -380,11 +382,13 @@ export default function TasksPage() {
                             <div className={styles.cardHeader}><span className={styles.cardTitle}>By Priority</span></div>
                             <ResponsiveContainer width="100%" height={200}>
                                 <BarChart data={byPriority} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="count" name="Tasks" radius={[4, 4, 0, 0]}>
-                                        {byPriority.map((e, i) => <Cell key={i} fill={e.color} />)}
+                                        {byPriority.map((e, i) => (
+                                            <Cell key={i} fill={e.color === 'var(--crm-text-faint)' ? '#9ca3af' : e.color} />
+                                        ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -396,8 +400,8 @@ export default function TasksPage() {
                             <div className={styles.cardHeader}><span className={styles.cardTitle}>Workload by Employee</span></div>
                             <ResponsiveContainer width="100%" height={220}>
                                 <BarChart data={byAssignee} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="open" name="Open" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                                     <Bar dataKey="done" name="Done" fill="#22c55e" radius={[4, 4, 0, 0]} />
@@ -439,8 +443,8 @@ export default function TasksPage() {
                 <div className={styles.modal}>
                     <div className={styles.modalContent}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#fff' }}>New Task</h2>
-                            <button onClick={() => setShowCreateModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}><X size={18} /></button>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>New Task</h2>
+                            <button onClick={() => setShowCreateModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-faint)' }}><X size={18} /></button>
                         </div>
 
                         <div className={styles.formGroup}>

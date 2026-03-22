@@ -57,7 +57,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 .from('profiles')
                 .select('full_name, email, role')
                 .eq('id', authUser.id)
-                .single()
+                .limit(1)
+                .maybeSingle()
 
             if (!profile || !['admin', 'super_admin', 'agent'].includes(profile.role)) {
                 router.push('/admin/login')

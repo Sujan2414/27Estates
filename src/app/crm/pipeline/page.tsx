@@ -43,13 +43,13 @@ const sourceConfig: Record<string, { label: string; color: string }> = {
     justdial: { label: 'JD', color: '#8b5cf6' },
     chatbot: { label: 'Bot', color: '#22c55e' },
     whatsapp: { label: 'WA', color: '#25D366' },
-    manual: { label: 'Manual', color: '#6b7280' },
-    referral: { label: 'Ref', color: '#BFA270' },
+    manual: { label: 'Manual', color: 'var(--crm-text-faint)' },
+    referral: { label: 'Ref', color: 'var(--crm-accent)' },
 }
 
 const tooltipStyle = {
-    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
-    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+    contentStyle: { backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border-subtle)', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: 'var(--crm-text-secondary)' }, labelStyle: { color: 'var(--crm-text-muted)' },
 }
 
 export default function PipelinePage() {
@@ -133,10 +133,10 @@ export default function PipelinePage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Pipeline</h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Pipeline</h1>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>
                             Drag leads between stages · {totalLeads.toLocaleString('en-IN')} total
                         </p>
                     </div>
@@ -183,7 +183,7 @@ export default function PipelinePage() {
                                 <div className={styles.kanbanColumnHeader}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: stage.color, flexShrink: 0 }} />
-                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb' }}>{stage.label}</span>
+                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{stage.label}</span>
                                     </div>
                                     <span style={{
                                         fontSize: '0.6875rem', fontWeight: 700,
@@ -223,19 +223,19 @@ export default function PipelinePage() {
                                             </div>
 
                                             {/* Name */}
-                                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb', marginBottom: '0.375rem', lineHeight: 1.3 }}>
+                                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', marginBottom: '0.375rem', lineHeight: 1.3 }}>
                                                 {lead.name}
                                             </div>
 
                                             {/* Contact info */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '0.5rem' }}>
                                                 {lead.phone && (
-                                                    <span style={{ fontSize: '0.6875rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                         <Phone size={9} /> {lead.phone}
                                                     </span>
                                                 )}
                                                 {lead.email && (
-                                                    <span style={{ fontSize: '0.6875rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         <Mail size={9} /> {lead.email}
                                                     </span>
                                                 )}
@@ -244,11 +244,11 @@ export default function PipelinePage() {
                                             {/* Footer: project + age */}
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 {lead.projects?.project_name ? (
-                                                    <span style={{ fontSize: '0.625rem', color: '#BFA270', fontWeight: 500 }}>
+                                                    <span style={{ fontSize: '0.625rem', color: 'var(--crm-accent)', fontWeight: 500 }}>
                                                         {lead.projects.project_name}
                                                     </span>
                                                 ) : <span />}
-                                                <span style={{ fontSize: '0.625rem', color: '#4b5563' }}>{formatAge(lead.created_at)}</span>
+                                                <span style={{ fontSize: '0.625rem', color: 'var(--crm-text-dim)' }}>{formatAge(lead.created_at)}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -274,8 +274,8 @@ export default function PipelinePage() {
                     {/* Stats */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                         {[
-                            { label: 'Total Leads', value: totalLeads, color: '#e5e7eb' },
-                            { label: 'Active', value: activeCount, color: '#BFA270' },
+                            { label: 'Total Leads', value: totalLeads, color: 'var(--crm-text-secondary)' },
+                            { label: 'Active', value: activeCount, color: 'var(--crm-accent)' },
                             { label: 'Converted', value: convertedCount, color: '#22c55e' },
                             { label: 'Lost', value: lostCount, color: '#ef4444' },
                             { label: 'Win Rate', value: `${winRate}%`, color: '#8b5cf6' },
@@ -324,8 +324,8 @@ export default function PipelinePage() {
                             </div>
                             <ResponsiveContainer width="100%" height={220}>
                                 <BarChart data={funnelData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="count" name="Leads" radius={[4, 4, 0, 0]}>
                                         {funnelData.map((entry, i) => (
@@ -352,7 +352,7 @@ export default function PipelinePage() {
                                         ))}
                                     </Pie>
                                     <Tooltip {...tooltipStyle} />
-                                    <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: '#9ca3af' }} />
+                                    <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -360,9 +360,9 @@ export default function PipelinePage() {
                                     <div key={s.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: s.color, flexShrink: 0 }} />
-                                            <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{s.name}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }}>{s.name}</span>
                                         </div>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#e5e7eb' }}>{s.value}</span>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{s.value}</span>
                                     </div>
                                 ))}
                             </div>

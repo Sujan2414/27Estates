@@ -560,6 +560,78 @@
     color: #ffffff;
 }
 
+/* Sub-row: type filter + View All */
+.sectionSubRow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+/* Desktop type filter buttons */
+.typeFilterDesktop {
+    display: none;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+@media (min-width: 768px) {
+    .typeFilterDesktop {
+        display: flex;
+    }
+}
+
+.typeFilterBtn {
+    padding: 0.3125rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #374151;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.typeFilterBtn:hover {
+    border-color: #183C38;
+    color: #183C38;
+}
+
+.typeFilterBtnActive {
+    background: #183C38;
+    color: #ffffff;
+    border-color: #183C38;
+}
+
+/* Mobile dropdown — hidden on desktop */
+.typeFilterMobile {
+    display: block;
+    padding: 0.375rem 0.625rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    color: #374151;
+    font-size: 0.8rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+    .typeFilterMobile {
+        display: none;
+    }
+}
+
+/* View All always pushed to the right */
+.viewAllRight {
+    flex-shrink: 0;
+    margin-left: 1rem;
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(1, 1fr);

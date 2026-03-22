@@ -22,8 +22,8 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
         transaction_type: initialData.transaction_type || '',
         ownership: initialData.ownership || '',
         bedrooms: initialData.bedrooms || '',
+        bathrooms: initialData.bathrooms || '',
         furnishing: initialData.furnishing || '',
-        suitable_for: initialData.suitable_for || '',
         unique_feature: initialData.unique_feature || '',
         channel: initialData.channel || '',
         description: initialData.description || '',
@@ -37,6 +37,12 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
         is_oc_approved: initialData.is_oc_approved || false,
     })
 
+    const [suitableFor, setSuitableFor] = useState<string[]>(
+        Array.isArray(initialData.suitable_for)
+            ? initialData.suitable_for
+            : (initialData.suitable_for ? [initialData.suitable_for] : [])
+    )
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target
         if (type === 'checkbox') {
@@ -46,13 +52,19 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
         }
     }
 
+    const toggleSuitableFor = (val: string) => {
+        setSuitableFor(prev =>
+            prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]
+        )
+    }
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.property_type || !formData.property_type_for) {
             alert('Please fill in required fields (*)')
             return
         }
-        onNext(formData)
+        onNext({ ...formData, suitable_for: suitableFor })
     }
 
     // Category-derived flags
@@ -81,19 +93,6 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
     const suitableForOptions = isCommercial
         ? ['Company', 'Startup', 'MNC']
         : ['Family', 'Bachelor', 'Company']
-
-    const handleArrayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const { name, options } = e.target
-        const selectedValues = Array.from(options)
-            .filter(opt => opt.selected)
-            .map(opt => opt.value)
-
-        setFormData(prev => ({ ...prev, [name]: selectedValues }))
-    }
-
-    const suitableForValue = Array.isArray(formData.suitable_for)
-        ? formData.suitable_for
-        : (formData.suitable_for ? [formData.suitable_for] : [])
 
     return (
         <form onSubmit={handleSubmit}>
@@ -147,7 +146,7 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
                 )}
             </div>
 
-            {/* Bedrooms + Furnishing (residential only) */}
+            {/* Bedrooms + Bathrooms (residential only) */}
             {showBedrooms && (
                 <div className={styles.grid2}>
                     <div className={styles.field}>
@@ -157,26 +156,38 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
                             {bedroomOptions.map(opt => <option key={opt} value={opt}>{opt} BHK</option>)}
                         </select>
                     </div>
-                    {showFurnishing && (
-                        <div className={styles.field}>
-                            <label className={styles.label}>Furnishing</label>
-                            <select name="furnishing" value={formData.furnishing} onChange={handleChange} className={styles.select}>
-                                <option value="">Select Furnishing</option>
-                                {furnishingOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                            </select>
-                        </div>
-                    )}
+                    <div className={styles.field}>
+                        <label className={styles.label}>Bathrooms</label>
+                        <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={styles.input} placeholder="e.g. 2" min="0" />
+                    </div>
                 </div>
             )}
 
-            {/* Furnishing only — Studio or Commercial (no bedrooms) */}
-            {!showBedrooms && showFurnishing && (
+            {/* Furnishing */}
+            {showBedrooms && showFurnishing && (
                 <div className={styles.field}>
                     <label className={styles.label}>Furnishing</label>
                     <select name="furnishing" value={formData.furnishing} onChange={handleChange} className={styles.select}>
                         <option value="">Select Furnishing</option>
                         {furnishingOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
+                </div>
+            )}
+
+            {/* Furnishing only — Studio or Commercial (no bedrooms) */}
+            {!showBedrooms && showFurnishing && (
+                <div className={styles.grid2}>
+                    <div className={styles.field}>
+                        <label className={styles.label}>Furnishing</label>
+                        <select name="furnishing" value={formData.furnishing} onChange={handleChange} className={styles.select}>
+                            <option value="">Select Furnishing</option>
+                            {furnishingOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                    </div>
+                    <div className={styles.field}>
+                        <label className={styles.label}>Bathrooms</label>
+                        <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} className={styles.input} placeholder="e.g. 2" min="0" />
+                    </div>
                 </div>
             )}
 
@@ -210,17 +221,18 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
                 <div className={styles.grid2}>
                     <div className={styles.field}>
                         <label className={styles.label}>Suitable For</label>
-                        <select
-                            name="suitable_for"
-                            multiple
-                            value={suitableForValue}
-                            onChange={handleArrayChange}
-                            className={styles.select}
-                            style={{ height: 'auto', minHeight: '80px' }}
-                        >
-                            {suitableForOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>Hold Ctrl/Cmd to select multiple</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '6px' }}>
+                            {suitableForOptions.map(opt => (
+                                <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={suitableFor.includes(opt)}
+                                        onChange={() => toggleSuitableFor(opt)}
+                                    />
+                                    {opt}
+                                </label>
+                            ))}
+                        </div>
                     </div>
                     <div className={styles.field}>
                         <label className={styles.label}>Channel</label>

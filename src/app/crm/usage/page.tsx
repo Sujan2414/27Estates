@@ -44,9 +44,9 @@ export default function APIUsagePage() {
     }, [])
 
     const tooltipStyle = {
-        contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
-        itemStyle: { color: '#e5e7eb' },
-        labelStyle: { color: '#9ca3af' },
+        contentStyle: { backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border-subtle)', borderRadius: '8px', fontSize: '0.75rem' },
+        itemStyle: { color: 'var(--crm-text-secondary)' },
+        labelStyle: { color: 'var(--crm-text-muted)' },
     }
 
     // Prepare INR cost data for chart
@@ -58,10 +58,10 @@ export default function APIUsagePage() {
     return (
         <div className={styles.pageContent}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>API Usage & Costs</h1>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Azure OpenAI token usage and estimated costs (INR)</p>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>API Usage & Costs</h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Azure OpenAI token usage and estimated costs (INR)</p>
                 </div>
             </div>
 
@@ -69,7 +69,7 @@ export default function APIUsagePage() {
             <div className={styles.statsRow} style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                 <div className={styles.statCard}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <Zap size={14} style={{ color: '#BFA270' }} />
+                        <Zap size={14} style={{ color: 'var(--crm-accent)' }} />
                         <span className={styles.statLabel} style={{ margin: 0 }}>Total Tokens (30d)</span>
                     </div>
                     <div className={styles.statValue}>{loading ? '—' : formatIndianNumber(data?.total.tokens || 0)}</div>
@@ -94,7 +94,7 @@ export default function APIUsagePage() {
                         <span className={styles.statLabel} style={{ margin: 0 }}>Today</span>
                     </div>
                     <div className={styles.statValue}>{loading ? '—' : data?.today.requests || 0}</div>
-                    <div style={{ fontSize: '0.6875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                    <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>
                         {formatIndianNumber(data?.today.tokens || 0)} tokens &middot; {formatINR(data?.today.cost || '0')}
                     </div>
                 </div>
@@ -115,8 +115,8 @@ export default function APIUsagePage() {
                                         <stop offset="95%" stopColor="#BFA270" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} />
-                                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} width={50} />
+                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} />
+                                <YAxis tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} width={50} />
                                 <Tooltip {...tooltipStyle} />
                                 <Area type="monotone" dataKey="tokens" stroke="#BFA270" fill="url(#tokenGrad2)" strokeWidth={2} name="Tokens" />
                             </AreaChart>
@@ -136,8 +136,8 @@ export default function APIUsagePage() {
                     <div style={{ width: '100%', height: 250 }}>
                         <ResponsiveContainer>
                             <BarChart data={dailyINR}>
-                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} />
-                                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} width={50} tickFormatter={v => `₹${v}`} />
+                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} />
+                                <YAxis tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} width={50} tickFormatter={v => `₹${v}`} />
                                 <Tooltip
                                     {...tooltipStyle}
                                     formatter={(value: number) => [`₹${value.toFixed(2)}`, 'Cost']}
@@ -160,8 +160,8 @@ export default function APIUsagePage() {
                     <div style={{ width: '100%', height: 250 }}>
                         <ResponsiveContainer>
                             <BarChart data={dailyINR}>
-                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} />
-                                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} width={30} />
+                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} />
+                                <YAxis tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} width={30} />
                                 <Tooltip {...tooltipStyle} />
                                 <Bar dataKey="requests" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Requests" />
                             </BarChart>

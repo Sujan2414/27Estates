@@ -58,10 +58,10 @@ export default function EmailTemplatesPage() {
         <div className={styles.pageContent}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Email Templates</h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Manage automated email templates</p>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Email Templates</h1>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Manage automated email templates</p>
                     </div>
                 </div>
                 <button onClick={() => { setEditingTemplate({ name: '', subject: '', body_html: '', category: 'general', variables: [] }); setShowEditor(true) }} className={styles.btnPrimary}>
@@ -78,19 +78,19 @@ export default function EmailTemplatesPage() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#e5e7eb' }}>{t.name}</span>
+                                        <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{t.name}</span>
                                         <span className={styles.badge} style={{
                                             backgroundColor: `${categoryColors[t.category] || '#6b7280'}20`,
                                             color: categoryColors[t.category] || '#6b7280',
                                         }}>{t.category}</span>
                                     </div>
-                                    <div style={{ fontSize: '0.8125rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.5rem' }}>
+                                    <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.5rem' }}>
                                         <Mail size={12} /> Subject: {t.subject}
                                     </div>
                                     {t.variables.length > 0 && (
                                         <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
                                             {t.variables.map(v => (
-                                                <code key={v} style={{ padding: '0.125rem 0.375rem', backgroundColor: '#1e2030', borderRadius: '4px', fontSize: '0.6875rem', color: '#BFA270' }}>{v}</code>
+                                                <code key={v} style={{ padding: '0.125rem 0.375rem', backgroundColor: 'var(--crm-elevated)', borderRadius: '4px', fontSize: '0.6875rem', color: 'var(--crm-accent)' }}>{v}</code>
                                             ))}
                                         </div>
                                     )}
@@ -107,7 +107,7 @@ export default function EmailTemplatesPage() {
             ) : (
                 <div className={styles.card}>
                     <div className={styles.emptyState}>
-                        <p style={{ color: '#e5e7eb', fontWeight: 500, marginBottom: '0.5rem' }}>No email templates yet</p>
+                        <p style={{ color: 'var(--crm-text-secondary)', fontWeight: 500, marginBottom: '0.5rem' }}>No email templates yet</p>
                         <p style={{ fontSize: '0.8125rem', marginBottom: '1rem' }}>Create templates for welcome emails, follow-ups, and alerts.</p>
                         <button onClick={() => { setEditingTemplate({ name: '', subject: '', body_html: '', category: 'general', variables: [] }); setShowEditor(true) }} className={styles.btnPrimary}>
                             <Plus size={14} /> Create First Template
@@ -121,7 +121,7 @@ export default function EmailTemplatesPage() {
                 <div className={styles.modal} onClick={() => setShowEditor(false)}>
                     <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '700px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>
                                 {editingTemplate.id ? 'Edit Template' : 'New Template'}
                             </h3>
                             <button onClick={() => setShowEditor(false)} className={styles.btnIcon}><X size={16} /></button>
@@ -147,7 +147,7 @@ export default function EmailTemplatesPage() {
                                 placeholder="e.g., Welcome to 27 Estates - {{name}}" className={styles.formInput} />
                         </div>
                         <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>HTML Body <span style={{ color: '#4b5563' }}>(use {'{{variable}}'} for dynamic content)</span></label>
+                            <label className={styles.formLabel}>HTML Body <span style={{ color: 'var(--crm-text-dim)' }}>(use {'{{variable}}'} for dynamic content)</span></label>
                             <textarea value={editingTemplate.body_html || ''} onChange={e => setEditingTemplate({ ...editingTemplate, body_html: e.target.value })}
                                 rows={15} className={styles.formInput} style={{ fontFamily: 'monospace', fontSize: '0.75rem', resize: 'vertical' }} />
                         </div>
@@ -166,7 +166,7 @@ export default function EmailTemplatesPage() {
             {previewHtml && (
                 <div className={styles.modal} onClick={() => setPreviewHtml(null)}>
                     <div onClick={e => e.stopPropagation()} style={{
-                        backgroundColor: '#fff', borderRadius: '1rem', padding: '1.5rem',
+                        backgroundcolor: 'var(--crm-text-primary)', borderRadius: '1rem', padding: '1.5rem',
                         maxWidth: '650px', width: '100%', maxHeight: '80vh', overflow: 'auto',
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

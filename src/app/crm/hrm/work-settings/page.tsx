@@ -94,7 +94,7 @@ export default function WorkSettingsPage() {
         return (
             <div style={{ padding: '3rem', textAlign: 'center' }}>
                 <Shield size={48} color="#d1d5db" style={{ margin: '0 auto 1rem' }} />
-                <p style={{ color: '#6b7280' }}>Only Super Admins can manage work settings.</p>
+                <p style={{ color: 'var(--crm-text-faint)' }}>Only Super Admins can manage work settings.</p>
             </div>
         )
     }
@@ -104,16 +104,16 @@ export default function WorkSettingsPage() {
     return (
         <div className={styles.pageContent} style={{ maxWidth: 640 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <Link href="/crm/hrm/attendance" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                <Link href="/crm/hrm/attendance" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', margin: 0 }}>Work Settings</h1>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginTop: '0.25rem' }}>Configure office hours, shift times, and reminder schedules</p>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)', margin: 0 }}>Work Settings</h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>Configure office hours, shift times, and reminder schedules</p>
                 </div>
             </div>
 
             {!tableExists && (
-                <div style={{ backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', fontSize: '0.8125rem', color: '#9ca3af' }}>
-                    Run <code style={{ background: '#1e2030', padding: '1px 6px', borderRadius: 4 }}>supabase/hrm-checkin.sql</code> migration to enable work settings.
+                <div style={{ backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
+                    Run <code style={{ background: 'var(--crm-elevated)', padding: '1px 6px', borderRadius: 4 }}>supabase/hrm-checkin.sql</code> migration to enable work settings.
                 </div>
             )}
 
@@ -121,7 +121,7 @@ export default function WorkSettingsPage() {
             <div className={styles.card} style={{ marginBottom: '1.25rem' }}>
                 <div className={styles.cardHeader}>
                     <span className={styles.cardTitle} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Clock size={16} style={{ color: '#BFA270' }} /> Working Hours
+                        <Clock size={16} style={{ color: 'var(--crm-accent)' }} /> Working Hours
                     </span>
                 </div>
 
@@ -153,7 +153,7 @@ export default function WorkSettingsPage() {
                             value={settings.full_day_hours}
                             onChange={e => setSettings(s => ({ ...s, full_day_hours: parseFloat(e.target.value) || 8 }))}
                         />
-                        <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem', display: 'block' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem', display: 'block' }}>
                             ≥ this = 🟢 green
                         </span>
                     </div>
@@ -166,15 +166,15 @@ export default function WorkSettingsPage() {
                             value={settings.half_day_hours}
                             onChange={e => setSettings(s => ({ ...s, half_day_hours: parseFloat(e.target.value) || 4 }))}
                         />
-                        <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem', display: 'block' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem', display: 'block' }}>
                             ≥ this = 🟠 orange · else 🔴 red
                         </span>
                     </div>
                 </div>
 
                 {/* Visual guide */}
-                <div style={{ background: '#1e2030', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.8125rem', color: '#9ca3af' }}>
-                    <strong style={{ color: '#e5e7eb' }}>Colour coding:</strong>{' '}
+                <div style={{ background: 'var(--crm-elevated)', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
+                    <strong style={{ color: 'var(--crm-text-secondary)' }}>Colour coding:</strong>{' '}
                     <span style={{ color: '#22c55e' }}>■</span> ≥{settings.full_day_hours}h full day{' · '}
                     <span style={{ color: '#f59e0b' }}>■</span> ≥{settings.half_day_hours}h half day{' · '}
                     <span style={{ color: '#ef4444' }}>■</span> &lt;{settings.half_day_hours}h short day
@@ -185,7 +185,7 @@ export default function WorkSettingsPage() {
             <div className={styles.card} style={{ marginBottom: '1.25rem' }}>
                 <div className={styles.cardHeader}>
                     <span className={styles.cardTitle} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Bell size={16} style={{ color: '#BFA270' }} /> Email Reminders
+                        <Bell size={16} style={{ color: 'var(--crm-accent)' }} /> Email Reminders
                     </span>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                         <div
@@ -228,8 +228,8 @@ export default function WorkSettingsPage() {
                 </div>
 
                 {/* Manual send buttons */}
-                <div style={{ borderTop: '1px solid #1e2030', paddingTop: '0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: '0.8125rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.375rem', flex: '1 1 100%' }}>
+                <div style={{ borderTop: '1px solid var(--crm-border)', paddingTop: '0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', display: 'flex', alignItems: 'center', gap: '0.375rem', flex: '1 1 100%' }}>
                         <Mail size={13} /> Send reminders manually now:
                     </div>
                     <button
@@ -253,9 +253,9 @@ export default function WorkSettingsPage() {
                 </div>
 
                 {/* Cron setup info */}
-                <div style={{ marginTop: '0.75rem', background: '#111827', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.75rem', color: '#6b7280' }}>
-                    <div style={{ color: '#9ca3af', fontWeight: 600, marginBottom: '0.375rem' }}>⚙ Automate with Supabase pg_cron</div>
-                    <code style={{ fontSize: '0.6875rem', color: '#BFA270', display: 'block', lineHeight: 1.8 }}>
+                <div style={{ marginTop: '0.75rem', background: '#111827', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.75rem', color: 'var(--crm-text-faint)' }}>
+                    <div style={{ color: 'var(--crm-text-muted)', fontWeight: 600, marginBottom: '0.375rem' }}>⚙ Automate with Supabase pg_cron</div>
+                    <code style={{ fontSize: '0.6875rem', color: 'var(--crm-accent)', display: 'block', lineHeight: 1.8 }}>
                         {`-- Check-in reminder at ${settings.checkin_reminder_time} IST (UTC+5:30)`}<br />
                         SELECT cron.schedule(&apos;hrm-checkin-reminder&apos;, &apos;{adjustForIST(settings.checkin_reminder_time)} * * *&apos;, $$<br />
                         &nbsp;&nbsp;SELECT net.http_post(url:=&apos;{'{SITE_URL}'}/api/crm/hrm/reminders&apos;, body:=&apos;&#123;"type":"checkin"&#125;&apos;);<br />
@@ -271,7 +271,7 @@ export default function WorkSettingsPage() {
                         <span style={{ fontSize: '1rem' }}>🔄</span> Regularization Quota
                     </span>
                 </div>
-                <p style={{ fontSize: '0.8125rem', color: '#6b7280', margin: '0 0 1rem', lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', margin: '0 0 1rem', lineHeight: 1.6 }}>
                     Employees can apply for regularization when they work short hours. Set the maximum allowed per month and year.
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -284,7 +284,7 @@ export default function WorkSettingsPage() {
                             value={settings.max_regularizations_per_month}
                             onChange={e => setSettings(s => ({ ...s, max_regularizations_per_month: parseInt(e.target.value) || 0 }))}
                         />
-                        <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem', display: 'block' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem', display: 'block' }}>
                             requests allowed per calendar month
                         </span>
                     </div>
@@ -297,12 +297,12 @@ export default function WorkSettingsPage() {
                             value={settings.max_regularizations_per_year}
                             onChange={e => setSettings(s => ({ ...s, max_regularizations_per_year: parseInt(e.target.value) || 0 }))}
                         />
-                        <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem', display: 'block' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem', display: 'block' }}>
                             requests allowed per financial year
                         </span>
                     </div>
                 </div>
-                <div style={{ background: '#1e2030', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.8125rem', color: '#9ca3af' }}>
+                <div style={{ background: 'var(--crm-elevated)', borderRadius: '0.5rem', padding: '0.75rem 1rem', fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
                     When an employee exceeds their quota, they cannot submit more requests until the next month/year.
                 </div>
             </div>

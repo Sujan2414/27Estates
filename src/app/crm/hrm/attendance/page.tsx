@@ -16,8 +16,8 @@ const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: fa
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
 
 const tooltipStyle = {
-    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
-    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+    contentStyle: { backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border-subtle)', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: 'var(--crm-text-secondary)' }, labelStyle: { color: 'var(--crm-text-muted)' },
 }
 
 interface AttendanceRecord {
@@ -326,17 +326,17 @@ export default function AttendancePage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm/hrm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                    <Link href="/crm/hrm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>
                             {isAdminUser ? 'Attendance' : 'My Attendance'}
                         </h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{records.length} records · {selectedMonth}</p>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>{records.length} records · {selectedMonth}</p>
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                     {isAdminUser && (
-                        <Link href="/crm/hrm/work-settings" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 0.875rem', border: '1px solid #374151', borderRadius: '0.5rem', color: '#9ca3af', fontSize: '0.8125rem', textDecoration: 'none' }}>
+                        <Link href="/crm/hrm/work-settings" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 0.875rem', border: '1px solid #374151', borderRadius: '0.5rem', color: 'var(--crm-text-muted)', fontSize: '0.8125rem', textDecoration: 'none' }}>
                             <Settings size={14} /> Work Settings
                         </Link>
                     )}
@@ -354,8 +354,8 @@ export default function AttendancePage() {
             {!tableExists && (
                 <div style={{ backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '0.75rem' }}>
                     <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.8125rem', color: '#9ca3af' }}>
-                        Run <code style={{ backgroundColor: '#1e2030', padding: '1px 6px', borderRadius: '4px' }}>supabase/hrm-schema.sql</code> and <code style={{ backgroundColor: '#1e2030', padding: '1px 6px', borderRadius: '4px' }}>supabase/hrm-checkin.sql</code> to enable attendance.
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
+                        Run <code style={{ backgroundColor: 'var(--crm-elevated)', padding: '1px 6px', borderRadius: '4px' }}>supabase/hrm-schema.sql</code> and <code style={{ backgroundColor: 'var(--crm-elevated)', padding: '1px 6px', borderRadius: '4px' }}>supabase/hrm-checkin.sql</code> to enable attendance.
                     </span>
                 </div>
             )}
@@ -368,22 +368,22 @@ export default function AttendancePage() {
                         ? `linear-gradient(135deg, ${hoursColor_}12, ${hoursColor_}06)`
                         : isCheckedIn
                             ? 'linear-gradient(135deg, #22c55e12, #22c55e06)'
-                            : 'linear-gradient(135deg, #1e2030, #161822)',
-                    border: `1px solid ${isCheckedOut ? hoursColor_ + '40' : isCheckedIn ? '#22c55e40' : '#2d3148'}`,
+                            : 'var(--crm-elevated)',
+                    border: `1px solid ${isCheckedOut ? hoursColor_ + '40' : isCheckedIn ? '#22c55e40' : 'var(--crm-border-subtle)'}`,
                     borderRadius: '1rem',
                     padding: '1.5rem',
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                         {/* Left: status info */}
                         <div style={{ flex: 1, minWidth: 200 }}>
-                            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.375rem', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginBottom: '0.375rem', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
                                 {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
                             </div>
 
                             {!todayRecord && (
                                 <>
-                                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#9ca3af', marginBottom: '0.5rem' }}>Not Checked In</div>
-                                    <div style={{ fontSize: '0.8125rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--crm-text-muted)', marginBottom: '0.5rem' }}>Not Checked In</div>
+                                    <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                                         <MapPin size={13} /> Your location will be captured on check-in
                                     </div>
                                 </>
@@ -395,7 +395,7 @@ export default function AttendancePage() {
                                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite', display: 'inline-block' }} />
                                         <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#22c55e' }}>Checked In</span>
                                     </div>
-                                    <div style={{ fontSize: '0.8125rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.25rem' }}>
+                                    <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.25rem' }}>
                                         <Clock size={13} /> Since {formatTime(todayRecord?.check_in_time)}
                                     </div>
                                     {elapsedDisplay && (
@@ -404,7 +404,7 @@ export default function AttendancePage() {
                                         </div>
                                     )}
                                     {todayRecord?.check_in_address && (
-                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.375rem' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginTop: '0.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.375rem' }}>
                                             <MapPin size={12} style={{ flexShrink: 0, marginTop: 1 }} />
                                             <span>{todayRecord.check_in_address}</span>
                                         </div>
@@ -423,7 +423,7 @@ export default function AttendancePage() {
                                         <CheckCircle size={18} />
                                         {formatDuration(todayRecord.hours_worked)} worked
                                     </div>
-                                    <div style={{ fontSize: '0.8125rem', color: '#9ca3af', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                             <LogIn size={12} style={{ color: '#22c55e' }} /> {formatTime(todayRecord.check_in_time)}
                                         </span>
@@ -442,7 +442,7 @@ export default function AttendancePage() {
                                         )}
                                     </div>
                                     {todayRecord.check_out_address && (
-                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.375rem', display: 'flex', alignItems: 'flex-start', gap: '0.375rem' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginTop: '0.375rem', display: 'flex', alignItems: 'flex-start', gap: '0.375rem' }}>
                                             <MapPin size={12} style={{ flexShrink: 0, marginTop: 1 }} />
                                             <span>{todayRecord.check_out_address}</span>
                                         </div>
@@ -534,13 +534,13 @@ export default function AttendancePage() {
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                                     <thead>
-                                        <tr style={{ borderBottom: '1px solid #1e2030' }}>
-                                            <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#6b7280', fontWeight: 600 }}>Employee</th>
-                                            <th style={{ textAlign: 'left', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Status</th>
-                                            <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Check In</th>
-                                            <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Check Out</th>
-                                            <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Hours</th>
-                                            <th style={{ textAlign: 'left', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Location</th>
+                                        <tr style={{ borderBottom: '1px solid var(--crm-border)' }}>
+                                            <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Employee</th>
+                                            <th style={{ textAlign: 'left', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Status</th>
+                                            <th style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Check In</th>
+                                            <th style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Check Out</th>
+                                            <th style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Hours</th>
+                                            <th style={{ textAlign: 'left', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Location</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -548,8 +548,8 @@ export default function AttendancePage() {
                                             const sConf = STATUS_OPTIONS.find(s => s.key === r.status)
                                             const hColor = hoursColor(r.hours_worked, workSettings)
                                             return (
-                                                <tr key={r.id} style={{ borderBottom: '1px solid #1e2030' }}>
-                                                    <td style={{ padding: '0.625rem 0.75rem', fontWeight: 500, color: '#e5e7eb' }}>{r.employee?.full_name || '—'}</td>
+                                                <tr key={r.id} style={{ borderBottom: '1px solid var(--crm-border)' }}>
+                                                    <td style={{ padding: '0.625rem 0.75rem', fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{r.employee?.full_name || '—'}</td>
                                                     <td style={{ padding: '0.5rem' }}>
                                                         <span style={{ fontSize: '0.75rem', fontWeight: 600, color: sConf?.color, background: `${sConf?.color}15`, padding: '2px 8px', borderRadius: '999px' }}>
                                                             {sConf?.label || r.status}
@@ -560,10 +560,10 @@ export default function AttendancePage() {
                                                     <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: hColor }}>
                                                         {formatDuration(r.hours_worked) || '—'}
                                                     </td>
-                                                    <td style={{ padding: '0.5rem', fontSize: '0.6875rem', color: '#6b7280', maxWidth: 160 }}>
+                                                    <td style={{ padding: '0.5rem', fontSize: '0.6875rem', color: 'var(--crm-text-faint)', maxWidth: 160 }}>
                                                         {r.check_in_address ? (
                                                             <span style={{ display: 'flex', alignItems: 'flex-start', gap: '0.25rem' }}>
-                                                                <MapPin size={11} style={{ flexShrink: 0, marginTop: 1, color: '#BFA270' }} />
+                                                                <MapPin size={11} style={{ flexShrink: 0, marginTop: 1, color: 'var(--crm-accent)' }} />
                                                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.check_in_address}</span>
                                                             </span>
                                                         ) : r.work_mode === 'remote' ? (
@@ -583,7 +583,7 @@ export default function AttendancePage() {
                     <div className={styles.card} style={{ overflowX: 'auto' }}>
                         <div className={styles.cardHeader}>
                             <span className={styles.cardTitle}>Monthly Overview</span>
-                            <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)' }}>
                                 <span style={{ color: '#22c55e' }}>■</span> ≥{workSettings.full_day_hours}h &nbsp;
                                 <span style={{ color: '#f59e0b' }}>■</span> ≥{workSettings.half_day_hours}h &nbsp;
                                 <span style={{ color: '#ef4444' }}>■</span> Short
@@ -595,17 +595,17 @@ export default function AttendancePage() {
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
                                 <thead>
                                     <tr>
-                                        <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#6b7280', fontWeight: 600, position: 'sticky', left: 0, backgroundColor: '#161822', zIndex: 1 }}>Employee</th>
+                                        <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: 'var(--crm-text-faint)', fontWeight: 600, position: 'sticky', left: 0, backgroundColor: 'var(--crm-surface)', zIndex: 1 }}>Employee</th>
                                         {monthDates.map(d => {
                                             const day = new Date(d).getDay()
                                             const isWeekend = day === 0 || day === 6
                                             return (
-                                                <th key={d} style={{ padding: '0.5rem 0.25rem', color: isWeekend ? '#2d3148' : '#6b7280', fontWeight: 600, textAlign: 'center', minWidth: '28px' }}>
+                                                <th key={d} style={{ padding: '0.5rem 0.25rem', color: isWeekend ? 'var(--crm-border-subtle)' : '#6b7280', fontWeight: 600, textAlign: 'center', minWidth: '28px' }}>
                                                     {d.split('-')[2]}
                                                 </th>
                                             )
                                         })}
-                                        <th style={{ textAlign: 'center', padding: '0.5rem 0.75rem', color: '#6b7280', fontWeight: 600 }}>%</th>
+                                        <th style={{ textAlign: 'center', padding: '0.5rem 0.75rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>%</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -616,8 +616,8 @@ export default function AttendancePage() {
                                         const workingDays = monthDates.filter(d => { const day = new Date(d).getDay(); return day !== 0 && day !== 6 }).length
                                         const pct = workingDays > 0 ? Math.round((presentDays / workingDays) * 100) : 0
                                         return (
-                                            <tr key={emp.id} style={{ borderTop: '1px solid #1e2030' }}>
-                                                <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500, color: '#e5e7eb', position: 'sticky', left: 0, backgroundColor: '#161822', whiteSpace: 'nowrap' }}>
+                                            <tr key={emp.id} style={{ borderTop: '1px solid var(--crm-border)' }}>
+                                                <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500, color: 'var(--crm-text-secondary)', position: 'sticky', left: 0, backgroundColor: 'var(--crm-surface)', whiteSpace: 'nowrap' }}>
                                                     {emp.full_name.split(' ')[0]}
                                                 </td>
                                                 {monthDates.map(d => {
@@ -635,14 +635,14 @@ export default function AttendancePage() {
                                                     return (
                                                         <td key={d} style={{ textAlign: 'center', padding: '0.25rem' }}>
                                                             {isWeekend ? (
-                                                                <span style={{ width: '18px', height: '18px', borderRadius: '3px', backgroundColor: '#1e2030', display: 'inline-block', opacity: 0.3 }} />
+                                                                <span style={{ width: '18px', height: '18px', borderRadius: '3px', backgroundColor: 'var(--crm-elevated)', display: 'inline-block', opacity: 0.3 }} />
                                                             ) : (
                                                                 <span
                                                                     title={status ? `${sConf?.label}${hours != null ? ` · ${formatDuration(hours)}` : ''}` : 'Not marked'}
                                                                     style={{
                                                                         width: '18px', height: '18px', borderRadius: '3px',
-                                                                        backgroundColor: status ? `${dotColor}40` : isToday ? '#BFA27020' : '#1e2030',
-                                                                        border: `1px solid ${status ? `${dotColor}60` : isToday ? '#BFA27040' : '#2d3148'}`,
+                                                                        backgroundColor: status ? `${dotColor}40` : isToday ? '#BFA27020' : 'var(--crm-border)',
+                                                                        border: `1px solid ${status ? `${dotColor}60` : isToday ? '#BFA27040' : 'var(--crm-border-subtle)'}`,
                                                                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                                                         cursor: 'default',
                                                                     }}
@@ -664,7 +664,7 @@ export default function AttendancePage() {
                         )}
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
                             {STATUS_OPTIONS.map(s => (
-                                <span key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.6875rem', color: '#6b7280' }}>
+                                <span key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.6875rem', color: 'var(--crm-text-faint)' }}>
                                     <span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: s.color + '60', border: `1px solid ${s.color}` }} />
                                     {s.label}
                                 </span>
@@ -685,7 +685,7 @@ export default function AttendancePage() {
                             })
                             if (shortDays.length === 0) return null
                             return (
-                                <div style={{ marginTop: '1rem', borderTop: '1px solid #1e2030', paddingTop: '1rem' }}>
+                                <div style={{ marginTop: '1rem', borderTop: '1px solid var(--crm-border)', paddingTop: '1rem' }}>
                                     <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#f59e0b', marginBottom: '0.625rem' }}>
                                         🔄 Short / Absent days — Apply for Regularisation
                                     </div>
@@ -696,12 +696,12 @@ export default function AttendancePage() {
                                             const existing = regularizations.find(r => r.date === d)
                                             const regStatusColor = existing?.status === 'approved' ? '#22c55e' : existing?.status === 'rejected' ? '#ef4444' : '#f59e0b'
                                             return (
-                                                <div key={d} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: '#1e2030', borderRadius: '0.5rem', gap: '1rem' }}>
+                                                <div key={d} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem', gap: '1rem' }}>
                                                     <div>
-                                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb' }}>
+                                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>
                                                             {new Date(d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
                                                         </span>
-                                                        <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem' }}>
+                                                        <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginLeft: '0.5rem' }}>
                                                             {hours != null ? `${hours.toFixed(1)}h worked` : status}
                                                         </span>
                                                     </div>
@@ -721,7 +721,7 @@ export default function AttendancePage() {
                                             )
                                         })}
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-dim)', marginTop: '0.5rem' }}>
                                         Quota: {regularizations.filter(r => r.status !== 'rejected').length} / {regQuota.max_regularizations_per_month} used this month
                                     </div>
                                 </div>
@@ -761,8 +761,8 @@ export default function AttendancePage() {
                             <div className={styles.cardHeader}><span className={styles.cardTitle}>Status Distribution</span></div>
                             <ResponsiveContainer width="100%" height={220}>
                                 <BarChart data={statusCounts} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="count" name="Records" radius={[4, 4, 0, 0]}>
                                         {statusCounts.map((e, i) => <Cell key={i} fill={e.color} />)}
@@ -776,8 +776,8 @@ export default function AttendancePage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                                     {employeeAttPct.sort((a, b) => b.pct - a.pct).map(e => (
                                         <div key={e.name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <span style={{ fontSize: '0.75rem', color: '#9ca3af', width: '70px', flexShrink: 0 }}>{e.name}</span>
-                                            <div style={{ flex: 1, height: '6px', backgroundColor: '#1e2030', borderRadius: '3px' }}>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', width: '70px', flexShrink: 0 }}>{e.name}</span>
+                                            <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--crm-elevated)', borderRadius: '3px' }}>
                                                 <div style={{ height: '100%', width: `${e.pct}%`, backgroundColor: e.pct >= 80 ? '#22c55e' : e.pct >= 60 ? '#f59e0b' : '#ef4444', borderRadius: '3px' }} />
                                             </div>
                                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: e.pct >= 80 ? '#22c55e' : e.pct >= 60 ? '#f59e0b' : '#ef4444', width: '36px', textAlign: 'right' }}>{e.pct}%</span>
@@ -795,8 +795,8 @@ export default function AttendancePage() {
                 <div className={styles.modal}>
                     <div className={styles.modalContent}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#fff' }}>Apply for Regularisation</h2>
-                            <button onClick={() => { setShowRegModal(false); setRegError(null) }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Apply for Regularisation</h2>
+                            <button onClick={() => { setShowRegModal(false); setRegError(null) }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-faint)' }}>✕</button>
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>Date</label>

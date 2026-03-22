@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 
 export type CRMRole = 'super_admin' | 'admin' | 'agent'
 
@@ -21,6 +21,58 @@ export const isSuperAdmin = (u: CRMUser | null) => u?.role === 'super_admin'
 export const isAdmin = (u: CRMUser | null) => u?.role === 'super_admin' || u?.role === 'admin'
 export const isAgent = (u: CRMUser | null) => u?.role === 'agent'
 
+// ── Theme ──────────────────────────────────────────────
+export type CRMTheme = 'light' | 'dark'
+
+interface ThemeContextValue {
+    theme: CRMTheme
+    toggleTheme: () => void
+}
+
+const ThemeContext = createContext<ThemeContextValue>({
+    theme: 'light',
+    toggleTheme: () => {},
+})
+
+export function useTheme(): ThemeContextValue {
+    return useContext(ThemeContext)
+}
+
+const STORAGE_KEY = 'crm-theme'
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+    const [theme, setTheme] = useState<CRMTheme>('light')
+    const [mounted, setMounted] = useState(false)
+
+    // Read persisted theme on mount
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY) as CRMTheme | null
+            if (stored === 'dark' || stored === 'light') {
+                setTheme(stored)
+            }
+        } catch { /* SSR / incognito */ }
+        setMounted(true)
+    }, [])
+
+    // Persist theme changes
+    useEffect(() => {
+        if (!mounted) return
+        try { localStorage.setItem(STORAGE_KEY, theme) } catch { /* silent */ }
+    }, [theme, mounted])
+
+    const toggleTheme = useCallback(() => {
+        setTheme(prev => (prev === 'dark' ? 'light' : 'dark'))
+    }, [])
+
+    return (
+        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+            {children}
+        </ThemeContext.Provider>
+    )
+}
+
+// ── Financial Year Helpers ─────────────────────────────
 // Current financial year (April–March, Indian standard)
 export function getCurrentFY(): string {
     const now = new Date()

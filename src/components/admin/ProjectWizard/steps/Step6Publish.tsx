@@ -203,6 +203,7 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
                 ad_card_image: adCardImage || null,
                 show_ad_on_home: showAdOnHome,
                 section: d.section || 'residential',
+                listing_type: d.listing_type || null,
             }
 
             const { error: insertError } = await supabase
@@ -235,8 +236,10 @@ export default function ProjectStep6Publish({ initialData, onNext, onBack }: Ste
             if (section === 'commercial') router.push('/admin/commercial')
             else if (section === 'warehouse') router.push('/admin/warehouse')
             else router.push('/admin/projects')
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create project')
+        } catch (err: any) {
+            const msg = err?.message || err?.details || (typeof err === 'string' ? err : 'Failed to create project. Check the browser console for details.')
+            setError(msg)
+            console.error('Project save error:', err)
         } finally {
             setSaving(false)
         }

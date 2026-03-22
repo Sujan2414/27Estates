@@ -8,6 +8,8 @@ import {
     Zap, Plug
 } from 'lucide-react'
 import styles from './crm.module.css'
+import { useTheme } from './crm-context'
+import { leadSourceConfig, leadStatusConfig, FALLBACK_CHART_COLORS } from '@/lib/crm-constants'
 
 // Lazy load recharts to avoid SSR issues
 const AreaChart = dynamic(() => import('recharts').then(m => m.AreaChart), { ssr: false })
@@ -42,35 +44,6 @@ interface RecentLead {
     source: string; status: string; priority: string; created_at: string
 }
 
-const sourceConfig: Record<string, { label: string; color: string; bg: string }> = {
-    website: { label: 'Website', color: '#3b82f6', bg: '#3b82f620' },
-    meta_ads: { label: 'Meta Ads', color: '#ec4899', bg: '#ec489920' },
-    google_ads: { label: 'Google Ads', color: '#f59e0b', bg: '#f59e0b20' },
-    '99acres': { label: '99acres', color: '#ef4444', bg: '#ef444420' },
-    magicbricks: { label: 'MagicBricks', color: '#f97316', bg: '#f9731620' },
-    'housing': { label: 'Housing.com', color: '#06b6d4', bg: '#06b6d420' },
-    justdial: { label: 'JustDial', color: '#8b5cf6', bg: '#8b5cf620' },
-    chatbot: { label: 'Chatbot', color: '#22c55e', bg: '#22c55e20' },
-    whatsapp: { label: 'WhatsApp', color: '#25D366', bg: '#25D36620' },
-    manual: { label: 'Manual', color: '#a78bfa', bg: '#a78bfa20' },
-    referral: { label: 'Referral', color: '#BFA270', bg: '#BFA27020' },
-    b2bbricks: { label: 'B2BBricks', color: '#fb7185', bg: '#fb718520' },
-    sulekha: { label: 'Sulekha', color: '#34d399', bg: '#34d39920' },
-    commonfloor: { label: 'CommonFloor', color: '#60a5fa', bg: '#60a5fa20' },
-}
-
-const FALLBACK_COLORS = ['#fb923c', '#4ade80', '#f472b6', '#38bdf8', '#a3e635', '#fbbf24', '#c084fc', '#2dd4bf']
-
-const statusConfig: Record<string, { color: string; label: string }> = {
-    new: { color: '#3b82f6', label: 'New' },
-    contacted: { color: '#f59e0b', label: 'Contacted' },
-    qualified: { color: '#8b5cf6', label: 'Qualified' },
-    negotiation: { color: '#f97316', label: 'Negotiation' },
-    site_visit: { color: '#06b6d4', label: 'Site Visit' },
-    converted: { color: '#22c55e', label: 'Converted' },
-    lost: { color: '#ef4444', label: 'Lost' },
-}
-
 const USD_TO_INR = 83
 
 const formatINR = (usdCost: string | number) => {
@@ -86,6 +59,13 @@ export default function CRMDashboard() {
     const [apiUsage, setApiUsage] = useState<APIUsage | null>(null)
     const [recentLeads, setRecentLeads] = useState<RecentLead[]>([])
     const [loading, setLoading] = useState(true)
+    const { theme } = useTheme()
+
+    const tooltipStyle = {
+        contentStyle: { backgroundColor: 'var(--crm-tooltip-bg)', border: '1px solid var(--crm-tooltip-border)', borderRadius: '8px', fontSize: '0.75rem' },
+        itemStyle: { color: 'var(--crm-text-secondary)' },
+        labelStyle: { color: 'var(--crm-text-muted)' },
+    }
 
     useEffect(() => {
         async function fetchAll() {
@@ -115,18 +95,23 @@ export default function CRMDashboard() {
 
     // Prepare source pie data with consistent colors
     const sourceData = stats ? Object.entries(stats.bySource).map(([key, value], i) => ({
-        name: sourceConfig[key]?.label || key, value,
-        fill: sourceConfig[key]?.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-        color: sourceConfig[key]?.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+        name: leadSourceConfig[key]?.label || key, value,
+        fill: leadSourceConfig[key]?.color || FALLBACK_CHART_COLORS[i % FALLBACK_CHART_COLORS.length],
+        color: leadSourceConfig[key]?.color || FALLBACK_CHART_COLORS[i % FALLBACK_CHART_COLORS.length],
     })) : []
+
+    // Gradient colors for area chart
+    const accentColor = '#BFA270'
+    const gradientOpacityTop = theme === 'dark' ? 0.3 : 0.2
+    const axisTickFill = theme === 'dark' ? '#6b7280' : '#9ca3af'
 
     return (
         <div className={styles.pageContent}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>Dashboard</h1>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)', marginBottom: '0.25rem' }}>Dashboard</h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>
                         Welcome back. Here&apos;s your CRM overview.
                     </p>
                 </div>
@@ -163,7 +148,7 @@ export default function CRMDashboard() {
                 </div>
                 <div className={styles.statCard}>
                     <div className={styles.statLabel}>Overdue Tasks</div>
-                    <div className={styles.statValue} style={{ color: stats?.overdueTasks ? '#ef4444' : '#6b7280' }}>
+                    <div className={styles.statValue} style={{ color: stats?.overdueTasks ? '#ef4444' : 'var(--crm-text-faint)' }}>
                         {loading ? '—' : stats?.overdueTasks || 0}
                     </div>
                 </div>
@@ -172,7 +157,7 @@ export default function CRMDashboard() {
                     <div className={styles.statValue} style={{ fontSize: '1.25rem' }}>
                         {loading ? '—' : formatINR(apiUsage?.total?.cost || '0')}
                     </div>
-                    <div style={{ fontSize: '0.6875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                    <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>
                         {formatIndianNumber(apiUsage?.total?.tokens || 0)} tokens
                     </div>
                 </div>
@@ -197,13 +182,13 @@ export default function CRMDashboard() {
                             const pct = maxFunnel > 0 ? (count / maxFunnel) * 100 : 0
                             return (
                                 <div key={step} className={styles.funnelStep}>
-                                    <span className={styles.funnelLabel}>{statusConfig[step]?.label}</span>
+                                    <span className={styles.funnelLabel}>{leadStatusConfig[step]?.label}</span>
                                     <div style={{ flex: 1 }}>
                                         <div
                                             className={styles.funnelBar}
                                             style={{
                                                 width: `${Math.max(pct, 8)}%`,
-                                                backgroundColor: statusConfig[step]?.color,
+                                                backgroundColor: leadStatusConfig[step]?.color,
                                             }}
                                         >
                                             {count}
@@ -240,16 +225,13 @@ export default function CRMDashboard() {
                                             paddingAngle={3}
                                             dataKey="value"
                                         />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' }}
-                                            itemStyle={{ color: '#e5e7eb' }}
-                                        />
+                                        <Tooltip {...tooltipStyle} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
                                 {sourceData.map(s => (
-                                    <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.6875rem', color: '#9ca3af' }}>
+                                    <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.6875rem', color: 'var(--crm-text-muted)' }}>
                                         <div style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: s.color }} />
                                         {s.name} ({s.value})
                                     </div>
@@ -281,18 +263,14 @@ export default function CRMDashboard() {
                             <AreaChart data={apiUsage.daily}>
                                 <defs>
                                     <linearGradient id="tokenGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#BFA270" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#BFA270" stopOpacity={0} />
+                                        <stop offset="5%" stopColor={accentColor} stopOpacity={gradientOpacityTop} />
+                                        <stop offset="95%" stopColor={accentColor} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} width={40} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' }}
-                                    itemStyle={{ color: '#e5e7eb' }}
-                                    labelStyle={{ color: '#9ca3af' }}
-                                />
-                                <Area type="monotone" dataKey="tokens" stroke="#BFA270" fill="url(#tokenGrad)" strokeWidth={2} name="Tokens" />
+                                <XAxis dataKey="label" tick={{ fontSize: 10, fill: axisTickFill }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                                <YAxis tick={{ fontSize: 10, fill: axisTickFill }} tickLine={false} axisLine={false} width={40} />
+                                <Tooltip {...tooltipStyle} />
+                                <Area type="monotone" dataKey="tokens" stroke={accentColor} fill="url(#tokenGrad)" strokeWidth={2} name="Tokens" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -322,36 +300,36 @@ export default function CRMDashboard() {
                             </thead>
                             <tbody>
                                 {recentLeads.map(lead => {
-                                    const src = sourceConfig[lead.source]
+                                    const src = leadSourceConfig[lead.source]
                                     return (
                                         <tr key={lead.id} style={{ cursor: 'pointer' }}
                                             onClick={() => window.location.href = `/crm/leads/${lead.id}`}>
                                             <td>
-                                                <div style={{ fontWeight: 500, color: '#e5e7eb' }}>{lead.name}</div>
-                                                <div style={{ fontSize: '0.6875rem', color: '#6b7280' }}>
+                                                <div style={{ fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{lead.name}</div>
+                                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)' }}>
                                                     {lead.phone || lead.email || '—'}
                                                 </div>
                                             </td>
                                             <td>
                                                 <span className={styles.badge} style={{
-                                                    backgroundColor: src?.bg || '#1e2030',
-                                                    color: src?.color || '#9ca3af',
+                                                    backgroundColor: src?.bg || 'var(--crm-elevated)',
+                                                    color: src?.color || 'var(--crm-text-muted)',
                                                 }}>
                                                     {src?.label || lead.source}
                                                 </span>
                                             </td>
                                             <td>
                                                 <span className={styles.badge} style={{
-                                                    backgroundColor: `${statusConfig[lead.status]?.color}20`,
-                                                    color: statusConfig[lead.status]?.color,
+                                                    backgroundColor: `${leadStatusConfig[lead.status]?.color}20`,
+                                                    color: leadStatusConfig[lead.status]?.color,
                                                 }}>
-                                                    {statusConfig[lead.status]?.label || lead.status}
+                                                    {leadStatusConfig[lead.status]?.label || lead.status}
                                                 </span>
                                             </td>
                                             <td style={{ fontSize: '0.75rem' }}>
                                                 {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🟡' : '🔵'}
                                             </td>
-                                            <td style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                            <td style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)' }}>
                                                 {formatRelative(lead.created_at)}
                                             </td>
                                         </tr>
@@ -390,15 +368,15 @@ export default function CRMDashboard() {
                     <div className={styles.card}>
                         <div className={styles.cardTitle} style={{ marginBottom: '0.75rem' }}>By Status</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {Object.entries(statusConfig).map(([status, config]) => {
+                            {Object.entries(leadStatusConfig).map(([status, config]) => {
                                 const count = stats?.byStatus[status] || 0
                                 const pct = stats?.total ? ((count / stats.total) * 100).toFixed(0) : '0'
                                 return (
                                     <div key={status} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: config.color, flexShrink: 0 }} />
-                                        <span style={{ fontSize: '0.8125rem', color: '#9ca3af', flex: 1 }}>{config.label}</span>
-                                        <span style={{ fontSize: '0.6875rem', color: '#6b7280', marginRight: '0.25rem' }}>{pct}%</span>
-                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb', minWidth: '24px', textAlign: 'right' }}>{count}</span>
+                                        <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', flex: 1 }}>{config.label}</span>
+                                        <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginRight: '0.25rem' }}>{pct}%</span>
+                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', minWidth: '24px', textAlign: 'right' }}>{count}</span>
                                     </div>
                                 )
                             })}

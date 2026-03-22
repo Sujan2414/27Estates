@@ -15,23 +15,13 @@ const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: fa
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
 const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
+import { leadSourceConfig, leadStatusConfig, FALLBACK_CHART_COLORS } from '@/lib/crm-constants'
 
-const statusColors: Record<string, string> = {
-    new: '#3b82f6', contacted: '#f59e0b', qualified: '#8b5cf6',
-    negotiation: '#f97316', site_visit: '#06b6d4', converted: '#22c55e', lost: '#ef4444',
-}
-
-const sourceLabels: Record<string, string> = {
-    website: 'Website', meta_ads: 'Meta Ads', google_ads: 'Google Ads',
-    '99acres': '99acres', magicbricks: 'MagicBricks', housing: 'Housing.com',
-    justdial: 'JustDial', chatbot: 'Chatbot', manual: 'Manual', referral: 'Referral',
-}
-
-const COLORS = ['#BFA270', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#ec4899']
+// Removed local color configs
 
 const tooltipStyle = {
-    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
-    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+    contentStyle: { backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border-subtle)', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: 'var(--crm-text-secondary)' }, labelStyle: { color: 'var(--crm-text-muted)' },
 }
 
 export default function AnalyticsPage() {
@@ -51,12 +41,12 @@ export default function AnalyticsPage() {
     // Source breakdown
     const sourceData = Object.entries(
         leads.reduce((acc: Record<string, number>, l) => { acc[l.source] = (acc[l.source] || 0) + 1; return acc }, {})
-    ).map(([name, value], i) => ({ name: sourceLabels[name] || name, value, fill: COLORS[i % COLORS.length] })).sort((a, b) => b.value - a.value)
+    ).map(([name, value], i) => ({ name: leadSourceConfig[name]?.label || name, value, fill: leadSourceConfig[name]?.color || FALLBACK_CHART_COLORS[i % FALLBACK_CHART_COLORS.length], colorKey: name })).sort((a, b) => b.value - a.value)
 
     // Status breakdown
     const statusData = Object.entries(
         leads.reduce((acc: Record<string, number>, l) => { acc[l.status] = (acc[l.status] || 0) + 1; return acc }, {})
-    ).map(([name, value]) => ({ name, value, fill: statusColors[name] || '#6b7280' }))
+    ).map(([name, value]) => ({ name: leadStatusConfig[name]?.label || name, value, fill: leadStatusConfig[name]?.color || '#6b7280' }))
 
     // Priority breakdown
     const priorityData = [
@@ -81,15 +71,15 @@ export default function AnalyticsPage() {
 
     // Conversion by source
     const conversionBySource = Object.entries(
-        leads.reduce((acc: Record<string, { total: number; converted: number }>, l) => {
-            const key = sourceLabels[l.source] || l.source
-            if (!acc[key]) acc[key] = { total: 0, converted: 0 }
-            acc[key].total++
-            if (l.status === 'converted') acc[key].converted++
+        leads.reduce((acc: Record<string, { total: number; converted: number, key: string }>, l) => {
+            const label = leadSourceConfig[l.source]?.label || l.source
+            if (!acc[label]) acc[label] = { total: 0, converted: 0, key: l.source }
+            acc[label].total++
+            if (l.status === 'converted') acc[label].converted++
             return acc
         }, {})
     ).map(([name, data]) => ({
-        name, total: data.total, converted: data.converted,
+        name, key: data.key, total: data.total, converted: data.converted,
         rate: data.total > 0 ? parseFloat(((data.converted / data.total) * 100).toFixed(1)) : 0,
     })).sort((a, b) => b.total - a.total)
 
@@ -98,10 +88,10 @@ export default function AnalyticsPage() {
     return (
         <div className={styles.pageContent}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Analytics</h1>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Deep dive into your lead data</p>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Analytics</h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Deep dive into your lead data</p>
                 </div>
             </div>
 
@@ -114,8 +104,8 @@ export default function AnalyticsPage() {
                 <div style={{ width: '100%', height: 250 }}>
                     <ResponsiveContainer>
                         <BarChart data={timeData}>
-                            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                            <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
+                            <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                            <YAxis tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
                             <Tooltip {...tooltipStyle} />
                             <Bar dataKey="count" fill="#BFA270" radius={[4, 4, 0, 0]} name="Leads" />
                         </BarChart>
@@ -140,11 +130,11 @@ export default function AnalyticsPage() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginTop: '0.5rem' }}>
                                 {sourceData.map((s, i) => (
                                     <div key={s.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#9ca3af' }}>
-                                            <div style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: COLORS[i % COLORS.length] }} />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--crm-text-muted)' }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: s.fill }} />
                                             {s.name}
                                         </div>
-                                        <span style={{ color: '#e5e7eb', fontWeight: 600 }}>{s.value}</span>
+                                        <span style={{ color: 'var(--crm-text-secondary)', fontWeight: 600 }}>{s.value}</span>
                                     </div>
                                 ))}
                             </div>
@@ -159,8 +149,8 @@ export default function AnalyticsPage() {
                         <div style={{ width: '100%', height: 280 }}>
                             <ResponsiveContainer>
                                 <BarChart data={statusData} layout="vertical">
-                                    <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} tickLine={false} axisLine={false} allowDecimals={false} />
-                                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} width={80} />
+                                    <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} tickLine={false} axisLine={false} allowDecimals={false} />
+                                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--crm-text-muted)' }} tickLine={false} axisLine={false} width={80} />
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="value" name="Leads" radius={[0, 4, 4, 0]} />
                                 </BarChart>
@@ -184,7 +174,7 @@ export default function AnalyticsPage() {
                         {priorityData.map(p => (
                             <div key={p.name} style={{ textAlign: 'center' }}>
                                 <div style={{ fontSize: '1.125rem', fontWeight: 700, color: p.fill }}>{p.value}</div>
-                                <div style={{ fontSize: '0.6875rem', color: '#6b7280' }}>{p.name}</div>
+                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)' }}>{p.name}</div>
                             </div>
                         ))}
                     </div>
@@ -218,11 +208,11 @@ export default function AnalyticsPage() {
                                 <td>
                                     <div style={{
                                         width: '100%', maxWidth: '120px', height: '6px',
-                                        backgroundColor: '#1e2030', borderRadius: '3px', overflow: 'hidden',
+                                        backgroundColor: 'var(--crm-elevated)', borderRadius: '3px', overflow: 'hidden',
                                     }}>
                                         <div style={{
                                             width: `${Math.min(row.rate * 2, 100)}%`, height: '100%',
-                                            backgroundColor: row.rate > 10 ? '#22c55e' : row.rate > 0 ? '#f59e0b' : '#2d3148',
+                                            backgroundColor: row.rate > 10 ? '#22c55e' : row.rate > 0 ? '#f59e0b' : 'var(--crm-border-subtle)',
                                             borderRadius: '3px', transition: 'width 0.6s',
                                         }} />
                                     </div>

@@ -6,7 +6,7 @@ import {
     ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, Clock,
     MessageSquare, PhoneCall, Send, StickyNote, CheckCircle2, Circle,
     Plus, Eye, Tag, IndianRupee, Star, TrendingUp, CalendarCheck,
-    Home, Edit3, Save, X
+    Home, Edit3, Save, X, Sliders, BedDouble, Ruler, Banknote
 } from 'lucide-react'
 import styles from '../../crm.module.css'
 import type { Lead, LeadActivity, LeadTask } from '@/lib/crm/types'
@@ -81,12 +81,40 @@ export default function LeadDetailPage() {
     const [tagInput, setTagInput] = useState('')
     const [saving, setSaving] = useState(false)
 
+    // Property preferences
+    const [prefEditing, setPrefEditing] = useState(false)
+    const [prefData, setPrefData] = useState({
+        property_type: '', preferred_location: '',
+        budget_min: '', budget_max: '',
+        bhk: '', area_min: '', area_max: '',
+        transaction_type: '', furnishing: '', possession: '',
+    })
+    const [prefSaving, setPrefSaving] = useState(false)
+
     const fetchLead = async () => {
         const [leadRes, visitsRes] = await Promise.all([
             fetch(`/api/crm/leads/${id}`),
             fetch(`/api/crm/site-visits?lead_id=${id}`),
         ])
-        if (leadRes.ok) { const d = await leadRes.json(); setLead(d.lead); setActivities(d.activities); setTasks(d.tasks) }
+        if (leadRes.ok) {
+            const d = await leadRes.json()
+            setLead(d.lead)
+            setActivities(d.activities)
+            setTasks(d.tasks)
+            const lp = d.lead?.lead_preferences || {}
+            setPrefData({
+                property_type: d.lead?.property_type || '',
+                preferred_location: d.lead?.preferred_location || '',
+                budget_min: d.lead?.budget_min?.toString() || '',
+                budget_max: d.lead?.budget_max?.toString() || '',
+                bhk: lp.bhk || '',
+                area_min: lp.area_min?.toString() || '',
+                area_max: lp.area_max?.toString() || '',
+                transaction_type: lp.transaction_type || '',
+                furnishing: lp.furnishing || '',
+                possession: lp.possession || '',
+            })
+        }
         if (visitsRes.ok) { const d = await visitsRes.json(); setVisits(d.visits || []) }
         setLoading(false)
     }
@@ -97,9 +125,7 @@ export default function LeadDetailPage() {
         fetchLead()
     }
 
-    const handleStatusChange = (s: string) => {
-        patch({ status: s })
-    }
+    const handleStatusChange = (s: string) => { patch({ status: s }) }
     const handleMarkLost = async () => {
         await fetch(`/api/crm/leads/${id}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -116,11 +142,28 @@ export default function LeadDetailPage() {
         await fetch(`/api/crm/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         setEditing(false); setSaving(false); fetchLead()
     }
+    const handleSavePref = async () => {
+        setPrefSaving(true)
+        await patch({
+            property_type: prefData.property_type || null,
+            preferred_location: prefData.preferred_location || null,
+            budget_min: prefData.budget_min ? Number(prefData.budget_min) : null,
+            budget_max: prefData.budget_max ? Number(prefData.budget_max) : null,
+            lead_preferences: {
+                bhk: prefData.bhk || null,
+                area_min: prefData.area_min ? Number(prefData.area_min) : null,
+                area_max: prefData.area_max ? Number(prefData.area_max) : null,
+                transaction_type: prefData.transaction_type || null,
+                furnishing: prefData.furnishing || null,
+                possession: prefData.possession || null,
+            }
+        })
+        setPrefEditing(false); setPrefSaving(false)
+    }
     const handleAddTag = async (tag: string) => {
         if (!tag.trim() || !lead) return
         const newTags = [...(lead.tags || []), tag.trim()]
-        await patch({ tags: newTags })
-        setTagInput('')
+        await patch({ tags: newTags }); setTagInput('')
     }
     const handleRemoveTag = async (tag: string) => {
         if (!lead) return
@@ -161,18 +204,19 @@ export default function LeadDetailPage() {
 
     const currentStep = statusSteps.indexOf(lead.status)
     const score = (lead as any).score || 0
+    const lp = (lead as any).lead_preferences || {}
 
     return (
         <div className={styles.pageContent}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <button onClick={() => router.push('/crm/leads')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}><ArrowLeft size={20} /></button>
+                <button onClick={() => router.push('/crm/leads')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-muted)' }}><ArrowLeft size={20} /></button>
                 <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>{lead.name}</h1>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>{lead.name}</h1>
                         <ScoreBadge score={score} />
                     </div>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{sourceLabels[lead.source]} · {formatRelative(lead.created_at)}</p>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>{sourceLabels[lead.source]} · {formatRelative(lead.created_at)}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {lead.phone && (
@@ -200,8 +244,8 @@ export default function LeadDetailPage() {
                             <button key={step} onClick={() => handleStatusChange(step)} style={{
                                 flex: 1, padding: '0.625rem 0.375rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer',
                                 fontSize: '0.6875rem', fontWeight: 600, minWidth: '80px', transition: 'all 0.2s',
-                                backgroundColor: i <= currentStep ? statusConfig[step]?.color : '#1e2030',
-                                color: i <= currentStep ? '#fff' : '#4b5563',
+                                backgroundColor: i <= currentStep ? statusConfig[step]?.color : 'var(--crm-elevated)',
+                                color: i <= currentStep ? '#fff' : 'var(--crm-text-muted)',
                             }}>{statusConfig[step]?.label}</button>
                         ))}
                     </div>
@@ -216,7 +260,7 @@ export default function LeadDetailPage() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
                             <span style={{ color: '#ef4444', fontWeight: 600, fontSize: '0.875rem' }}>Lost</span>
-                            {lead.lost_reason && <span style={{ color: '#6b7280', fontSize: '0.8125rem', marginLeft: '0.5rem' }}>— {lead.lost_reason}</span>}
+                            {lead.lost_reason && <span style={{ color: 'var(--crm-text-muted)', fontSize: '0.8125rem', marginLeft: '0.5rem' }}>— {lead.lost_reason}</span>}
                         </div>
                         <button onClick={() => patch({ status: 'new', lost_reason: null })} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Reopen</button>
                     </div>
@@ -231,7 +275,7 @@ export default function LeadDetailPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                             <span className={styles.cardTitle}>Contact Info</span>
                             <button onClick={() => { setEditing(!editing); setEditData({ ...lead }) }}
-                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#BFA270', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-accent)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 {editing ? <><X size={12} /> Cancel</> : <><Edit3 size={12} /> Edit</>}
                             </button>
                         </div>
@@ -240,12 +284,6 @@ export default function LeadDetailPage() {
                                 <input type="text" value={editData.name || ''} onChange={e => setEditData({ ...editData, name: e.target.value })} placeholder="Name" className={styles.formInput} />
                                 <input type="email" value={editData.email || ''} onChange={e => setEditData({ ...editData, email: e.target.value })} placeholder="Email" className={styles.formInput} />
                                 <input type="tel" value={editData.phone || ''} onChange={e => setEditData({ ...editData, phone: e.target.value })} placeholder="Phone" className={styles.formInput} />
-                                <input type="text" value={editData.preferred_location || ''} onChange={e => setEditData({ ...editData, preferred_location: e.target.value })} placeholder="Preferred Location" className={styles.formInput} />
-                                <input type="text" value={editData.property_type || ''} onChange={e => setEditData({ ...editData, property_type: e.target.value })} placeholder="Property Type (e.g. 2BHK Flat)" className={styles.formInput} />
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <input type="number" value={editData.budget_min || ''} onChange={e => setEditData({ ...editData, budget_min: e.target.value ? Number(e.target.value) : null })} placeholder="Budget Min ₹" className={styles.formInput} />
-                                    <input type="number" value={editData.budget_max || ''} onChange={e => setEditData({ ...editData, budget_max: e.target.value ? Number(e.target.value) : null })} placeholder="Budget Max ₹" className={styles.formInput} />
-                                </div>
                                 <input type="datetime-local" value={editData.next_follow_up_at?.slice(0, 16) || ''} onChange={e => setEditData({ ...editData, next_follow_up_at: e.target.value })} className={styles.formInput} />
                                 <textarea value={editData.notes || ''} onChange={e => setEditData({ ...editData, notes: e.target.value })} placeholder="Notes" rows={3} className={styles.formInput} style={{ resize: 'vertical' }} />
                                 <button onClick={handleSaveEdit} className={styles.btnPrimary} disabled={saving}>
@@ -254,22 +292,166 @@ export default function LeadDetailPage() {
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {lead.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}><Phone size={12} style={{ color: '#4b5563' }} /> <span style={{ color: '#e5e7eb' }}>{lead.phone}</span></div>}
-                                {lead.email && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}><Mail size={12} style={{ color: '#4b5563' }} /> <span style={{ color: '#e5e7eb' }}>{lead.email}</span></div>}
-                                {lead.preferred_location && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#9ca3af' }}><MapPin size={12} /> {lead.preferred_location}</div>}
-                                {lead.property_type && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#9ca3af' }}><Building2 size={12} /> {lead.property_type}</div>}
-                                {(lead.budget_min || lead.budget_max) && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#BFA270' }}>
-                                        <IndianRupee size={12} />
-                                        <span>{formatINR(lead.budget_min)} – {formatINR(lead.budget_max)}</span>
-                                    </div>
-                                )}
+                                {lead.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}><Phone size={12} style={{ color: 'var(--crm-text-muted)' }} /><span style={{ color: 'var(--crm-text-secondary)' }}>{lead.phone}</span></div>}
+                                {lead.email && <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}><Mail size={12} style={{ color: 'var(--crm-text-muted)' }} /><span style={{ color: 'var(--crm-text-secondary)' }}>{lead.email}</span></div>}
                                 {lead.next_follow_up_at && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#f59e0b' }}>
                                         <CalendarCheck size={12} /> Follow-up: {formatDateTime(lead.next_follow_up_at)}
                                     </div>
                                 )}
-                                {lead.notes && <div style={{ fontSize: '0.8125rem', color: '#9ca3af', backgroundColor: '#0f1117', padding: '0.625rem', borderRadius: '0.5rem', marginTop: '0.25rem' }}>{lead.notes}</div>}
+                                {lead.notes && <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', backgroundColor: 'var(--crm-elevated)', padding: '0.625rem', borderRadius: '0.5rem', marginTop: '0.25rem' }}>{lead.notes}</div>}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Property Preferences */}
+                    <div className={styles.card}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <span className={styles.cardTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Sliders size={14} /> Property Preference
+                            </span>
+                            <button onClick={() => setPrefEditing(!prefEditing)}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-accent)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {prefEditing ? <><X size={12} /> Cancel</> : <><Edit3 size={12} /> Edit</>}
+                            </button>
+                        </div>
+                        {prefEditing ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                    <div>
+                                        <label className={styles.formLabel}>Property Type</label>
+                                        <select value={prefData.property_type} onChange={e => setPrefData({ ...prefData, property_type: e.target.value })} className={styles.formSelect}>
+                                            <option value="">Select...</option>
+                                            {['Apartment', 'House', 'Villa', 'Bungalow', 'Row Villa', 'Penthouse', 'Studio', 'Duplex', 'Plot', 'Farmhouse', 'Commercial', 'Office', 'Warehouse'].map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className={styles.formLabel}>BHK</label>
+                                        <select value={prefData.bhk} onChange={e => setPrefData({ ...prefData, bhk: e.target.value })} className={styles.formSelect}>
+                                            <option value="">Any</option>
+                                            {['1 BHK', '2 BHK', '3 BHK', '4 BHK', '5 BHK', '6+ BHK'].map(b => <option key={b} value={b}>{b}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className={styles.formLabel}>Transaction Type</label>
+                                    <select value={prefData.transaction_type} onChange={e => setPrefData({ ...prefData, transaction_type: e.target.value })} className={styles.formSelect}>
+                                        <option value="">Any</option>
+                                        <option value="Buy">Buy</option>
+                                        <option value="Rent">Rent</option>
+                                        <option value="Lease">Lease</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={styles.formLabel}>Preferred Location</label>
+                                    <input type="text" value={prefData.preferred_location} onChange={e => setPrefData({ ...prefData, preferred_location: e.target.value })} placeholder="e.g. Baner, Pune" className={styles.formInput} />
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                    <div>
+                                        <label className={styles.formLabel}>Budget Min (₹)</label>
+                                        <input type="number" value={prefData.budget_min} onChange={e => setPrefData({ ...prefData, budget_min: e.target.value })} placeholder="e.g. 5000000" className={styles.formInput} />
+                                    </div>
+                                    <div>
+                                        <label className={styles.formLabel}>Budget Max (₹)</label>
+                                        <input type="number" value={prefData.budget_max} onChange={e => setPrefData({ ...prefData, budget_max: e.target.value })} placeholder="e.g. 10000000" className={styles.formInput} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                    <div>
+                                        <label className={styles.formLabel}>Area Min (sqft)</label>
+                                        <input type="number" value={prefData.area_min} onChange={e => setPrefData({ ...prefData, area_min: e.target.value })} placeholder="e.g. 800" className={styles.formInput} />
+                                    </div>
+                                    <div>
+                                        <label className={styles.formLabel}>Area Max (sqft)</label>
+                                        <input type="number" value={prefData.area_max} onChange={e => setPrefData({ ...prefData, area_max: e.target.value })} placeholder="e.g. 1500" className={styles.formInput} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                    <div>
+                                        <label className={styles.formLabel}>Furnishing</label>
+                                        <select value={prefData.furnishing} onChange={e => setPrefData({ ...prefData, furnishing: e.target.value })} className={styles.formSelect}>
+                                            <option value="">Any</option>
+                                            <option value="Furnished">Furnished</option>
+                                            <option value="Semi Furnished">Semi Furnished</option>
+                                            <option value="Unfurnished">Unfurnished</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className={styles.formLabel}>Possession</label>
+                                        <select value={prefData.possession} onChange={e => setPrefData({ ...prefData, possession: e.target.value })} className={styles.formSelect}>
+                                            <option value="">Any</option>
+                                            <option value="Ready to Move">Ready to Move</option>
+                                            <option value="Under Construction">Under Construction</option>
+                                            <option value="Within 6 months">Within 6 months</option>
+                                            <option value="Within 1 year">Within 1 year</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button onClick={handleSavePref} className={styles.btnPrimary} disabled={prefSaving}>
+                                    <Save size={14} /> {prefSaving ? 'Saving...' : 'Save Preferences'}
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {!lead.property_type && !lead.preferred_location && !lead.budget_min && !lp.bhk && !lp.transaction_type ? (
+                                    <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', fontStyle: 'italic' }}>
+                                        No preferences added yet. Click Edit to add.
+                                    </div>
+                                ) : (
+                                    <>
+                                        {lead.property_type && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}>
+                                                <Building2 size={12} style={{ color: 'var(--crm-text-muted)', flexShrink: 0 }} />
+                                                <span style={{ color: 'var(--crm-text-muted)' }}>Type:</span>
+                                                <span style={{ color: 'var(--crm-text-secondary)', fontWeight: 500 }}>
+                                                    {lead.property_type}{lp.bhk ? ` · ${lp.bhk}` : ''}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {lp.transaction_type && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}>
+                                                <Banknote size={12} style={{ color: 'var(--crm-text-muted)', flexShrink: 0 }} />
+                                                <span style={{ color: 'var(--crm-text-muted)' }}>For:</span>
+                                                <span style={{ color: 'var(--crm-text-secondary)', fontWeight: 500 }}>{lp.transaction_type}</span>
+                                            </div>
+                                        )}
+                                        {lead.preferred_location && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}>
+                                                <MapPin size={12} style={{ color: 'var(--crm-text-muted)', flexShrink: 0 }} />
+                                                <span style={{ color: 'var(--crm-text-muted)' }}>Location:</span>
+                                                <span style={{ color: 'var(--crm-text-secondary)', fontWeight: 500 }}>{lead.preferred_location}</span>
+                                            </div>
+                                        )}
+                                        {(lead.budget_min || lead.budget_max) && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}>
+                                                <IndianRupee size={12} style={{ color: 'var(--crm-accent)', flexShrink: 0 }} />
+                                                <span style={{ color: 'var(--crm-text-muted)' }}>Budget:</span>
+                                                <span style={{ color: 'var(--crm-accent)', fontWeight: 600 }}>{formatINR(lead.budget_min)} – {formatINR(lead.budget_max)}</span>
+                                            </div>
+                                        )}
+                                        {(lp.area_min || lp.area_max) && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}>
+                                                <Ruler size={12} style={{ color: 'var(--crm-text-muted)', flexShrink: 0 }} />
+                                                <span style={{ color: 'var(--crm-text-muted)' }}>Area:</span>
+                                                <span style={{ color: 'var(--crm-text-secondary)', fontWeight: 500 }}>{lp.area_min || '—'} – {lp.area_max || '—'} sqft</span>
+                                            </div>
+                                        )}
+                                        {lp.furnishing && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}>
+                                                <Home size={12} style={{ color: 'var(--crm-text-muted)', flexShrink: 0 }} />
+                                                <span style={{ color: 'var(--crm-text-muted)' }}>Furnishing:</span>
+                                                <span style={{ color: 'var(--crm-text-secondary)', fontWeight: 500 }}>{lp.furnishing}</span>
+                                            </div>
+                                        )}
+                                        {lp.possession && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem' }}>
+                                                <CalendarCheck size={12} style={{ color: 'var(--crm-text-muted)', flexShrink: 0 }} />
+                                                <span style={{ color: 'var(--crm-text-muted)' }}>Possession:</span>
+                                                <span style={{ color: 'var(--crm-text-secondary)', fontWeight: 500 }}>{lp.possession}</span>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -283,11 +465,11 @@ export default function LeadDetailPage() {
                             {(lead.tags || []).map(tag => (
                                 <span key={tag} style={{
                                     padding: '3px 8px', borderRadius: '999px', fontSize: '0.6875rem',
-                                    backgroundColor: '#BFA27020', color: '#BFA270', border: '1px solid #BFA27040',
+                                    backgroundColor: 'var(--crm-accent-bg)', color: 'var(--crm-accent)', border: '1px solid #BFA27040',
                                     display: 'flex', alignItems: 'center', gap: '4px',
                                 }}>
                                     {tag}
-                                    <button onClick={() => handleRemoveTag(tag)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280', padding: 0, lineHeight: 1 }}><X size={10} /></button>
+                                    <button onClick={() => handleRemoveTag(tag)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-muted)', padding: 0, lineHeight: 1 }}><X size={10} /></button>
                                 </span>
                             ))}
                         </div>
@@ -303,14 +485,18 @@ export default function LeadDetailPage() {
                     <div className={styles.card}>
                         <span className={styles.cardTitle} style={{ display: 'block', marginBottom: '0.75rem' }}>Priority</span>
                         <div style={{ display: 'flex', gap: '0.375rem' }}>
-                            {(['hot', 'warm', 'cold'] as const).map(p => (
-                                <button key={p} onClick={() => patch({ priority: p })} style={{
-                                    flex: 1, padding: '0.5rem', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
-                                    border: `1px solid ${lead.priority === p ? (p === 'hot' ? '#ef4444' : p === 'warm' ? '#f59e0b' : '#3b82f6') : '#1e2030'}`,
-                                    backgroundColor: lead.priority === p ? (p === 'hot' ? '#ef444415' : p === 'warm' ? '#f59e0b15' : '#3b82f615') : '#0f1117',
-                                    color: p === 'hot' ? '#ef4444' : p === 'warm' ? '#f59e0b' : '#3b82f6',
-                                }}>{p === 'hot' ? '🔥' : p === 'warm' ? '🟡' : '🔵'} {p}</button>
-                            ))}
+                            {(['hot', 'warm', 'cold'] as const).map(p => {
+                                const pColor = p === 'hot' ? '#ef4444' : p === 'warm' ? '#f59e0b' : '#3b82f6'
+                                const isActive = lead.priority === p
+                                return (
+                                    <button key={p} onClick={() => patch({ priority: p })} style={{
+                                        flex: 1, padding: '0.5rem', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize',
+                                        border: `1px solid ${isActive ? pColor : 'var(--crm-border)'}`,
+                                        backgroundColor: isActive ? `${pColor}15` : 'var(--crm-elevated)',
+                                        color: pColor,
+                                    }}>{p === 'hot' ? '🔥' : p === 'warm' ? '🟡' : '🔵'} {p}</button>
+                                )
+                            })}
                         </div>
                     </div>
 
@@ -323,13 +509,13 @@ export default function LeadDetailPage() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                                 {Object.entries((lead as any).score_breakdown as Record<string, number>).map(([key, val]) => (
                                     <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                                        <span style={{ color: '#6b7280', textTransform: 'capitalize' }}>{key}</span>
-                                        <span style={{ color: val > 0 ? '#22c55e' : '#4b5563', fontWeight: 600 }}>+{val}</span>
+                                        <span style={{ color: 'var(--crm-text-muted)', textTransform: 'capitalize' }}>{key}</span>
+                                        <span style={{ color: (val as number) > 0 ? '#22c55e' : 'var(--crm-text-dim)', fontWeight: 600 }}>+{val as number}</span>
                                     </div>
                                 ))}
-                                <div style={{ borderTop: '1px solid #1e2030', marginTop: '0.25rem', paddingTop: '0.25rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', fontWeight: 700 }}>
-                                    <span style={{ color: '#9ca3af' }}>Total</span>
-                                    <span style={{ color: '#fff' }}>{score}/100</span>
+                                <div style={{ borderTop: '1px solid var(--crm-border)', marginTop: '0.25rem', paddingTop: '0.25rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', fontWeight: 700 }}>
+                                    <span style={{ color: 'var(--crm-text-muted)' }}>Total</span>
+                                    <span style={{ color: 'var(--crm-text-primary)' }}>{score}/100</span>
                                 </div>
                             </div>
                         </div>
@@ -338,11 +524,11 @@ export default function LeadDetailPage() {
                     {/* Source */}
                     <div className={styles.card}>
                         <span className={styles.cardTitle} style={{ display: 'block', marginBottom: '0.75rem' }}>Source</span>
-                        <div style={{ fontSize: '0.8125rem', color: '#9ca3af', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                            <div><strong style={{ color: '#6b7280' }}>Platform:</strong> {sourceLabels[lead.source]}</div>
-                            {lead.source_campaign && <div><strong style={{ color: '#6b7280' }}>Campaign:</strong> {lead.source_campaign}</div>}
-                            {lead.source_form_id && <div><strong style={{ color: '#6b7280' }}>Form ID:</strong> {lead.source_form_id}</div>}
-                            {lead.last_contacted_at && <div><strong style={{ color: '#6b7280' }}>Last Contacted:</strong> {formatDate(lead.last_contacted_at)}</div>}
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                            <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Platform:</strong> {sourceLabels[lead.source]}</div>
+                            {lead.source_campaign && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Campaign:</strong> {lead.source_campaign}</div>}
+                            {lead.source_form_id && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Form ID:</strong> {lead.source_form_id}</div>}
+                            {lead.last_contacted_at && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Last Contacted:</strong> {formatDate(lead.last_contacted_at)}</div>}
                         </div>
                     </div>
                 </div>
@@ -369,7 +555,7 @@ export default function LeadDetailPage() {
                                 <button onClick={() => setShowAddActivity(!showAddActivity)} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem' }}><Plus size={12} /> Log</button>
                             </div>
                             {showAddActivity && (
-                                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#0f1117', borderRadius: '0.5rem' }}>
+                                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--crm-elevated)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)' }}>
                                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                         <select value={newActivity.type} onChange={e => setNewActivity({ ...newActivity, type: e.target.value })} className={styles.formSelect} style={{ width: 'auto' }}>
                                             <option value="note">Note</option>
@@ -388,14 +574,14 @@ export default function LeadDetailPage() {
                                 </div>
                             )}
                             {activities.length > 0 ? activities.map((a, i) => (
-                                <div key={a.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem 0', borderBottom: i < activities.length - 1 ? '1px solid #1e2030' : 'none' }}>
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#1e2030', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280', flexShrink: 0 }}>
+                                <div key={a.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem 0', borderBottom: i < activities.length - 1 ? '1px solid var(--crm-border)' : 'none' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--crm-text-muted)', flexShrink: 0 }}>
                                         {activityIcons[a.type] || <Clock size={14} />}
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#e5e7eb' }}>{a.title}</div>
-                                        {a.description && <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.125rem' }}>{a.description}</div>}
-                                        <div style={{ fontSize: '0.6875rem', color: '#4b5563', marginTop: '0.25rem' }}>{formatRelative(a.created_at)} · {a.created_by}</div>
+                                        <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{a.title}</div>
+                                        {a.description && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '0.125rem' }}>{a.description}</div>}
+                                        <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>{formatRelative(a.created_at)} · {a.created_by}</div>
                                     </div>
                                 </div>
                             )) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No activity yet</div>}
@@ -410,7 +596,7 @@ export default function LeadDetailPage() {
                                 <button onClick={() => setShowAddTask(!showAddTask)} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem' }}><Plus size={12} /> Add</button>
                             </div>
                             {showAddTask && (
-                                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#0f1117', borderRadius: '0.5rem' }}>
+                                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--crm-elevated)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)' }}>
                                     <input type="text" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} placeholder="Task title" className={styles.formInput} style={{ marginBottom: '0.5rem' }} />
                                     <input type="datetime-local" value={newTask.due_date} onChange={e => setNewTask({ ...newTask, due_date: e.target.value })} className={styles.formInput} style={{ marginBottom: '0.5rem' }} />
                                     <textarea value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} placeholder="Notes (optional)" rows={2} className={styles.formInput} style={{ resize: 'vertical', marginBottom: '0.5rem' }} />
@@ -425,15 +611,15 @@ export default function LeadDetailPage() {
                                 return (
                                     <div key={t.id} style={{
                                         display: 'flex', alignItems: 'flex-start', gap: '0.625rem', padding: '0.625rem', borderRadius: '0.375rem', marginBottom: '0.375rem',
-                                        backgroundColor: overdue ? '#ef444410' : '#0f1117', border: `1px solid ${overdue ? '#ef444430' : '#1e2030'}`, opacity: t.is_completed ? 0.5 : 1,
+                                        backgroundColor: overdue ? '#ef444410' : 'var(--crm-elevated)', border: `1px solid ${overdue ? '#ef444430' : 'var(--crm-border)'}`, opacity: t.is_completed ? 0.5 : 1,
                                     }}>
-                                        <button onClick={() => handleToggleTask(t.id, t.is_completed)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: t.is_completed ? '#22c55e' : '#4b5563', marginTop: '2px' }}>
+                                        <button onClick={() => handleToggleTask(t.id, t.is_completed)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: t.is_completed ? '#22c55e' : 'var(--crm-text-muted)', marginTop: '2px' }}>
                                             {t.is_completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                                         </button>
                                         <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#e5e7eb', textDecoration: t.is_completed ? 'line-through' : 'none' }}>{t.title}</div>
-                                            {t.description && <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '2px' }}>{t.description}</div>}
-                                            <div style={{ fontSize: '0.6875rem', color: overdue ? '#ef4444' : '#4b5563', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--crm-text-secondary)', textDecoration: t.is_completed ? 'line-through' : 'none' }}>{t.title}</div>
+                                            {t.description && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '2px' }}>{t.description}</div>}
+                                            <div style={{ fontSize: '0.6875rem', color: overdue ? '#ef4444' : 'var(--crm-text-faint)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <Calendar size={10} />{formatDateTime(t.due_date)} {overdue && '· Overdue'}
                                             </div>
                                         </div>
@@ -451,7 +637,7 @@ export default function LeadDetailPage() {
                                 <button onClick={() => setShowAddVisit(!showAddVisit)} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem' }}><Plus size={12} /> Schedule</button>
                             </div>
                             {showAddVisit && (
-                                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#0f1117', borderRadius: '0.5rem' }}>
+                                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--crm-elevated)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)' }}>
                                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                         <div style={{ flex: 1 }}>
                                             <label className={styles.formLabel}>Date *</label>
@@ -473,24 +659,24 @@ export default function LeadDetailPage() {
                                 const isPast = new Date(v.visit_date) < new Date()
                                 const statusColor = v.status === 'completed' ? '#22c55e' : v.status === 'no_show' ? '#ef4444' : v.status === 'cancelled' ? '#6b7280' : '#f59e0b'
                                 return (
-                                    <div key={v.id} style={{ padding: '0.75rem', borderRadius: '0.5rem', backgroundColor: '#0f1117', border: '1px solid #1e2030', marginBottom: '0.5rem' }}>
+                                    <div key={v.id} style={{ padding: '0.75rem', borderRadius: '0.5rem', backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border)', marginBottom: '0.5rem' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                             <div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <Home size={14} style={{ color: '#6b7280' }} />
-                                                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb' }}>
+                                                    <Home size={14} style={{ color: 'var(--crm-text-muted)' }} />
+                                                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>
                                                         {v.properties?.title || v.projects?.project_name || 'Site Visit'}
                                                     </span>
                                                     <span style={{ fontSize: '0.6875rem', color: statusColor, backgroundColor: `${statusColor}20`, padding: '2px 6px', borderRadius: '999px' }}>
                                                         {v.status}
                                                     </span>
                                                 </div>
-                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                     <Calendar size={10} /> {formatDate(v.visit_date)}
                                                     {v.visit_time && <><Clock size={10} style={{ marginLeft: '6px' }} /> {v.visit_time}</>}
                                                 </div>
-                                                {v.notes && <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px' }}>{v.notes}</div>}
-                                                {v.outcome && <div style={{ fontSize: '0.75rem', color: '#BFA270', marginTop: '4px' }}>Outcome: {v.outcome}</div>}
+                                                {v.notes && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '4px' }}>{v.notes}</div>}
+                                                {v.outcome && <div style={{ fontSize: '0.75rem', color: 'var(--crm-accent)', marginTop: '4px' }}>Outcome: {v.outcome}</div>}
                                             </div>
                                             {v.status === 'scheduled' && isPast && (
                                                 <div style={{ display: 'flex', gap: '0.375rem' }}>

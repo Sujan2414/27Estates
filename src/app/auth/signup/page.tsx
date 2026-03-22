@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "@/components/auth/AuthLayout";
@@ -31,6 +31,59 @@ function SignUpContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const supabase = createClient();
+
+    // Once the "check your email" screen is showing, listen for confirmation
+    // across tabs so we can redirect automatically.
+    useEffect(() => {
+        if (!emailSent) return;
+
+        const redirectTo = searchParams?.get('redirect') || '/properties';
+
+        const handleConfirmed = () => {
+            sessionStorage.setItem('session_active', 'true');
+            router.push(redirectTo);
+        };
+
+        // 1. Supabase auth state change — fires cross-tab because Supabase
+        //    syncs its session via localStorage storage events.
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+                handleConfirmed();
+            }
+        });
+
+        // 2. BroadcastChannel — explicit signal from the /auth/confirmed page.
+        let channel: BroadcastChannel | null = null;
+        try {
+            channel = new BroadcastChannel('auth_confirmation');
+            channel.addEventListener('message', (e) => {
+                if (e.data?.type === 'email_confirmed') handleConfirmed();
+            });
+        } catch {
+            // BroadcastChannel not supported; fall back to localStorage storage event.
+            const handleStorage = (e: StorageEvent) => {
+                if (e.key === 'email_confirmed') handleConfirmed();
+            };
+            window.addEventListener('storage', handleStorage);
+        }
+
+        // 3. Visibility change — when the user switches back to this tab after
+        //    confirming in another tab/window, check the session directly.
+        const handleVisibility = async () => {
+            if (!document.hidden) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) handleConfirmed();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        return () => {
+            subscription.unsubscribe();
+            channel?.close();
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [emailSent]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -66,7 +119,7 @@ function SignUpContent() {
                         full_name: `${firstName} ${lastName}`.trim(),
                         phone: phone,
                     },
-                    emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${searchParams?.get('redirect') || '/properties'}`,
+                    emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback?redirect=${searchParams?.get('redirect') || '/properties'}`,
                 },
             });
 
@@ -106,15 +159,30 @@ function SignUpContent() {
                     <p style={{ fontWeight: 600, color: '#183C38', marginBottom: '24px', fontSize: '1rem' }}>
                         {email}
                     </p>
-                    <p style={{ color: '#888', fontSize: '0.85rem', marginBottom: '32px' }}>
-                        Please click the link in your email to verify your account, then sign in.
+                    <p style={{ color: '#888', fontSize: '0.85rem', marginBottom: '8px' }}>
+                        Click the link in your email to verify your account.
                     </p>
+                    <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '32px' }}>
+                        Once confirmed, you&apos;ll be taken to the dashboard automatically — no need to do anything else on this page.
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginBottom: '24px' }}>
+                        <span style={{
+                            display: 'inline-block',
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: '#183C38',
+                            animation: 'pulse 1.5s ease-in-out infinite',
+                        }} />
+                        <span style={{ color: '#555', fontSize: '0.85rem' }}>Waiting for confirmation…</span>
+                    </div>
+                    <style>{`@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.2; } }`}</style>
                     <Link
                         href="/auth/signin"
                         className="auth-button block text-center no-underline hover:opacity-90 transition-opacity"
                         style={{ display: 'block', textDecoration: 'none' }}
                     >
-                        Go to Sign In
+                        Sign In Instead
                     </Link>
                 </div>
             ) : (

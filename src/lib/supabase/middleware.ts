@@ -23,7 +23,11 @@ export async function updateSession(request: NextRequest) {
                         request,
                     })
                     cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
+                        supabaseResponse.cookies.set(name, value, {
+                            ...options,
+                            // Always persist auth cookies for 1 year so users stay logged in
+                            maxAge: name.startsWith('sb-') ? 365 * 24 * 60 * 60 : options?.maxAge,
+                        })
                     )
                 },
             },
@@ -45,7 +49,8 @@ export async function updateSession(request: NextRequest) {
             .from('profiles')
             .select('role')
             .eq('id', user.id)
-            .single()
+            .limit(1)
+            .maybeSingle()
 
         const allowedRoles = ['admin', 'super_admin', 'agent']
         if (!profile || !allowedRoles.includes(profile.role)) {

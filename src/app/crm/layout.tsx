@@ -9,9 +9,10 @@ import {
     Settings, LogOut, Menu, X, BarChart3, Zap, Bell,
     CalendarCheck, TrendingUp, ChevronRight,
     Building2, Users2, ClipboardList, Clock, Calendar, Sliders,
+    Sun, Moon,
 } from 'lucide-react'
 import styles from './crm.module.css'
-import { CRMContext, type CRMUser, type CRMRole } from './crm-context'
+import { CRMContext, type CRMUser, type CRMRole, ThemeProvider, useTheme } from './crm-context'
 
 interface Notification {
     id: string; type: string; title: string; body?: string; link?: string; is_read: boolean; created_at: string
@@ -25,7 +26,7 @@ interface NavGroup {
     id: string; label: string; items: NavItem[]
 }
 
-export default function CRMLayout({ children }: { children: React.ReactNode }) {
+function CRMLayoutInner({ children }: { children: React.ReactNode }) {
     const [crmUser, setCrmUser] = useState<CRMUser | null>(null)
     const [loading, setLoading] = useState(true)
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -41,6 +42,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter()
     const pathname = usePathname()
     const supabase = useMemo(() => createClient(), [])
+    const { theme, toggleTheme } = useTheme()
 
     useEffect(() => {
         const init = async () => {
@@ -215,15 +217,15 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
     // Role badge colours
     const roleBadge: Record<string, { label: string; color: string }> = {
         super_admin: { label: 'Super Admin', color: '#8b5cf6' },
-        admin: { label: 'Admin', color: '#BFA270' },
+        admin: { label: 'Admin', color: 'var(--crm-btn-primary-bg)' },
         agent: { label: 'Agent', color: '#3b82f6' },
     }
     const badge = roleBadge[crmUser?.role || '']
 
     if (loading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f1117' }}>
-                <div style={{ width: '32px', height: '32px', border: '3px solid #1e2030', borderTopColor: '#BFA270', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--crm-bg)' }}>
+                <div style={{ width: '32px', height: '32px', border: '3px solid var(--crm-border)', borderTopColor: 'var(--crm-accent)', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
                 <style jsx global>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
         )
@@ -231,7 +233,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <CRMContext.Provider value={crmUser}>
-            <div className={styles.crmLayout} data-lenis-prevent>
+            <div className={styles.crmLayout} data-lenis-prevent data-theme={theme}>
                 <button className={styles.mobileMenuBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>
                     {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
                 </button>
@@ -260,7 +262,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                                     >
                                         <span
                                             className={styles.navSectionLabel}
-                                            style={hasActiveItem && !isOpen ? { color: '#BFA270' } : undefined}
+                                            style={hasActiveItem && !isOpen ? { color: 'var(--crm-accent)' } : undefined}
                                         >
                                             {group.label}
                                         </span>
@@ -269,7 +271,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                                             style={{
                                                 transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
                                                 transition: 'transform 0.2s',
-                                                color: '#4b5563',
+                                                color: 'var(--crm-text-dim)',
                                             }}
                                         />
                                     </button>
@@ -298,7 +300,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                     </nav>
 
                     <div className={styles.sidebarFooter}>
-                        <Link href="/admin" className={styles.navItem} style={{ fontSize: '0.75rem' }}>
+                        <Link href="/admin" className={styles.navItem} style={{ fontSize: '0.75rem', color: 'var(--crm-btn-primary-bg)', fontWeight: 600 }}>
                             ← Back to Admin
                         </Link>
                         <div style={{ padding: '0.625rem 0.75rem' }}>
@@ -317,14 +319,14 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                                 <div style={{
                                     width: '28px', height: '28px', borderRadius: '50%',
-                                    backgroundColor: '#BFA270', color: '#0f1117',
+                                    backgroundColor: 'var(--crm-btn-primary-bg)', color: 'var(--crm-btn-primary-text)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontSize: '0.75rem', fontWeight: 700,
                                 }}>
                                     {crmUser?.full_name?.charAt(0) || 'U'}
                                 </div>
-                                <span style={{ fontSize: '0.8125rem', color: '#d1d5db', flex: 1 }}>{crmUser?.full_name}</span>
-                                <button onClick={handleLogout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280', padding: '4px' }}>
+                                <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-tertiary)', flex: 1 }}>{crmUser?.full_name}</span>
+                                <button onClick={handleLogout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-faint)', padding: '4px' }}>
                                     <LogOut size={14} />
                                 </button>
                             </div>
@@ -336,13 +338,23 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
 
                 {/* Main content */}
                 <main className={styles.main} data-lenis-prevent>
-                    {/* Notification bar */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.75rem 1.5rem 0', position: 'relative' }} ref={notifRef}>
+                    {/* Top bar: theme toggle + notification bell */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.75rem 1.5rem 0', position: 'relative', gap: '0.5rem', alignItems: 'center' }} ref={notifRef}>
+                        {/* Theme toggle */}
+                        <button
+                            onClick={toggleTheme}
+                            className={styles.themeToggle}
+                            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                        >
+                            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                        </button>
+
+                        {/* Notification bell */}
                         <button
                             onClick={() => setShowNotifs(!showNotifs)}
                             style={{
                                 position: 'relative', border: 'none', background: 'none', cursor: 'pointer',
-                                color: unreadCount > 0 ? '#BFA270' : '#4b5563', padding: '6px',
+                                color: unreadCount > 0 ? 'var(--crm-accent)' : 'var(--crm-text-dim)', padding: '6px',
                             }}
                         >
                             <Bell size={20} />
@@ -361,27 +373,27 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                             <div style={{
                                 position: 'absolute', top: '100%', right: '1.5rem', zIndex: 100,
                                 width: '340px', maxHeight: '480px', overflow: 'hidden',
-                                backgroundColor: '#161822', border: '1px solid #2d3148',
-                                borderRadius: '0.75rem', boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                                backgroundColor: 'var(--crm-surface)', border: '1px solid var(--crm-border-subtle)',
+                                borderRadius: '0.75rem', boxShadow: '0 20px 40px var(--crm-shadow)',
                                 display: 'flex', flexDirection: 'column',
                             }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #1e2030' }}>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e5e7eb' }}>Notifications</span>
-                                    <button onClick={markAllRead} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#BFA270', fontSize: '0.75rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid var(--crm-border)' }}>
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>Notifications</span>
+                                    <button onClick={markAllRead} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-accent)', fontSize: '0.75rem' }}>
                                         Mark all read
                                     </button>
                                 </div>
                                 <div style={{ overflowY: 'auto', flex: 1 }}>
                                     {notifications.length === 0 ? (
-                                        <div style={{ padding: '2rem', textAlign: 'center', color: '#4b5563', fontSize: '0.875rem' }}>No notifications</div>
+                                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--crm-text-dim)', fontSize: '0.875rem' }}>No notifications</div>
                                     ) : notifications.map(n => (
                                         <div
                                             key={n.id}
                                             onClick={() => handleNotifClick(n)}
                                             style={{
                                                 padding: '0.75rem 1rem', cursor: 'pointer',
-                                                borderBottom: '1px solid #1e2030',
-                                                backgroundColor: n.is_read ? 'transparent' : '#BFA27008',
+                                                borderBottom: '1px solid var(--crm-border)',
+                                                backgroundColor: n.is_read ? 'transparent' : 'var(--crm-accent-bg)',
                                                 display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
                                             }}
                                         >
@@ -390,9 +402,9 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                                                 backgroundColor: n.is_read ? 'transparent' : (notifTypeColor[n.type] || '#6b7280'),
                                             }} />
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '0.8125rem', fontWeight: n.is_read ? 400 : 600, color: '#e5e7eb', marginBottom: '2px' }}>{n.title}</div>
-                                                {n.body && <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.body}</div>}
-                                                <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>{formatRelative(n.created_at)}</div>
+                                                <div style={{ fontSize: '0.8125rem', fontWeight: n.is_read ? 400 : 600, color: 'var(--crm-text-secondary)', marginBottom: '2px' }}>{n.title}</div>
+                                                {n.body && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.body}</div>}
+                                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)' }}>{formatRelative(n.created_at)}</div>
                                             </div>
                                         </div>
                                     ))}
@@ -405,5 +417,13 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                 </main>
             </div>
         </CRMContext.Provider>
+    )
+}
+
+export default function CRMLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <ThemeProvider>
+            <CRMLayoutInner>{children}</CRMLayoutInner>
+        </ThemeProvider>
     )
 }

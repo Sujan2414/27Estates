@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import styles from './admin-login.module.css'
@@ -9,22 +8,18 @@ import styles from './admin-login.module.css'
 export default function AdminLoginPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
-    const [rememberMe, setRememberMe] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
-    const router = useRouter()
     const supabase = createClient()
 
-    // Load saved credentials on mount
+    // Load saved email on mount
     useEffect(() => {
         try {
             const saved = localStorage.getItem('admin_remember')
             if (saved) {
-                const { email: savedEmail, password: savedPassword } = JSON.parse(saved)
+                const { email: savedEmail } = JSON.parse(saved)
                 setEmail(savedEmail || '')
-                setPassword(savedPassword || '')
-                setRememberMe(true)
             }
         } catch { /* ignore */ }
     }, [])
@@ -45,40 +40,31 @@ export default function AdminLoginPage() {
                 return
             }
 
-            // Check if user is admin
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', authData.user.id)
-                .single()
+            // Check role server-side (bypasses RLS using service role key)
+            const roleRes = await fetch('/api/admin/check-role', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: authData.user.id }),
+            })
+            const { role } = await roleRes.json()
 
-            if (profileError) {
-                await supabase.auth.signOut()
-                setError(`Profile error: ${profileError.message}`)
-                return
-            }
-
-            if (!profile) {
+            if (!role) {
                 await supabase.auth.signOut()
                 setError('No profile found. Please contact administrator.')
                 return
             }
 
-            if (!['admin', 'super_admin', 'agent'].includes(profile.role)) {
+            if (!['admin', 'super_admin', 'agent'].includes(role)) {
                 await supabase.auth.signOut()
-                setError(`Access denied. Your role is: ${profile.role}. Admin/Agent role required.`)
+                setError(`Access denied. Your role is: ${role}. Admin/Agent role required.`)
                 return
             }
 
-            // Save or clear remember me
-            if (rememberMe) {
-                localStorage.setItem('admin_remember', JSON.stringify({ email, password }))
-            } else {
-                localStorage.removeItem('admin_remember')
-            }
+            // Always save email and persist session
+            localStorage.setItem('admin_remember', JSON.stringify({ email }))
+            await fetch('/api/auth/session', { method: 'POST' })
 
-            router.push('/admin')
-            router.refresh()
+            window.location.href = '/admin'
         } catch {
             setError('An unexpected error occurred')
         } finally {
@@ -148,18 +134,6 @@ export default function AdminLoginPage() {
                                 </button>
                             )}
                         </div>
-                    </div>
-
-                    <div className={styles.rememberRow}>
-                        <label className={styles.rememberLabel}>
-                            <input
-                                type="checkbox"
-                                checked={rememberMe}
-                                onChange={(e) => setRememberMe(e.target.checked)}
-                                className={styles.rememberCheckbox}
-                            />
-                            Remember me
-                        </label>
                     </div>
 
                     <button

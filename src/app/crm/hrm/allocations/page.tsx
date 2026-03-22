@@ -216,7 +216,7 @@ export default function LeaveAllocationsPage() {
         return (
             <div style={{ padding: '3rem', textAlign: 'center' }}>
                 <Shield size={48} color="#d1d5db" style={{ margin: '0 auto 1rem' }} />
-                <p style={{ color: '#6b7280', fontSize: '1rem' }}>Only Super Admins can manage leave allocations.</p>
+                <p style={{ color: 'var(--crm-text-faint)', fontSize: '1rem' }}>Only Super Admins can manage leave allocations.</p>
             </div>
         )
     }
@@ -227,7 +227,7 @@ export default function LeaveAllocationsPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', margin: 0 }}>Leave Allocations</h1>
-                    <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                    <p style={{ color: 'var(--crm-text-faint)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
                         Set annual leave quotas per employee · Financial Year {fy}
                     </p>
                 </div>
@@ -243,7 +243,7 @@ export default function LeaveAllocationsPage() {
                                 <option key={f} value={f}>FY {f}</option>
                             ))}
                         </select>
-                        <ChevronDown size={14} style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6b7280' }} />
+                        <ChevronDown size={14} style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--crm-text-faint)' }} />
                     </div>
                     <button
                         onClick={fetchData}
@@ -264,16 +264,16 @@ export default function LeaveAllocationsPage() {
             </div>
 
             {/* Legend */}
-            <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', fontSize: '0.75rem', color: 'var(--crm-text-faint)' }}>
                 <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#dcfce7', borderRadius: 2, marginRight: 4 }} />Balance &gt; 0</span>
                 <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#fef9c3', borderRadius: 2, marginRight: 4 }} />Low balance</span>
                 <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#fee2e2', borderRadius: 2, marginRight: 4 }} />Over-used</span>
             </div>
 
             {loading ? (
-                <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>Loading…</div>
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--crm-text-muted)' }}>Loading…</div>
             ) : employees.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>No employees found</div>
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--crm-text-muted)' }}>No employees found</div>
             ) : (
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', background: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
@@ -283,7 +283,7 @@ export default function LeaveAllocationsPage() {
                                 {LEAVE_TYPES.map((lt) => (
                                     <th key={lt} style={{ padding: '0.75rem 0.5rem', textAlign: 'center', fontWeight: 600, color: '#374151', minWidth: 100 }}>
                                         {LEAVE_LABELS[lt]}
-                                        <div style={{ fontSize: '0.625rem', color: '#9ca3af', fontWeight: 400 }}>Alloc / Used / Bal</div>
+                                        <div style={{ fontSize: '0.625rem', color: 'var(--crm-text-muted)', fontWeight: 400 }}>Alloc / Used / Bal</div>
                                     </th>
                                 ))}
                                 <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600, color: '#374151' }}>Actions</th>
@@ -300,7 +300,7 @@ export default function LeaveAllocationsPage() {
                                 >
                                     <td style={{ padding: '0.75rem 1rem', whiteSpace: 'nowrap' }}>
                                         <div style={{ fontWeight: 600, color: '#111827' }}>{row.employee.full_name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'capitalize' }}>{row.employee.role.replace('_', ' ')}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', textTransform: 'capitalize' }}>{row.employee.role.replace('_', ' ')}</div>
                                     </td>
                                     {LEAVE_TYPES.map((lt) => {
                                         const a = row.allocations[lt]
@@ -316,7 +316,7 @@ export default function LeaveAllocationsPage() {
                                                         onChange={(e) => handleChange(row.employee.id, lt, parseInt(e.target.value) || 0)}
                                                         style={{ width: 52, textAlign: 'center', padding: '0.25rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: 600 }}
                                                     />
-                                                    <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>/{a.used}</span>
+                                                    <span style={{ color: 'var(--crm-text-muted)', fontSize: '0.75rem' }}>/{a.used}</span>
                                                     <span style={{ background: balColor, borderRadius: '0.25rem', padding: '0.125rem 0.375rem', fontSize: '0.75rem', fontWeight: 600, color: '#374151', minWidth: 28 }}>
                                                         {a.balance}
                                                     </span>
@@ -329,7 +329,7 @@ export default function LeaveAllocationsPage() {
                                             <button
                                                 onClick={() => applyDefaults(row.employee.id)}
                                                 title="Apply default quotas"
-                                                style={{ padding: '0.375rem 0.625rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: '#6b7280' }}
+                                                style={{ padding: '0.375rem 0.625rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--crm-text-faint)' }}
                                             >
                                                 Defaults
                                             </button>

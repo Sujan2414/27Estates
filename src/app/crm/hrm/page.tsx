@@ -19,8 +19,8 @@ const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
 const Legend = dynamic(() => import('recharts').then(m => m.Legend), { ssr: false })
 
 const tooltipStyle = {
-    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
-    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+    contentStyle: { backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border-subtle)', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: 'var(--crm-text-secondary)' }, labelStyle: { color: 'var(--crm-text-muted)' },
 }
 
 interface Employee { id: string; full_name: string; role: string; leads_assigned: number; leads_converted: number }
@@ -94,8 +94,8 @@ export default function HRMOverviewPage() {
     return (
         <div className={styles.pageContent}>
             <div style={{ marginBottom: '1.5rem' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>HRM Overview</h1>
-                <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Human Resource Management · {employees.length} employees</p>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>HRM Overview</h1>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Human Resource Management · {employees.length} employees</p>
             </div>
 
             {!tablesExist && (
@@ -103,8 +103,8 @@ export default function HRMOverviewPage() {
                     <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '1px' }} />
                     <div>
                         <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#f59e0b', marginBottom: '0.25rem' }}>HRM Tables Not Set Up</div>
-                        <div style={{ fontSize: '0.8125rem', color: '#9ca3af' }}>
-                            Run <code style={{ backgroundColor: '#1e2030', padding: '1px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>supabase/hrm-schema.sql</code> in your Supabase SQL editor to enable Tasks, Attendance, and Leaves.
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
+                            Run <code style={{ backgroundColor: 'var(--crm-elevated)', padding: '1px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>supabase/hrm-schema.sql</code> in your Supabase SQL editor to enable Tasks, Attendance, and Leaves.
                         </div>
                     </div>
                 </div>
@@ -113,7 +113,7 @@ export default function HRMOverviewPage() {
             {/* Stats */}
             <div className={styles.hrmStatsGrid}>
                 {[
-                    { label: 'Total Employees', value: employees.length, color: '#BFA270', icon: Users2, href: '/crm/hrm/employees' },
+                    { label: 'Total Employees', value: employees.length, color: 'var(--crm-accent)', icon: Users2, href: '/crm/hrm/employees' },
                     { label: 'Present Today', value: todayAttendance.present + todayAttendance.wfh, color: '#22c55e', icon: Clock, href: '/crm/hrm/attendance' },
                     { label: 'Pending Leaves', value: pendingLeaves, color: '#f59e0b', icon: Calendar, href: '/crm/hrm/leaves' },
                     { label: 'Open Tasks', value: openTasks, color: '#8b5cf6', icon: ClipboardList, href: '/crm/hrm/tasks' },
@@ -135,17 +135,19 @@ export default function HRMOverviewPage() {
                 <div className={styles.card}>
                     <div className={styles.cardHeader}>
                         <span className={styles.cardTitle}>Tasks by Status</span>
-                        <Link href="/crm/hrm/tasks" style={{ fontSize: '0.75rem', color: '#BFA270', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                        <Link href="/crm/hrm/tasks" style={{ fontSize: '0.75rem', color: 'var(--crm-accent)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
                             View All <ArrowRight size={12} />
                         </Link>
                     </div>
                     <ResponsiveContainer width="100%" height={180}>
                         <BarChart data={tasksByStatus} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                            <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                            <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 11, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
                             <Tooltip {...tooltipStyle} />
                             <Bar dataKey="count" name="Tasks" radius={[4, 4, 0, 0]}>
-                                {tasksByStatus.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                                {tasksByStatus.map((entry, i) => (
+                                    <Cell key={i} fill={entry.color} />
+                                ))}
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
@@ -167,7 +169,7 @@ export default function HRMOverviewPage() {
                             <PieChart>
                                 <Pie data={roleDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65} innerRadius={30} />
                                 <Tooltip {...tooltipStyle} />
-                                <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: '#9ca3af' }} />
+                                <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }} />
                             </PieChart>
                         </ResponsiveContainer>
                     ) : (
@@ -181,7 +183,7 @@ export default function HRMOverviewPage() {
                 <div className={styles.card}>
                     <div className={styles.cardHeader}>
                         <span className={styles.cardTitle}>Top Performers</span>
-                        <TrendingUp size={14} style={{ color: '#BFA270' }} />
+                        <TrendingUp size={14} style={{ color: 'var(--crm-accent)' }} />
                     </div>
                     {topPerformers.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
@@ -189,13 +191,13 @@ export default function HRMOverviewPage() {
                                 const rate = e.leads_assigned > 0 ? Math.round((e.leads_converted / e.leads_assigned) * 100) : 0
                                 return (
                                     <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        <span style={{ width: '20px', fontSize: '0.75rem', color: '#4b5563', fontWeight: 700 }}>#{i + 1}</span>
-                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#BFA270', color: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
+                                        <span style={{ width: '20px', fontSize: '0.75rem', color: 'var(--crm-text-dim)', fontWeight: 700 }}>#{i + 1}</span>
+                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--crm-btn-primary-bg)', color: 'var(--crm-btn-primary-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
                                             {e.full_name?.charAt(0) || '?'}
                                         </div>
                                         <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb' }}>{e.full_name}</div>
-                                            <div style={{ fontSize: '0.6875rem', color: '#6b7280' }}>{e.leads_converted}/{e.leads_assigned} leads converted</div>
+                                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{e.full_name}</div>
+                                            <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)' }}>{e.leads_converted}/{e.leads_assigned} leads converted</div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <CheckCircle2 size={12} style={{ color: '#22c55e' }} />
@@ -214,7 +216,7 @@ export default function HRMOverviewPage() {
                 <div className={styles.card}>
                     <div className={styles.cardHeader}>
                         <span className={styles.cardTitle}>Recent Tasks</span>
-                        <Link href="/crm/hrm/tasks" style={{ fontSize: '0.75rem', color: '#BFA270', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                        <Link href="/crm/hrm/tasks" style={{ fontSize: '0.75rem', color: 'var(--crm-accent)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
                             View All <ArrowRight size={12} />
                         </Link>
                     </div>
@@ -224,11 +226,11 @@ export default function HRMOverviewPage() {
                                 const priorityColor = t.priority === 'urgent' ? '#ef4444' : t.priority === 'high' ? '#f97316' : t.priority === 'medium' ? '#f59e0b' : '#6b7280'
                                 const statusColor = t.status === 'done' ? '#22c55e' : t.status === 'in_progress' ? '#f59e0b' : t.status === 'review' ? '#8b5cf6' : '#6b7280'
                                 return (
-                                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', borderRadius: '0.375rem', backgroundColor: '#1e2030' }}>
+                                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', borderRadius: '0.375rem', backgroundColor: 'var(--crm-elevated)' }}>
                                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: priorityColor, flexShrink: 0 }} />
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.8125rem', color: '#e5e7eb', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
-                                            {t.assignee && <div style={{ fontSize: '0.6875rem', color: '#6b7280' }}>{t.assignee.full_name}</div>}
+                                            <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-secondary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
+                                            {t.assignee && <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)' }}>{t.assignee.full_name}</div>}
                                         </div>
                                         <span style={{ fontSize: '0.625rem', fontWeight: 600, color: statusColor, backgroundColor: `${statusColor}15`, padding: '2px 6px', borderRadius: '999px', flexShrink: 0 }}>
                                             {t.status === 'in_progress' ? 'Active' : t.status}
@@ -255,12 +257,12 @@ export default function HRMOverviewPage() {
                 ].map(link => (
                     <Link key={link.href} href={link.href} style={{ textDecoration: 'none' }}>
                         <div className={styles.card} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', backgroundColor: '#BFA27015', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <link.icon size={18} style={{ color: '#BFA270' }} />
+                            <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', backgroundColor: 'var(--crm-nav-active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <link.icon size={18} style={{ color: 'var(--crm-btn-primary-bg)' }} />
                             </div>
                             <div>
-                                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#e5e7eb' }}>{link.label}</div>
-                                <div style={{ fontSize: '0.6875rem', color: '#6b7280' }}>{link.sub}</div>
+                                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{link.label}</div>
+                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)' }}>{link.sub}</div>
                             </div>
                         </div>
                     </Link>

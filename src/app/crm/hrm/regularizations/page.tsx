@@ -228,15 +228,15 @@ export default function RegularizationsPage() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>
                         Regularisations
                         {pendingCount > 0 && (
-                            <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', background: '#f59e0b', color: '#0f1117', borderRadius: '999px', padding: '2px 8px', fontWeight: 700 }}>
+                            <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', background: '#f59e0b', color: 'var(--crm-bg)', borderRadius: '999px', padding: '2px 8px', fontWeight: 700 }}>
                                 {pendingCount} pending
                             </span>
                         )}
                     </h1>
-                    <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginTop: '0.125rem' }}>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', marginTop: '0.125rem' }}>
                         {isAdminUser ? 'Manage employee attendance regularisation requests' : 'View your attendance and submit regularisation requests'}
                     </p>
                 </div>
@@ -245,14 +245,14 @@ export default function RegularizationsPage() {
             {!tableExists && (
                 <div style={{ backgroundColor: '#f59e0b10', border: '1px solid #f59e0b40', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '0.75rem' }}>
                     <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.8125rem', color: '#9ca3af' }}>
-                        Run <code style={{ background: '#1e2030', padding: '1px 6px', borderRadius: 4 }}>supabase/hrm-regularizations.sql</code> to enable regularisations.
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
+                        Run <code style={{ background: 'var(--crm-elevated)', padding: '1px 6px', borderRadius: 4 }}>supabase/hrm-regularizations.sql</code> to enable regularisations.
                     </span>
                 </div>
             )}
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '1px solid #1e2030', paddingBottom: '0' }}>
+            <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--crm-border)', paddingBottom: '0' }}>
                 {[
                     { id: 'calendar', label: 'Attendance Calendar', icon: Calendar },
                     { id: 'requests', label: 'Requests', icon: List },
@@ -265,15 +265,15 @@ export default function RegularizationsPage() {
                             padding: '0.625rem 1rem',
                             background: 'none', border: 'none', cursor: 'pointer',
                             fontSize: '0.875rem', fontWeight: activeTab === tab.id ? 600 : 500,
-                            color: activeTab === tab.id ? '#BFA270' : '#6b7280',
-                            borderBottom: activeTab === tab.id ? '2px solid #BFA270' : '2px solid transparent',
+                            color: activeTab === tab.id ? 'var(--crm-btn-primary-bg)' : '#6b7280',
+                            borderBottom: activeTab === tab.id ? '2px solid var(--crm-btn-primary-bg)' : '2px solid transparent',
                             marginBottom: '-1px',
                         }}
                     >
                         <tab.icon size={15} />
                         {tab.label}
                         {tab.id === 'requests' && pendingCount > 0 && (
-                            <span style={{ fontSize: '0.6875rem', background: '#f59e0b', color: '#0f1117', borderRadius: '999px', padding: '1px 6px', fontWeight: 700 }}>
+                            <span style={{ fontSize: '0.6875rem', background: '#f59e0b', color: 'var(--crm-bg)', borderRadius: '999px', padding: '1px 6px', fontWeight: 700 }}>
                                 {pendingCount}
                             </span>
                         )}
@@ -289,21 +289,21 @@ export default function RegularizationsPage() {
                         <button onClick={prevMonth} className={styles.btnSecondary} style={{ padding: '0.375rem 0.625rem', display: 'flex', alignItems: 'center' }}>
                             <ChevronLeft size={16} />
                         </button>
-                        <span style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '1rem' }}>{monthLabel}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--crm-text-secondary)', fontSize: '1rem' }}>{monthLabel}</span>
                         <button onClick={nextMonth} className={styles.btnSecondary} style={{ padding: '0.375rem 0.625rem', display: 'flex', alignItems: 'center' }}>
                             <ChevronRight size={16} />
                         </button>
                     </div>
 
                     {/* Legend */}
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', fontSize: '0.75rem', color: 'var(--crm-text-faint)' }}>
                         {[
                             { color: '#22c55e', label: 'Present' },
                             { color: '#ef4444', label: 'Absent' },
                             { color: '#f59e0b', label: 'Late' },
                             { color: '#f97316', label: 'Half Day' },
                             { color: '#3b82f6', label: 'WFH' },
-                            { color: '#2d3148', label: 'No Record' },
+                            { color: 'var(--crm-border-subtle)', label: 'No Record' },
                         ].map(s => (
                             <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: s.color }} />
@@ -311,7 +311,7 @@ export default function RegularizationsPage() {
                             </div>
                         ))}
                         {!isAdminUser && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: '#BFA270' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--crm-accent)' }}>
                                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#BFA27040', border: '1px solid #BFA270' }} />
                                 Click absent/no-record day to apply regularisation
                             </div>
@@ -351,12 +351,12 @@ export default function RegularizationsPage() {
                                     const isAbsent = att?.status === 'absent'
                                     const canApply = !isAdminUser && !isWeekend && !isFuture && (isAbsent || !att)
 
-                                    let bgColor = '#161822'
-                                    if (isWeekend) bgColor = '#0f1117'
+                                    let bgColor = 'var(--crm-surface)'
+                                    if (isWeekend) bgColor = 'var(--crm-bg)'
                                     else if (isToday && !att) bgColor = '#BFA27015'
                                     else if (attColor) bgColor = `${attColor}15`
 
-                                    let borderColor = isWeekend ? '#1e2030' : (attColor || (isToday ? '#BFA270' : '#1e2030'))
+                                    let borderColor = isWeekend ? 'var(--crm-border)' : (attColor || (isToday ? '#BFA270' : 'var(--crm-border)'))
                                     if (reg) borderColor = STATUS_CONFIG[reg.status].color
 
                                     return (
@@ -385,7 +385,7 @@ export default function RegularizationsPage() {
                                                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: attColor || '#6b7280', margin: '0 auto' }} />
                                             )}
                                             {!att && !isWeekend && !isFuture && (
-                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2d3148', margin: '0 auto' }} />
+                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--crm-border-subtle)', margin: '0 auto' }} />
                                             )}
                                             {reg && (
                                                 <div style={{ position: 'absolute', top: 2, right: 3, fontSize: '0.5rem', color: STATUS_CONFIG[reg.status].color, fontWeight: 700 }}>
@@ -405,7 +405,7 @@ export default function RegularizationsPage() {
                     {/* This month's regularisation status summary */}
                     {Object.keys(regMap).length > 0 && (
                         <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#9ca3af', marginBottom: '0.25rem' }}>
+                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-muted)', marginBottom: '0.25rem' }}>
                                 Regularisation Requests This Month
                             </div>
                             {Object.values(regMap).map(reg => {
@@ -413,10 +413,10 @@ export default function RegularizationsPage() {
                                 return (
                                     <div key={reg.id} className={styles.card} style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                                         <div>
-                                            <span style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>
+                                            <span style={{ fontWeight: 600, color: 'var(--crm-text-secondary)', fontSize: '0.875rem' }}>
                                                 {new Date(reg.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
                                             </span>
-                                            <span style={{ marginLeft: '0.75rem', fontSize: '0.8125rem', color: '#9ca3af' }}>{reg.reason}</span>
+                                            <span style={{ marginLeft: '0.75rem', fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>{reg.reason}</span>
                                         </div>
                                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: sConf.color, background: `${sConf.color}15`, padding: '2px 10px', borderRadius: '999px' }}>
                                             {sConf.label}
@@ -444,7 +444,7 @@ export default function RegularizationsPage() {
                     {/* Status filter tabs */}
                     <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                         {['pending', 'approved', 'rejected', 'all'].map(s => {
-                            const conf = STATUS_CONFIG[s as keyof typeof STATUS_CONFIG] || { color: '#BFA270', label: 'All' }
+                            const conf = STATUS_CONFIG[s as keyof typeof STATUS_CONFIG] || { color: 'var(--crm-accent)', label: 'All' }
                             const count = s === 'all' ? regs.length : regs.filter(r => r.status === s).length
                             return (
                                 <button
@@ -452,15 +452,15 @@ export default function RegularizationsPage() {
                                     onClick={() => setStatusFilter(s)}
                                     style={{
                                         padding: '0.5rem 0.875rem', borderRadius: '0.5rem', cursor: 'pointer',
-                                        border: statusFilter === s ? `1px solid ${conf.color}` : '1px solid #1e2030',
-                                        backgroundColor: statusFilter === s ? `${conf.color}15` : '#161822',
-                                        color: statusFilter === s ? conf.color : '#6b7280',
+                                        border: statusFilter === s ? `1px solid ${conf.color}` : '1px solid var(--crm-border)',
+                                        backgroundColor: statusFilter === s ? `${conf.color}15` : 'var(--crm-surface)',
+                                        color: statusFilter === s ? conf.color : 'var(--crm-text-muted)',
                                         fontSize: '0.8125rem', fontWeight: statusFilter === s ? 600 : 500,
                                         display: 'flex', alignItems: 'center', gap: '0.5rem',
                                     }}
                                 >
                                     {s.charAt(0).toUpperCase() + s.slice(1)}
-                                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, backgroundColor: statusFilter === s ? `${conf.color}25` : '#1e2030', padding: '1px 6px', borderRadius: '999px', color: statusFilter === s ? conf.color : '#4b5563' }}>
+                                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, backgroundColor: statusFilter === s ? `${conf.color}25` : 'var(--crm-elevated)', padding: '1px 6px', borderRadius: '999px', color: statusFilter === s ? conf.color : 'var(--crm-text-dim)' }}>
                                         {count}
                                     </span>
                                 </button>
@@ -483,24 +483,24 @@ export default function RegularizationsPage() {
                                     <div
                                         key={reg.id}
                                         className={styles.card}
-                                        style={{ padding: '1.25rem', borderLeft: `3px solid ${sConf.color}`, background: isPending ? '#1e203050' : '#161822' }}
+                                        style={{ padding: '1.25rem', borderLeft: `3px solid ${sConf.color}`, background: isPending ? 'var(--crm-accent-bg)' : 'var(--crm-surface)' }}
                                     >
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
                                             <div style={{ flex: 1, minWidth: 200 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                                                     {isAdminUser && reg.employee && (
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#BFA270', color: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
+                                                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--crm-accent)', color: 'var(--crm-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
                                                                 {reg.employee.full_name.charAt(0)}
                                                             </div>
                                                             <div>
-                                                                <div style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>{reg.employee.full_name}</div>
-                                                                <div style={{ fontSize: '0.6875rem', color: '#6b7280', textTransform: 'capitalize' }}>{reg.employee.role.replace('_', ' ')}</div>
+                                                                <div style={{ fontWeight: 600, color: 'var(--crm-text-secondary)', fontSize: '0.875rem' }}>{reg.employee.full_name}</div>
+                                                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', textTransform: 'capitalize' }}>{reg.employee.role.replace('_', ' ')}</div>
                                                             </div>
                                                         </div>
                                                     )}
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                                                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#e5e7eb' }}>{formatDate(reg.date)}</span>
+                                                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--crm-text-secondary)' }}>{formatDate(reg.date)}</span>
                                                         {reg.actual_hours != null && (
                                                             <span style={{ fontSize: '0.75rem', color: '#ef4444', background: '#ef444415', padding: '1px 8px', borderRadius: '999px', fontWeight: 600 }}>
                                                                 {reg.actual_hours.toFixed(1)}h logged
@@ -509,11 +509,11 @@ export default function RegularizationsPage() {
                                                     </div>
                                                 </div>
 
-                                                <p style={{ fontSize: '0.8125rem', color: '#9ca3af', margin: '0 0 0.5rem', lineHeight: 1.6, maxWidth: 500 }}>
+                                                <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', margin: '0 0 0.5rem', lineHeight: 1.6, maxWidth: 500 }}>
                                                     {reg.reason}
                                                 </p>
 
-                                                <div style={{ fontSize: '0.6875rem', color: '#4b5563', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                                                     <span>Submitted {formatTs(reg.created_at)}</span>
                                                     {reg.status !== 'pending' && reg.approver && (
                                                         <span style={{ color: sConf.color }}>
@@ -522,7 +522,7 @@ export default function RegularizationsPage() {
                                                         </span>
                                                     )}
                                                     {reg.admin_notes && (
-                                                        <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Note: {reg.admin_notes}</span>
+                                                        <span style={{ color: 'var(--crm-text-faint)', fontStyle: 'italic' }}>Note: {reg.admin_notes}</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -541,7 +541,7 @@ export default function RegularizationsPage() {
                                                             placeholder="Admin notes (optional)..."
                                                             value={notesMap[reg.id] || ''}
                                                             onChange={e => setNotesMap(m => ({ ...m, [reg.id]: e.target.value }))}
-                                                            style={{ padding: '0.375rem 0.625rem', background: '#0f1117', border: '1px solid #2d3148', borderRadius: '0.375rem', color: '#e5e7eb', fontSize: '0.75rem', outline: 'none' }}
+                                                            style={{ padding: '0.375rem 0.625rem', background: 'var(--crm-bg)', border: '1px solid var(--crm-border-subtle)', borderRadius: '0.375rem', color: 'var(--crm-text-secondary)', fontSize: '0.75rem', outline: 'none' }}
                                                         />
                                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                             <button
@@ -572,7 +572,7 @@ export default function RegularizationsPage() {
                     )}
 
                     {isAdminUser && !isSA && (
-                        <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#1e2030', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#6b7280' }}>
+                        <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>
                             <Shield size={14} />
                             Only Super Admins can approve or reject regularisation requests.
                         </div>
@@ -584,10 +584,10 @@ export default function RegularizationsPage() {
             {applyModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                     <div className={styles.card} style={{ width: '100%', maxWidth: 440, padding: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--crm-text-primary)', marginBottom: '0.25rem' }}>
                             Apply Regularisation
                         </h3>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginBottom: '1.25rem' }}>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', marginBottom: '1.25rem' }}>
                             {new Date(applyModal.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                             {applyModal.attRecord && (
                                 <span style={{ marginLeft: '0.5rem', color: ATTENDANCE_COLORS[applyModal.attRecord.status] || '#6b7280' }}>
@@ -598,7 +598,7 @@ export default function RegularizationsPage() {
                             {!applyModal.attRecord && <span style={{ marginLeft: '0.5rem', color: '#ef4444' }}>· No attendance record</span>}
                         </p>
 
-                        <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#9ca3af', display: 'block', marginBottom: '0.5rem' }}>
+                        <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-muted)', display: 'block', marginBottom: '0.5rem' }}>
                             Reason for Regularisation *
                         </label>
                         <textarea
@@ -607,8 +607,8 @@ export default function RegularizationsPage() {
                             placeholder="Explain why you were absent or unable to complete required hours..."
                             rows={4}
                             style={{
-                                width: '100%', padding: '0.75rem', background: '#0f1117', border: '1px solid #2d3148',
-                                borderRadius: '0.5rem', color: '#e5e7eb', fontSize: '0.875rem', outline: 'none',
+                                width: '100%', padding: '0.75rem', background: 'var(--crm-bg)', border: '1px solid var(--crm-border-subtle)',
+                                borderRadius: '0.5rem', color: 'var(--crm-text-secondary)', fontSize: '0.875rem', outline: 'none',
                                 resize: 'vertical', boxSizing: 'border-box',
                             }}
                         />
@@ -626,8 +626,8 @@ export default function RegularizationsPage() {
                                 onClick={handleApply}
                                 disabled={applying || !applyReason.trim()}
                                 style={{
-                                    flex: 2, padding: '0.625rem 1rem', background: applyReason.trim() ? '#BFA270' : '#2d3148',
-                                    color: applyReason.trim() ? '#0f1117' : '#4b5563',
+                                    flex: 2, padding: '0.625rem 1rem', background: applyReason.trim() ? '#BFA270' : 'var(--crm-border-subtle)',
+                                    color: applyReason.trim() ? 'var(--crm-bg)' : '#4b5563',
                                     border: 'none', borderRadius: '0.5rem', fontSize: '0.875rem', fontWeight: 600,
                                     cursor: applyReason.trim() && !applying ? 'pointer' : 'not-allowed',
                                     transition: 'background 0.15s',

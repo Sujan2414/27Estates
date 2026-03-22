@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import styles from '../crm.module.css'
 import { useCRMUser, isAdmin, isSuperAdmin } from '../crm-context'
+import { leadSourceConfig, leadStatusConfig, FALLBACK_CHART_COLORS } from '@/lib/crm-constants'
 
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
 const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
@@ -21,8 +22,8 @@ const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: fa
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
 
 const tooltipStyle = {
-    contentStyle: { backgroundColor: '#1e2030', border: '1px solid #2d3148', borderRadius: '8px', fontSize: '0.75rem' },
-    itemStyle: { color: '#e5e7eb' }, labelStyle: { color: '#9ca3af' },
+    contentStyle: { backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border-subtle)', borderRadius: '8px', fontSize: '0.75rem' },
+    itemStyle: { color: 'var(--crm-text-secondary)' }, labelStyle: { color: 'var(--crm-text-muted)' },
 }
 
 interface Lead {
@@ -52,21 +53,11 @@ interface Schedule {
 
 interface Employee { id: string; full_name: string; role: string }
 
-const sourceLabels: Record<string, string> = {
-    website: 'Website', meta_ads: 'Meta Ads', google_ads: 'Google Ads',
-    '99acres': '99acres', magicbricks: 'MagicBricks', housing: 'Housing.com',
-    justdial: 'JustDial', chatbot: 'Chatbot', whatsapp: 'WhatsApp', manual: 'Manual', referral: 'Referral',
-}
-const statusConfig: Record<string, { color: string; label: string }> = {
-    new: { color: '#3b82f6', label: 'New' }, contacted: { color: '#f59e0b', label: 'Contacted' },
-    qualified: { color: '#8b5cf6', label: 'Qualified' }, negotiation: { color: '#f97316', label: 'Negotiation' },
-    site_visit: { color: '#06b6d4', label: 'Site Visit' }, converted: { color: '#22c55e', label: 'Converted' },
-    lost: { color: '#ef4444', label: 'Lost' },
-}
+// Removed local color configs
 const scheduleStatusConfig: Record<string, { color: string; label: string }> = {
     pending: { color: '#3b82f6', label: 'Pending' },
     called: { color: '#22c55e', label: 'Called' },
-    no_answer: { color: '#6b7280', label: 'No Answer' },
+    no_answer: { color: 'var(--crm-text-faint)', label: 'No Answer' },
     postpone_requested: { color: '#f59e0b', label: 'Postpone Requested' },
     postponed: { color: '#8b5cf6', label: 'Postponed' },
     escalated: { color: '#ef4444', label: 'Escalated' },
@@ -258,11 +249,11 @@ export default function LeadsPage() {
     const totalPages = Math.ceil(total / 25)
 
     // Analytics computed
-    const statusCounts = Object.entries(statusConfig).map(([k, v]) => ({
+    const statusCounts = Object.entries(leadStatusConfig).map(([k, v]) => ({
         name: v.label, count: leads.filter(l => l.status === k).length, color: v.color,
     }))
-    const sourceCounts = Object.entries(sourceLabels).map(([k, v]) => ({
-        name: v, count: leads.filter(l => l.source === k).length, color: '#BFA270',
+    const sourceCounts = Object.entries(leadSourceConfig).map(([k, v]) => ({
+        name: v.label, count: leads.filter(l => l.source === k).length, color: v.color,
     })).filter(s => s.count > 0).sort((a, b) => b.count - a.count)
     const agentPerf = employees.map(e => {
         const assigned = leads.filter(l => l.assigned_to === e.id)
@@ -295,9 +286,9 @@ export default function LeadsPage() {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: '#6b7280' }}><ArrowLeft size={20} /></Link>
+                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>
                             Leads
                             {escalatedLeads.length > 0 && (
                                 <span style={{ marginLeft: '0.5rem', fontSize: '0.8125rem', background: '#ef4444', color: 'white', borderRadius: '999px', padding: '2px 8px', fontWeight: 700 }}>
@@ -305,7 +296,7 @@ export default function LeadsPage() {
                                 </span>
                             )}
                         </h1>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{total} leads · {unassignedLeads.length} unassigned</p>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>{total} leads · {unassignedLeads.length} unassigned</p>
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -342,7 +333,7 @@ export default function LeadsPage() {
                     {/* Search + Filters */}
                     <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
                         <div style={{ flex: 1, position: 'relative' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#4b5563' }} />
+                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--crm-text-dim)' }} />
                             <input type="text" placeholder="Search name, email, phone..." value={search}
                                 onChange={e => { setSearch(e.target.value); setPage(1) }} className={styles.searchInput} />
                         </div>
@@ -350,11 +341,11 @@ export default function LeadsPage() {
                     </div>
 
                     {showFilters && (
-                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', padding: '0.75rem', backgroundColor: '#161822', borderRadius: '0.5rem', border: '1px solid #1e2030', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', padding: '0.75rem', backgroundColor: 'var(--crm-surface)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)', flexWrap: 'wrap' }}>
                             <div>
                                 <label className={styles.formLabel}>Source</label>
                                 <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '140px' }}>
-                                    {sources.map(s => <option key={s} value={s}>{s === 'all' ? 'All Sources' : sourceLabels[s] || s}</option>)}
+                                    {sources.map(s => <option key={s} value={s}>{s === 'all' ? 'All Sources' : leadSourceConfig[s]?.label || s}</option>)}
                                 </select>
                             </div>
                             <div>
@@ -385,7 +376,7 @@ export default function LeadsPage() {
                         {statuses.map(s => (
                             <button key={s} className={`${styles.pillTab} ${statusFilter === s ? styles.pillTabActive : ''}`}
                                 onClick={() => { setStatusFilter(s); setPage(1) }}>
-                                {s === 'all' ? 'All' : statusConfig[s]?.label || s}
+                                {s === 'all' ? 'All' : leadStatusConfig[s]?.label || s}
                             </button>
                         ))}
                     </div>
@@ -421,8 +412,8 @@ export default function LeadsPage() {
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                             {isEscalated && <AlertTriangle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />}
                                                             <div>
-                                                                <div style={{ fontWeight: 500, color: '#e5e7eb' }}>{lead.name}</div>
-                                                                <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>
+                                                                <div style={{ fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{lead.name}</div>
+                                                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)' }}>
                                                                     {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🟡' : '🔵'} {lead.priority}
                                                                 </div>
                                                             </div>
@@ -430,26 +421,31 @@ export default function LeadsPage() {
                                                     </td>
                                                     <td>
                                                         {lead.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}><Phone size={10} /> {lead.phone}</div>}
-                                                        {lead.email && <div style={{ fontSize: '0.6875rem', color: '#4b5563' }}>{lead.email}</div>}
+                                                        {lead.email && <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)' }}>{lead.email}</div>}
                                                     </td>
-                                                    <td><span className={styles.badge} style={{ backgroundColor: '#1e2030', color: '#9ca3af' }}>{sourceLabels[lead.source] || lead.source}</span></td>
+                                                    <td>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: leadSourceConfig[lead.source]?.color || 'var(--crm-text-faint)' }} />
+                                                            {leadSourceConfig[lead.source]?.label || lead.source}
+                                                        </div>
+                                                    </td>
                                                     <td>
                                                         <select value={lead.status} onClick={e => e.stopPropagation()} onChange={e => handleStatusChange(lead.id, e.target.value)}
-                                                            style={{ padding: '0.2rem 0.4rem', borderRadius: '0.375rem', fontSize: '0.6875rem', fontWeight: 600, border: '1px solid #2d3148', cursor: 'pointer', backgroundColor: `${statusConfig[lead.status]?.color}20`, color: statusConfig[lead.status]?.color }}>
-                                                            {statuses.filter(s => s !== 'all').map(s => <option key={s} value={s}>{statusConfig[s]?.label || s}</option>)}
+                                                            style={{ padding: '0.2rem 0.4rem', borderRadius: '0.375rem', fontSize: '0.6875rem', fontWeight: 600, border: '1px solid var(--crm-border-subtle)', cursor: 'pointer', backgroundColor: `${leadStatusConfig[lead.status]?.color}20`, color: leadStatusConfig[lead.status]?.color }}>
+                                                            {Object.keys(leadStatusConfig).filter(s => s !== 'all').map(s => <option key={s} value={s}>{leadStatusConfig[s]?.label || s}</option>)}
                                                         </select>
                                                     </td>
-                                                    <td>{lead.score != null ? <ScoreDot score={lead.score} /> : <span style={{ color: '#4b5563', fontSize: '0.75rem' }}>—</span>}</td>
+                                                    <td>{lead.score != null ? <ScoreDot score={lead.score} /> : <span style={{ color: 'var(--crm-text-dim)', fontSize: '0.75rem' }}>—</span>}</td>
                                                     <td onClick={e => e.stopPropagation()}>
                                                         {lead.assignee ? (
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#BFA270', color: '#0f1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700, flexShrink: 0 }}>
+                                                                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--crm-accent)', color: 'var(--crm-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700, flexShrink: 0 }}>
                                                                     {lead.assignee.full_name.charAt(0)}
                                                                 </div>
-                                                                <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{lead.assignee.full_name.split(' ')[0]}</span>
+                                                                <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }}>{lead.assignee.full_name.split(' ')[0]}</span>
                                                                 {isAdminUser && (
                                                                     <button onClick={() => { setAssignLeadId(lead.id); setAssignAgentId(lead.assigned_to || ''); setShowAssignModal(true) }}
-                                                                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#4b5563', padding: '0 2px' }}>
+                                                                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-dim)', padding: '0 2px' }}>
                                                                         <RefreshCw size={10} />
                                                                     </button>
                                                                 )}
@@ -460,7 +456,7 @@ export default function LeadsPage() {
                                                                     style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#f59e0b', background: '#f59e0b10', border: '1px solid #f59e0b30', borderRadius: '0.375rem', padding: '2px 8px', cursor: 'pointer' }}>
                                                                     <Users size={10} style={{ display: 'inline', marginRight: 3 }} /> Assign
                                                                 </button>
-                                                            ) : <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>—</span>
+                                                            ) : <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-dim)' }}>—</span>
                                                         )}
                                                     </td>
                                                     <td style={{ fontSize: '0.75rem', color: isOverdue ? '#ef4444' : '#6b7280' }}>
@@ -471,7 +467,7 @@ export default function LeadsPage() {
                                                             </span>
                                                         ) : '—'}
                                                     </td>
-                                                    <td style={{ fontSize: '0.75rem', color: '#4b5563' }}>{formatRelative(lead.created_at)}</td>
+                                                    <td style={{ fontSize: '0.75rem', color: 'var(--crm-text-dim)' }}>{formatRelative(lead.created_at)}</td>
                                                     <td><button onClick={e => handleDelete(lead.id, e)} className={styles.btnIcon} style={{ color: '#ef4444' }}><Trash2 size={12} /></button></td>
                                                 </tr>
                                             )
@@ -480,16 +476,16 @@ export default function LeadsPage() {
                                 </table>
                             </div>
                             {totalPages > 1 && (
-                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', borderTop: '1px solid #1e2030' }}>
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', borderTop: '1px solid var(--crm-border)' }}>
                                     <button disabled={page <= 1} onClick={() => setPage(page - 1)} className={styles.btnIcon}><ChevronLeft size={16} /></button>
-                                    <span style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Page {page} of {totalPages} · {total} leads</span>
+                                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Page {page} of {totalPages} · {total} leads</span>
                                     <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className={styles.btnIcon}><ChevronRight size={16} /></button>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className={styles.card}><div className={styles.emptyState}>
-                            <p style={{ color: '#e5e7eb', fontWeight: 500, marginBottom: '0.5rem' }}>No leads found</p>
+                            <p style={{ color: 'var(--crm-text-secondary)', fontWeight: 500, marginBottom: '0.5rem' }}>No leads found</p>
                             <p style={{ fontSize: '0.8125rem' }}>{search ? 'Try adjusting your search.' : 'Add leads manually or connect ad platforms.'}</p>
                         </div></div>
                     )}
@@ -526,9 +522,9 @@ export default function LeadsPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             {Object.entries(todayScheduleByAgent).filter(([, v]) => v.slots.length > 0).map(([agentId, { name, slots }]) => (
                                 <div key={agentId}>
-                                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#BFA270', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--crm-accent)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <UserCheck size={14} /> {name}
-                                        <span style={{ fontSize: '0.6875rem', color: '#6b7280', fontWeight: 400 }}>· {slots.length} calls</span>
+                                        <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', fontWeight: 400 }}>· {slots.length} calls</span>
                                     </div>
                                     <ScheduleSlotList slots={slots} isAdmin={isAdminUser} isSA={isSA} crmUserId={crmUser?.id}
                                         onAction={handleScheduleAction}
@@ -556,7 +552,7 @@ export default function LeadsPage() {
                 <>
                     {/* Stat cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                        {Object.entries(statusConfig).map(([k, v]) => (
+                        {Object.entries(leadStatusConfig).map(([k, v]) => (
                             <div key={k} className={styles.statCard}>
                                 <div className={styles.statLabel}>{v.label}</div>
                                 <div className={styles.statValue} style={{ color: v.color, fontSize: '1.5rem' }}>{leads.filter(l => l.status === k).length}</div>
@@ -570,8 +566,8 @@ export default function LeadsPage() {
                             <div className={styles.cardHeader}><span className={styles.cardTitle}>Status Distribution</span></div>
                             <ResponsiveContainer width="100%" height={220}>
                                 <BarChart data={statusCounts} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
+                                    <YAxis tick={{ fontSize: 10, fill: 'var(--crm-text-faint)' }} axisLine={false} tickLine={false} />
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="count" name="Leads" radius={[4, 4, 0, 0]}>
                                         {statusCounts.map((e, i) => <Cell key={i} fill={e.color} />)}
@@ -589,11 +585,11 @@ export default function LeadsPage() {
                                         const pct = total > 0 ? Math.round((s.count / total) * 100) : 0
                                         return (
                                             <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <span style={{ fontSize: '0.75rem', color: '#9ca3af', width: '90px', flexShrink: 0 }}>{s.name}</span>
-                                                <div style={{ flex: 1, height: '6px', backgroundColor: '#1e2030', borderRadius: '3px' }}>
-                                                    <div style={{ height: '100%', width: `${pct}%`, backgroundColor: '#BFA270', borderRadius: '3px' }} />
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', width: '90px', flexShrink: 0 }}>{s.name}</span>
+                                                <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--crm-elevated)', borderRadius: '3px' }}>
+                                                    <div style={{ height: '100%', width: `${pct}%`, backgroundColor: s.color, borderRadius: '3px' }} />
                                                 </div>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#BFA270', width: '36px', textAlign: 'right' }}>{s.count}</span>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-accent)', width: '36px', textAlign: 'right' }}>{s.count}</span>
                                             </div>
                                         )
                                     })}
@@ -608,21 +604,21 @@ export default function LeadsPage() {
                                 <div style={{ overflowX: 'auto' }}>
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                                         <thead>
-                                            <tr style={{ borderBottom: '1px solid #1e2030' }}>
-                                                <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#6b7280', fontWeight: 600 }}>Agent</th>
-                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Assigned</th>
-                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Contacted</th>
-                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Converted</th>
-                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: '#6b7280', fontWeight: 600 }}>Conv. Rate</th>
+                                            <tr style={{ borderBottom: '1px solid var(--crm-border)' }}>
+                                                <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Agent</th>
+                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Assigned</th>
+                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Contacted</th>
+                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Converted</th>
+                                                <th style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--crm-text-faint)', fontWeight: 600 }}>Conv. Rate</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {agentPerf.map(a => {
                                                 const convRate = a.assigned > 0 ? Math.round((a.converted / a.assigned) * 100) : 0
                                                 return (
-                                                    <tr key={a.name} style={{ borderBottom: '1px solid #1e2030' }}>
-                                                        <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500, color: '#e5e7eb' }}>{a.name}</td>
-                                                        <td style={{ textAlign: 'center', padding: '0.5rem', color: '#9ca3af' }}>{a.assigned}</td>
+                                                    <tr key={a.name} style={{ borderBottom: '1px solid var(--crm-border)' }}>
+                                                        <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{a.name}</td>
+                                                        <td style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--crm-text-muted)' }}>{a.assigned}</td>
                                                         <td style={{ textAlign: 'center', padding: '0.5rem', color: '#f59e0b' }}>{a.contacted}</td>
                                                         <td style={{ textAlign: 'center', padding: '0.5rem', color: '#22c55e', fontWeight: 700 }}>{a.converted}</td>
                                                         <td style={{ textAlign: 'center', padding: '0.5rem', fontWeight: 700, color: convRate >= 20 ? '#22c55e' : convRate >= 10 ? '#f59e0b' : '#ef4444' }}>
@@ -644,14 +640,17 @@ export default function LeadsPage() {
                             <div className={styles.cardHeader}><span className={styles.cardTitle} style={{ color: '#ef4444' }}>⚠ Escalated Leads ({escalatedLeads.length})</span></div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 {escalatedLeads.slice(0, 5).map(l => (
-                                    <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: '#1e2030', borderRadius: '0.5rem' }}>
+                                    <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem' }}>
                                         <div>
-                                            <span style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>{l.name}</span>
-                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem' }}>{l.phone}</span>
+                                            <span style={{ fontWeight: 600, color: 'var(--crm-text-secondary)', fontSize: '0.875rem' }}>{l.name}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginLeft: '0.5rem' }}>{l.phone}</span>
+                                            <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', backgroundColor: `${leadStatusConfig[l.status]?.color}20`, color: leadStatusConfig[l.status]?.color }}>
+                                                {leadStatusConfig[l.status]?.label || l.status}
+                                            </span>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             <span style={{ fontSize: '0.6875rem', color: '#ef4444' }}>Escalated {l.escalated_at ? formatRelative(l.escalated_at) : ''} ago · #{l.escalation_count || 1}</span>
-                                            <Link href={`/crm/leads/${l.id}`} style={{ fontSize: '0.75rem', color: '#BFA270' }}>View →</Link>
+                                            <Link href={`/crm/leads/${l.id}`} style={{ fontSize: '0.75rem', color: 'var(--crm-accent)' }}>View →</Link>
                                         </div>
                                     </div>
                                 ))}
@@ -670,7 +669,7 @@ export default function LeadsPage() {
                 <div className={styles.modal} onClick={() => setShowAddModal(false)}>
                     <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb' }}>Add New Lead</h3>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>Add New Lead</h3>
                             <button onClick={() => setShowAddModal(false)} className={styles.btnIcon}><X size={16} /></button>
                         </div>
                         <div className={styles.formGroup}>
@@ -691,7 +690,7 @@ export default function LeadsPage() {
                             <div className={styles.formGroup} style={{ flex: 1 }}>
                                 <label className={styles.formLabel}>Source</label>
                                 <select value={newLead.source} onChange={e => setNewLead({ ...newLead, source: e.target.value })} className={styles.formSelect}>
-                                    {sources.filter(s => s !== 'all').map(s => <option key={s} value={s}>{sourceLabels[s] || s}</option>)}
+                                    {sources.filter(s => s !== 'all').map(s => <option key={s} value={s}>{leadSourceConfig[s]?.label || s}</option>)}
                                 </select>
                             </div>
                             <div className={styles.formGroup} style={{ flex: 1 }}>
@@ -725,7 +724,7 @@ export default function LeadsPage() {
                             <label className={styles.formLabel}>Notes</label>
                             <textarea value={newLead.notes} onChange={e => setNewLead({ ...newLead, notes: e.target.value })} rows={3} className={styles.formInput} style={{ resize: 'vertical' }} />
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: '#1e2030', borderRadius: '0.5rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem' }}>
                             ⚡ Lead will be auto-assigned via round-robin after creation
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -741,7 +740,7 @@ export default function LeadsPage() {
                 <div className={styles.modal} onClick={() => setShowAssignModal(false)}>
                     <div className={styles.modalContent} style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb' }}>Assign Lead</h3>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>Assign Lead</h3>
                             <button onClick={() => setShowAssignModal(false)} className={styles.btnIcon}><X size={16} /></button>
                         </div>
                         <div className={styles.formGroup}>
@@ -766,10 +765,10 @@ export default function LeadsPage() {
                 <div className={styles.modal} onClick={() => setShowOutcomeModal(false)}>
                     <div className={styles.modalContent} style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#e5e7eb' }}>Log Call — {activeSchedule.lead?.name}</h3>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>Log Call — {activeSchedule.lead?.name}</h3>
                             <button onClick={() => setShowOutcomeModal(false)} className={styles.btnIcon}><X size={16} /></button>
                         </div>
-                        <div style={{ marginBottom: '1rem', padding: '0.5rem 0.75rem', background: '#1e2030', borderRadius: '0.5rem', fontSize: '0.8125rem', color: '#9ca3af' }}>
+                        <div style={{ marginBottom: '1rem', padding: '0.5rem 0.75rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem', fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>
                             Scheduled: {formatDateTime(activeSchedule.scheduled_at)}
                             {activeSchedule.lead?.phone && <div style={{ marginTop: '0.25rem' }}><Phone size={11} style={{ display: 'inline', marginRight: 4 }} />{activeSchedule.lead.phone}</div>}
                         </div>
@@ -824,7 +823,7 @@ function ScheduleSlotList({
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
             {slots.map(slot => {
-                const sConf = scheduleStatusConfig[slot.status] || { color: '#6b7280', label: slot.status }
+                const sConf = scheduleStatusConfig[slot.status] || { color: 'var(--crm-text-faint)', label: slot.status }
                 const isPending = slot.status === 'pending'
                 const isPostponeReq = slot.status === 'postpone_requested'
                 const isOverdue = new Date(slot.scheduled_at) < new Date() && isPending
@@ -834,13 +833,13 @@ function ScheduleSlotList({
                     <div key={slot.id} className={styles.card} style={{
                         padding: '1rem 1.25rem',
                         borderLeft: `3px solid ${isPostponeReq ? '#f59e0b' : isOverdue ? '#ef4444' : sConf.color}`,
-                        background: isPostponeReq ? '#f59e0b08' : isOverdue ? '#ef444408' : '#161822',
+                        background: isPostponeReq ? '#f59e0b08' : isOverdue ? '#ef444408' : 'var(--crm-surface)',
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
                             {/* Left: lead info */}
                             <div style={{ flex: 1, minWidth: 200 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.375rem', flexWrap: 'wrap' }}>
-                                    <span style={{ fontSize: '1rem', fontWeight: 700, color: '#e5e7eb' }}>{slot.lead?.name || '—'}</span>
+                                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--crm-text-secondary)' }}>{slot.lead?.name || '—'}</span>
                                     {slot.lead?.priority === 'hot' && <span style={{ fontSize: '0.6875rem' }}>🔥</span>}
                                     {slot.lead?.priority === 'warm' && <span style={{ fontSize: '0.6875rem' }}>🟡</span>}
                                     {isOverdue && <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#ef4444', background: '#ef444415', padding: '2px 6px', borderRadius: '4px' }}>OVERDUE</span>}
@@ -851,12 +850,12 @@ function ScheduleSlotList({
                                         <Phone size={13} /> {slot.lead.phone}
                                     </a>
                                 )}
-                                <div style={{ fontSize: '0.75rem', color: '#6b7280', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                         <Clock size={11} /> {new Date(slot.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                                     </span>
                                     {isAdmin && slot.agent && (
-                                        <span style={{ color: '#BFA270' }}>Agent: {slot.agent.full_name.split(' ')[0]}</span>
+                                        <span style={{ color: 'var(--crm-accent)' }}>Agent: {slot.agent.full_name.split(' ')[0]}</span>
                                     )}
                                     {slot.outcome && <span style={{ color: '#22c55e' }}>✓ {slot.outcome}</span>}
                                     {slot.notes && <span style={{ fontStyle: 'italic', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{slot.notes}"</span>}
@@ -877,7 +876,7 @@ function ScheduleSlotList({
                                             <CheckCircle2 size={11} /> Called
                                         </button>
                                         <button onClick={() => onAction(slot.id, null as unknown as string, { status: 'no_answer' })}
-                                            style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', background: '#6b728020', color: '#9ca3af', border: '1px solid #6b728040', borderRadius: '0.375rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                            style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', background: '#6b728020', color: 'var(--crm-text-muted)', border: '1px solid #6b728040', borderRadius: '0.375rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                             <PhoneOff size={11} /> No Answer
                                         </button>
                                         {!isAdmin && (
@@ -908,19 +907,19 @@ function ScheduleSlotList({
                                     reassignId === slot.id ? (
                                         <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
                                             <select value={reassignAgentId} onChange={e => setReassignAgentId(e.target.value)}
-                                                style={{ fontSize: '0.75rem', background: '#0f1117', border: '1px solid #2d3148', borderRadius: '0.375rem', color: '#e5e7eb', padding: '3px 6px' }}>
+                                                style={{ fontSize: '0.75rem', background: 'var(--crm-bg)', border: '1px solid var(--crm-border-subtle)', borderRadius: '0.375rem', color: 'var(--crm-text-secondary)', padding: '3px 6px' }}>
                                                 <option value="">Select agent...</option>
                                                 {employees.map(e => <option key={e.id} value={e.id}>{e.full_name.split(' ')[0]}</option>)}
                                             </select>
                                             <button onClick={() => { if (reassignAgentId) { onAction(slot.id, 'reassign', { new_agent_id: reassignAgentId }); setReassignId(null) } }}
-                                                style={{ fontSize: '0.75rem', padding: '3px 8px', background: '#BFA270', color: '#0f1117', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 700 }}>
+                                                style={{ fontSize: '0.75rem', padding: '3px 8px', background: 'var(--crm-accent)', color: 'var(--crm-bg)', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 700 }}>
                                                 Go
                                             </button>
-                                            <button onClick={() => setReassignId(null)} style={{ fontSize: '0.75rem', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer' }}>✕</button>
+                                            <button onClick={() => setReassignId(null)} style={{ fontSize: '0.75rem', background: 'none', border: 'none', color: 'var(--crm-text-faint)', cursor: 'pointer' }}>✕</button>
                                         </div>
                                     ) : (
                                         <button onClick={() => { setReassignId(slot.id); setReassignAgentId('') }}
-                                            style={{ fontSize: '0.6875rem', color: '#6b7280', background: 'none', border: '1px solid #2d3148', padding: '2px 8px', borderRadius: '0.375rem', cursor: 'pointer' }}>
+                                            style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', background: 'none', border: '1px solid var(--crm-border-subtle)', padding: '2px 8px', borderRadius: '0.375rem', cursor: 'pointer' }}>
                                             Reassign
                                         </button>
                                     )
