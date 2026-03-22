@@ -3,18 +3,18 @@
 import { useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 export default function EmailConfirmedPage() {
+    const router = useRouter();
+
     useEffect(() => {
         (async () => {
-            // Force the client-side Supabase to read the session from cookies
-            // and write it to localStorage. This triggers a `storage` event that
-            // supabase.auth.onAuthStateChange() in the original signup tab picks up,
-            // causing that tab to auto-redirect to /properties.
             const supabase = createClient();
+            // Sync session from cookies → localStorage so the waiting tab picks it up
             await supabase.auth.getSession();
 
-            // Belt-and-suspenders: also broadcast explicitly for same-browser tabs.
+            // Signal the original tab
             try {
                 const channel = new BroadcastChannel('auth_confirmation');
                 channel.postMessage({ type: 'email_confirmed' });
@@ -22,8 +22,11 @@ export default function EmailConfirmedPage() {
             } catch {
                 localStorage.setItem('email_confirmed', Date.now().toString());
             }
+
+            // Redirect this tab to listings after a short moment
+            setTimeout(() => router.push('/properties'), 2000);
         })();
-    }, []);
+    }, [router]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -36,12 +39,8 @@ export default function EmailConfirmedPage() {
 
                 <h1 className="text-3xl font-bold text-gray-900">Email Confirmed!</h1>
 
-                <p className="text-gray-600 text-lg">
-                    Your email has been successfully verified.
-                </p>
-
-                <p className="text-gray-500 text-sm">
-                    You can close this tab and return to the app — you&apos;ll be taken to the dashboard automatically.
+                <p className="text-gray-500">
+                    Taking you to the listings page…
                 </p>
             </div>
         </div>

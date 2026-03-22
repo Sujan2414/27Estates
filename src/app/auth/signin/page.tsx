@@ -20,6 +20,7 @@ export default function LoginPage() {
 function LoginContent() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [rememberMe, setRememberMe] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -40,7 +41,7 @@ function LoginContent() {
             if (signInError) throw signInError;
 
             if (data.user) {
-                // Always persist session — user stays logged in until they sign out
+                // Always persist session cookie; "Remember Me" is default on
                 await fetch('/api/auth/session', { method: 'POST' });
 
                 // Sync profile row
@@ -97,12 +98,19 @@ function LoginContent() {
                     placeholder="Password"
                 />
 
-                <button
-                    type="submit"
-                    className="auth-button"
-                    disabled={loading}
-                    style={{ marginTop: '20px' }}
-                >
+                <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0 20px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: '#555', userSelect: 'none' }}>
+                        <input
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            style={{ width: '16px', height: '16px', accentColor: 'var(--dark-turquoise, #183C38)', cursor: 'pointer' }}
+                        />
+                        Remember me
+                    </label>
+                </div>
+
+                <button type="submit" className="auth-button" disabled={loading}>
                     {loading ? 'Signing In...' : 'Sign In'}
                 </button>
             </form>

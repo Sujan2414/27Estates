@@ -159,24 +159,9 @@ function SignUpContent() {
                     <p style={{ fontWeight: 600, color: '#183C38', marginBottom: '24px', fontSize: '1rem' }}>
                         {email}
                     </p>
-                    <p style={{ color: '#888', fontSize: '0.85rem', marginBottom: '8px' }}>
-                        Click the link in your email to verify your account.
+                    <p style={{ color: '#888', fontSize: '0.875rem', marginBottom: '32px' }}>
+                        Click the link in your email — you&apos;ll be taken to the listings page.
                     </p>
-                    <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '32px' }}>
-                        Once confirmed, you&apos;ll be taken to the dashboard automatically — no need to do anything else on this page.
-                    </p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginBottom: '24px' }}>
-                        <span style={{
-                            display: 'inline-block',
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            background: '#183C38',
-                            animation: 'pulse 1.5s ease-in-out infinite',
-                        }} />
-                        <span style={{ color: '#555', fontSize: '0.85rem' }}>Waiting for confirmation…</span>
-                    </div>
-                    <style>{`@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.2; } }`}</style>
                     <Link
                         href="/auth/signin"
                         className="auth-button block text-center no-underline hover:opacity-90 transition-opacity"

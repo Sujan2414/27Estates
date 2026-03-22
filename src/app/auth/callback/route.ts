@@ -4,26 +4,32 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
+    const token_hash = searchParams.get('token_hash')
     const type = searchParams.get('type')
-    let redirect = searchParams.get('redirect') || searchParams.get('next') || '/properties'
+    const redirect = searchParams.get('redirect') || '/properties'
 
-    if (type === 'signup') {
-        redirect = '/auth/confirmed'
-    }
+    const supabase = await createClient()
 
-    if (code) {
-        const supabase = await createClient()
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-
+    // token_hash flow — works on any device/browser (cross-device confirmation)
+    if (token_hash && type) {
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as any })
         if (!error) {
-            // If this is a password recovery, redirect to reset-password page
-            if (type === 'recovery') {
-                return NextResponse.redirect(`${origin}/auth/reset-password`)
-            }
+            if (type === 'recovery') return NextResponse.redirect(`${origin}/auth/reset-password`)
+            if (type === 'signup' || type === 'email') return NextResponse.redirect(`${origin}/auth/confirmed`)
             return NextResponse.redirect(`${origin}${redirect}`)
         }
     }
 
-    // If there's an error, redirect to home
-    return NextResponse.redirect(`${origin}/`)
+    // PKCE code flow — same browser that initiated signup
+    if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error) {
+            if (type === 'recovery') return NextResponse.redirect(`${origin}/auth/reset-password`)
+            if (type === 'signup') return NextResponse.redirect(`${origin}/auth/confirmed`)
+            return NextResponse.redirect(`${origin}${redirect}`)
+        }
+    }
+
+    // Both failed — redirect to sign in
+    return NextResponse.redirect(`${origin}/auth/signin`)
 }
