@@ -5,7 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
-import TextStyle from '@tiptap/extension-text-style'
+import { TextStyle } from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useEffect, useCallback } from 'react'
@@ -77,7 +77,7 @@ export default function RichEmailEditor({ value, onChange }: Props) {
     // Sync external value changes (e.g. switching templates)
     useEffect(() => {
         if (editor && value !== editor.getHTML()) {
-            editor.commands.setContent(value || '', false)
+            editor.commands.setContent(value || '', { emitUpdate: false })
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value])
