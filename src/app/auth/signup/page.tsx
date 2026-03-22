@@ -119,7 +119,7 @@ function SignUpContent() {
                         full_name: `${firstName} ${lastName}`.trim(),
                         phone: phone,
                     },
-                    emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback?redirect=${searchParams?.get('redirect') || '/properties'}`,
+                    emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback?type=signup&redirect=${searchParams?.get('redirect') || '/properties'}`,
                 },
             });
 

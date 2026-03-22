@@ -2,20 +2,27 @@
 
 import { useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 export default function EmailConfirmedPage() {
     useEffect(() => {
-        // Signal any open tabs that email has been confirmed.
-        // supabase.auth.onAuthStateChange in the original tab will also pick up
-        // the new session from localStorage automatically.
-        try {
-            const channel = new BroadcastChannel('auth_confirmation');
-            channel.postMessage({ type: 'email_confirmed' });
-            setTimeout(() => channel.close(), 1000);
-        } catch {
-            // BroadcastChannel not supported in this browser — fallback
-            localStorage.setItem('email_confirmed', Date.now().toString());
-        }
+        (async () => {
+            // Force the client-side Supabase to read the session from cookies
+            // and write it to localStorage. This triggers a `storage` event that
+            // supabase.auth.onAuthStateChange() in the original signup tab picks up,
+            // causing that tab to auto-redirect to /properties.
+            const supabase = createClient();
+            await supabase.auth.getSession();
+
+            // Belt-and-suspenders: also broadcast explicitly for same-browser tabs.
+            try {
+                const channel = new BroadcastChannel('auth_confirmation');
+                channel.postMessage({ type: 'email_confirmed' });
+                setTimeout(() => channel.close(), 1000);
+            } catch {
+                localStorage.setItem('email_confirmed', Date.now().toString());
+            }
+        })();
     }, []);
 
     return (
