@@ -152,7 +152,7 @@ const statusOptions = [
 ];
 
 const cityOptions = ["Bangalore", "Mumbai", "Delhi", "Hyderabad", "Chennai", "Pune", "Kolkata", "Goa"];
-const configOptions = ["1 BHK", "2 BHK", "3 BHK", "4 BHK", "4+ BHK", "Villa", "Plot", "Penthouse"];
+const configOptions = ["1 BHK", "2 BHK", "2.5 BHK", "3 BHK", "3.5 BHK", "4 BHK", "4.5 BHK", "4+ BHK", "Villa", "Plot", "Penthouse"];
 
 const formatBudgetLabel = (val: number) => {
     if (val >= 100000000) return "10 Cr +";
@@ -311,9 +311,9 @@ const Dashboard = () => {
             if (budgetMax < 100000000) propQuery = propQuery.lte('price', budgetMax);
         }
         if (currentConfig) {
-            const bedroomMatch = currentConfig.match(/^(\d+)/);
+            const bedroomMatch = currentConfig.match(/^(\d+\.?\d*)/);
             if (bedroomMatch) {
-                const beds = parseInt(bedroomMatch[1]);
+                const beds = parseFloat(bedroomMatch[1]);
                 if (currentConfig.includes('+')) propQuery = propQuery.gte('bedrooms', beds);
                 else propQuery = propQuery.eq('bedrooms', beds);
             } else {
@@ -333,7 +333,7 @@ const Dashboard = () => {
             if (budgetMax < 100000000) projQuery = projQuery.lte('min_price_numeric', budgetMax);
         }
         if (currentConfig) {
-            const bedroomMatch = currentConfig.match(/^(\d+)/);
+            const bedroomMatch = currentConfig.match(/^(\d+\.?\d*)/);
             if (bedroomMatch) {
                 projQuery = projQuery.contains('bhk_options', [`${bedroomMatch[1]} BHK`]);
             } else {

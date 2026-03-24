@@ -757,3 +757,182 @@
     border-color: var(--crm-accent);
     background: var(--crm-accent-bg);
 }
+
+/* ── Bottom Grid ──────────────────────────────────── */
+.bottomGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+@media (min-width: 1024px) {
+    .bottomGrid { grid-template-columns: 2fr 1fr; }
+}
+
+/* ── Loading Skeleton ─────────────────────────────── */
+@keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, var(--crm-elevated) 25%, var(--crm-border) 50%, var(--crm-elevated) 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 0.375rem;
+}
+
+.skeletonCard {
+    composes: statCard;
+}
+
+.skeletonLine {
+    composes: skeleton;
+    height: 12px;
+    margin-bottom: 0.5rem;
+}
+
+.skeletonBlock {
+    composes: skeleton;
+    height: 32px;
+    margin-bottom: 0.5rem;
+}
+
+/* ── Attention Card ───────────────────────────────── */
+.attentionCard {
+    composes: card;
+    border-left: 3px solid #f59e0b;
+}
+
+.attentionItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--crm-border);
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.attentionItem:last-child { border-bottom: none; }
+.attentionItem:hover { background-color: var(--crm-elevated); }
+
+.attentionDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.attentionText {
+    flex: 1;
+    min-width: 0;
+}
+
+.attentionTitle {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--crm-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attentionMeta {
+    font-size: 0.6875rem;
+    color: var(--crm-text-faint);
+}
+
+/* ── Checkbox ─────────────────────────────────────── */
+.checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 2px solid var(--crm-border-subtle);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    background: none;
+    padding: 0;
+}
+
+.checkbox:hover { border-color: var(--crm-accent); }
+
+.checkboxChecked {
+    composes: checkbox;
+    background-color: var(--crm-btn-primary-bg);
+    border-color: var(--crm-btn-primary-bg);
+    color: var(--crm-btn-primary-text);
+}
+
+/* ── Bulk Action Bar ──────────────────────────────── */
+.bulkBar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    background-color: var(--crm-accent-bg);
+    border: 1px solid var(--crm-accent);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.bulkBarCount {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--crm-accent);
+    white-space: nowrap;
+}
+
+/* ── Toast ────────────────────────────────────────── */
+@keyframes slideInUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    z-index: 200;
+    animation: slideInUp 0.3s ease;
+    box-shadow: 0 8px 24px var(--crm-shadow);
+}
+
+.toastSuccess {
+    composes: toast;
+    background-color: #22c55e;
+    color: #fff;
+}
+
+.toastError {
+    composes: toast;
+    background-color: #ef4444;
+    color: #fff;
+}
+
+/* ── Section Header ───────────────────────────────── */
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--crm-text-primary);
+}
+
+.sectionSubtitle {
+    font-size: 0.75rem;
+    color: var(--crm-text-faint);
+}

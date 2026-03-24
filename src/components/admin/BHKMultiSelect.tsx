@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'
 
 // Common BHK options on the site filters
-const BHK_OPTIONS = ['1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK', '5+ BHK']
+const BHK_OPTIONS = ['1 RK', '1 BHK', '2 BHK', '2.5 BHK', '3 BHK', '3.5 BHK', '4 BHK', '4.5 BHK', '5+ BHK']
 
 interface BHKMultiSelectProps {
     value: string // comma-separated string, e.g., "1 BHK, 2 BHK, 3 BHK"

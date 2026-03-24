@@ -17,7 +17,8 @@ export interface Lead {
     source_raw_data: Record<string, unknown> | null
     status: LeadStatus
     priority: LeadPriority
-    assigned_agent_id: string | null
+    assigned_to: string | null
+    assigned_agent_id: string | null // alias kept for backward compat
     property_interest: string | null
     project_interest: string | null
     budget_min: number | null
@@ -26,16 +27,22 @@ export interface Lead {
     property_type: string | null
     notes: string | null
     tags: string[]
+    score: number | null
+    score_breakdown: Record<string, number> | null
+    lead_preferences: Record<string, unknown> | null
     last_contacted_at: string | null
     next_follow_up_at: string | null
     converted_at: string | null
     lost_reason: string | null
+    escalated_at: string | null
+    escalation_count: number
     created_at: string
     updated_at: string
     // Joined fields
     agents?: { name: string; email: string; phone: string } | null
+    assignee?: { id: string; full_name: string } | null
     properties?: { title: string; property_id: string } | null
-    projects?: { name: string } | null
+    projects?: { project_name: string } | null
 }
 
 export interface LeadActivity {

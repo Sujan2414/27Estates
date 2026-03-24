@@ -8,9 +8,10 @@ import { createClient } from '@/lib/supabase/client'
 import styles from '../../crm.module.css'
 import { useCRMUser, isAdmin } from '../../crm-context'
 
+import { Cell } from 'recharts'
+
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
 const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
-const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false })
 const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false })
 const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false })
 const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: false })
@@ -31,14 +32,14 @@ interface Task {
 interface Employee { id: string; full_name: string; role: string }
 
 const COLUMNS = [
-    { key: 'todo', label: 'To Do', color: 'var(--crm-text-faint)' },
+    { key: 'todo', label: 'To Do', color: '#9ca3af' },
     { key: 'in_progress', label: 'In Progress', color: '#f59e0b' },
     { key: 'review', label: 'Review', color: '#8b5cf6' },
     { key: 'done', label: 'Done', color: '#22c55e' },
 ]
 
 const PRIORITIES = [
-    { key: 'low', label: 'Low', color: 'var(--crm-text-faint)' },
+    { key: 'low', label: 'Low', color: '#9ca3af' },
     { key: 'medium', label: 'Medium', color: '#f59e0b' },
     { key: 'high', label: 'High', color: '#f97316' },
     { key: 'urgent', label: 'Urgent', color: '#ef4444' },
@@ -160,7 +161,7 @@ export default function TasksPage() {
         if (diff < 0) return { label: `${Math.abs(diff)}d overdue`, color: '#ef4444' }
         if (diff === 0) return { label: 'Due today', color: '#f59e0b' }
         if (diff === 1) return { label: 'Due tomorrow', color: '#f59e0b' }
-        return { label: `${diff}d left`, color: 'var(--crm-text-faint)' }
+        return { label: `${diff}d left`, color: '#9ca3af' }
     }
 
     // Analytics data
@@ -307,7 +308,7 @@ export default function TasksPage() {
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
                                                     {task.assignee ? (
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundcolor: 'var(--crm-accent)', color: 'var(--crm-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700 }}>
+                                                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'var(--crm-accent)', color: 'var(--crm-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700 }}>
                                                                 {task.assignee.full_name.charAt(0)}
                                                             </div>
                                                             <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-muted)' }}>{task.assignee.full_name.split(' ')[0]}</span>
@@ -334,7 +335,7 @@ export default function TasksPage() {
                                     })}
 
                                     {cards.length === 0 && (
-                                        <div style={{ padding: '1.25rem 0.75rem', textAlign: 'center', color: '#374151', fontSize: '0.75rem', border: '1px dashed #2d3148', borderRadius: '0.5rem' }}>
+                                        <div style={{ padding: '1.25rem 0.75rem', textAlign: 'center', color: 'var(--crm-text-faint)', fontSize: '0.75rem', border: '1px dashed var(--crm-border-subtle)', borderRadius: '0.5rem' }}>
                                             Drop tasks here
                                         </div>
                                     )}
@@ -371,7 +372,7 @@ export default function TasksPage() {
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="count" name="Tasks" radius={[4, 4, 0, 0]}>
                                         {byStatus.map((e, i) => (
-                                            <Cell key={i} fill={e.color === 'var(--crm-text-faint)' ? '#9ca3af' : e.color} />
+                                            <Cell key={i} fill={e.color} />
                                         ))}
                                     </Bar>
                                 </BarChart>
@@ -387,7 +388,7 @@ export default function TasksPage() {
                                     <Tooltip {...tooltipStyle} />
                                     <Bar dataKey="count" name="Tasks" radius={[4, 4, 0, 0]}>
                                         {byPriority.map((e, i) => (
-                                            <Cell key={i} fill={e.color === 'var(--crm-text-faint)' ? '#9ca3af' : e.color} />
+                                            <Cell key={i} fill={e.color} />
                                         ))}
                                     </Bar>
                                 </BarChart>

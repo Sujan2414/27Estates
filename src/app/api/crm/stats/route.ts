@@ -10,7 +10,7 @@ export async function GET() {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString()
 
     const [
         totalLeads,
@@ -21,6 +21,10 @@ export async function GET() {
         bySource,
         overdueTasks,
         hotLeads,
+        unassignedLeads,
+        staleLeads,
+        overdueFollowups,
+        upcomingVisits,
     ] = await Promise.all([
         supabase.from('leads').select('id', { count: 'exact', head: true }),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'new'),
@@ -32,6 +36,31 @@ export async function GET() {
             .eq('is_completed', false)
             .lt('due_date', now.toISOString()),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('priority', 'hot'),
+        // Unassigned active leads
+        supabase.from('leads').select('id, name, created_at, priority, source', { count: 'exact' })
+            .is('assigned_agent_id', null)
+            .not('status', 'in', '("converted","lost")')
+            .order('created_at', { ascending: false })
+            .limit(5),
+        // Stale leads — active leads with no activity for 3+ days
+        supabase.from('leads').select('id, name, status, priority, updated_at, source')
+            .not('status', 'in', '("converted","lost")')
+            .lt('updated_at', threeDaysAgo)
+            .order('updated_at', { ascending: true })
+            .limit(5),
+        // Overdue follow-ups
+        supabase.from('leads').select('id, name, next_follow_up_at, priority, status')
+            .not('status', 'in', '("converted","lost")')
+            .lt('next_follow_up_at', now.toISOString())
+            .not('next_follow_up_at', 'is', null)
+            .order('next_follow_up_at', { ascending: true })
+            .limit(5),
+        // Today's upcoming visits
+        supabase.from('site_visits').select('id, lead_id, visit_date, visit_time, status, leads(name)')
+            .eq('status', 'scheduled')
+            .gte('visit_date', today.split('T')[0])
+            .order('visit_date', { ascending: true })
+            .limit(5),
     ])
 
     // Count by status
@@ -61,5 +90,13 @@ export async function GET() {
         conversionRate,
         byStatus: statusCounts,
         bySource: sourceCounts,
+        // Attention items
+        attention: {
+            unassigned: unassignedLeads.data || [],
+            unassignedCount: unassignedLeads.count || 0,
+            stale: staleLeads.data || [],
+            overdueFollowups: overdueFollowups.data || [],
+            upcomingVisits: upcomingVisits.data || [],
+        },
     })
 }

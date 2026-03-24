@@ -75,7 +75,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await processWebhook(platform, 'lead_created', payload, lead.id, 'processed')
 
     // Auto-assign via round-robin (non-blocking)
-    assignLead(lead.id).catch(() => {})
+    assignLead(lead.id).catch(err => console.error('Auto-assign failed for webhook lead', lead.id, err))
 
     return NextResponse.json({ message: 'Lead created', lead_id: lead.id }, { status: 201 })
 }

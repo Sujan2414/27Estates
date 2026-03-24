@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Auto-assign via round-robin (fire and forget — don't block response)
-        assignLead(lead.id).catch(() => {})
+        assignLead(lead.id).catch(err => console.error('Auto-assign failed for lead', lead.id, err))
 
         return NextResponse.json({ lead }, { status: 201 })
     } catch {

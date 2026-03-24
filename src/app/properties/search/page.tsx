@@ -98,7 +98,7 @@ const sortOptions = [
     { value: "popular", label: "Most Popular" },
 ];
 
-const bedroomOptions = ["Any", "1", "2", "3", "4", "5+"];
+const bedroomOptions = ["Any", "1", "2", "2.5", "3", "3.5", "4", "4.5", "5+"];
 const bathroomOptions = ["Any", "1", "2", "3", "4+"];
 
 const directionOptions = [
@@ -315,7 +315,7 @@ const SearchPage = () => {
 
         // ... (Rest of filter logic same)
         if (selectedBedrooms !== "Any") {
-            const bedCount = selectedBedrooms === "5+" ? 5 : parseInt(selectedBedrooms);
+            const bedCount = selectedBedrooms === "5+" ? 5 : parseFloat(selectedBedrooms);
             result = result.filter(p =>
                 selectedBedrooms === "5+" ? p.bedrooms >= bedCount : p.bedrooms === bedCount
             );

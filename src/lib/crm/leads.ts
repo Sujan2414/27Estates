@@ -90,11 +90,13 @@ async function createNotification(payload: {
     link?: string
     lead_id?: string
 }) {
-    // Use a fresh client cast to any so the untyped 'notifications' table works
-    const sb = getSupabase() as unknown as ReturnType<typeof import('@supabase/supabase-js').createClient>
-    await (sb as any).from('notifications').insert(payload).catch(() => {
+    try {
+        const sb = getSupabase()
+        await sb.from('notifications').insert(payload)
+    } catch (err) {
         // Silently fail if table doesn't exist yet
-    })
+        console.warn('Notification insert failed (table may not exist):', err)
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────

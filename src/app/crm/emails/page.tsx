@@ -217,15 +217,19 @@ export default function EmailTemplatesPage() {
             {previewHtml && (
                 <div className={styles.modal} onClick={() => setPreviewHtml(null)}>
                     <div onClick={e => e.stopPropagation()} style={{
-                        background: '#fff', borderRadius: '1rem', padding: '1.5rem',
+                        background: 'var(--crm-surface)', borderRadius: '1rem', padding: '1.5rem',
                         maxWidth: '680px', width: '100%', maxHeight: '85vh', overflow: 'auto',
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#111' }}>Email Preview</h3>
-                            <button onClick={() => setPreviewHtml(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>Email Preview</h3>
+                            <button onClick={() => setPreviewHtml(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-muted)' }}><X size={20} /></button>
                         </div>
-                        <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', overflow: 'hidden' }}
-                            dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                        <iframe
+                            srcDoc={previewHtml}
+                            sandbox=""
+                            style={{ width: '100%', height: '500px', border: '1px solid var(--crm-border)', borderRadius: '0.5rem', background: '#fff' }}
+                            title="Email preview"
+                        />
                     </div>
                 </div>
             )}

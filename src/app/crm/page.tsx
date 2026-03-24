@@ -5,7 +5,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import {
     UserPlus, Flame, Mail, Target,
-    Zap, Plug
+    Zap, Plug, AlertTriangle, UserX, Clock, CalendarCheck, ChevronRight,
 } from 'lucide-react'
 import styles from './crm.module.css'
 import { useTheme } from './crm-context'
@@ -21,6 +21,24 @@ const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.Respons
 const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false })
 const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false })
 
+interface AttentionLead {
+    id: string; name: string; priority?: string; source?: string; status?: string
+    created_at?: string; updated_at?: string; next_follow_up_at?: string
+}
+
+interface AttentionVisit {
+    id: string; lead_id: string; visit_date: string; visit_time?: string
+    leads?: { name: string } | null
+}
+
+interface AttentionData {
+    unassigned: AttentionLead[]
+    unassignedCount: number
+    stale: AttentionLead[]
+    overdueFollowups: AttentionLead[]
+    upcomingVisits: AttentionVisit[]
+}
+
 interface CRMStats {
     total: number
     new: number
@@ -31,6 +49,7 @@ interface CRMStats {
     conversionRate: string
     byStatus: Record<string, number>
     bySource: Record<string, number>
+    attention?: AttentionData
 }
 
 interface APIUsage {
@@ -53,6 +72,20 @@ const formatINR = (usdCost: string | number) => {
 }
 
 const formatIndianNumber = (n: number) => n.toLocaleString('en-IN')
+
+function SkeletonRow() {
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {[1, 2, 3].map(i => (
+                <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div className={styles.skeleton} style={{ width: '40%', height: '14px' }} />
+                    <div className={styles.skeleton} style={{ width: '20%', height: '14px' }} />
+                    <div className={styles.skeleton} style={{ width: '15%', height: '14px' }} />
+                </div>
+            ))}
+        </div>
+    )
+}
 
 export default function CRMDashboard() {
     const [stats, setStats] = useState<CRMStats | null>(null)
@@ -105,6 +138,14 @@ export default function CRMDashboard() {
     const gradientOpacityTop = theme === 'dark' ? 0.3 : 0.2
     const axisTickFill = theme === 'dark' ? '#6b7280' : '#9ca3af'
 
+    // Attention data
+    const attention = stats?.attention
+    const hasAttention = attention && (
+        attention.unassigned.length > 0 ||
+        attention.stale.length > 0 ||
+        attention.overdueFollowups.length > 0
+    )
+
     return (
         <div className={styles.pageContent}>
             {/* Header */}
@@ -124,44 +165,180 @@ export default function CRMDashboard() {
 
             {/* Stats Row */}
             <div className={styles.statsRow}>
-                <div className={styles.statCard}>
-                    <div className={styles.statLabel}>Total Leads</div>
-                    <div className={styles.statValue}>{loading ? '—' : formatIndianNumber(stats?.total || 0)}</div>
-                    <div className={`${styles.statChange} ${styles.statUp}`}>
-                        +{stats?.thisWeek || 0} this week
-                    </div>
-                </div>
-                <div className={styles.statCard}>
-                    <div className={styles.statLabel}>New Today</div>
-                    <div className={styles.statValue}>{loading ? '—' : stats?.today || 0}</div>
-                </div>
-                <div className={styles.statCard}>
-                    <div className={styles.statLabel}>Hot Leads</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <div className={styles.statValue} style={{ color: '#ef4444' }}>{loading ? '—' : stats?.hot || 0}</div>
-                        <Flame size={18} style={{ color: '#ef4444' }} />
-                    </div>
-                </div>
-                <div className={styles.statCard}>
-                    <div className={styles.statLabel}>Conversion Rate</div>
-                    <div className={styles.statValue} style={{ color: '#22c55e' }}>{loading ? '—' : `${stats?.conversionRate || 0}%`}</div>
-                </div>
-                <div className={styles.statCard}>
-                    <div className={styles.statLabel}>Overdue Tasks</div>
-                    <div className={styles.statValue} style={{ color: stats?.overdueTasks ? '#ef4444' : 'var(--crm-text-faint)' }}>
-                        {loading ? '—' : stats?.overdueTasks || 0}
-                    </div>
-                </div>
-                <div className={styles.statCard}>
-                    <div className={styles.statLabel}>API Cost (30d)</div>
-                    <div className={styles.statValue} style={{ fontSize: '1.25rem' }}>
-                        {loading ? '—' : formatINR(apiUsage?.total?.cost || '0')}
-                    </div>
-                    <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>
-                        {formatIndianNumber(apiUsage?.total?.tokens || 0)} tokens
-                    </div>
-                </div>
+                {loading ? (
+                    <>
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className={styles.statCard}>
+                                <div className={styles.skeleton} style={{ width: '60%', height: '10px', marginBottom: '0.75rem' }} />
+                                <div className={styles.skeleton} style={{ width: '40%', height: '24px' }} />
+                            </div>
+                        ))}
+                    </>
+                ) : (
+                    <>
+                        <div className={styles.statCard}>
+                            <div className={styles.statLabel}>Total Leads</div>
+                            <div className={styles.statValue}>{formatIndianNumber(stats?.total || 0)}</div>
+                            <div className={`${styles.statChange} ${styles.statUp}`}>
+                                +{stats?.thisWeek || 0} this week
+                            </div>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statLabel}>New Today</div>
+                            <div className={styles.statValue}>{stats?.today || 0}</div>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statLabel}>Hot Leads</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className={styles.statValue} style={{ color: '#ef4444' }}>{stats?.hot || 0}</div>
+                                <Flame size={18} style={{ color: '#ef4444' }} />
+                            </div>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statLabel}>Conversion Rate</div>
+                            <div className={styles.statValue} style={{ color: '#22c55e' }}>{stats?.conversionRate || 0}%</div>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statLabel}>Overdue Tasks</div>
+                            <div className={styles.statValue} style={{ color: stats?.overdueTasks ? '#ef4444' : 'var(--crm-text-faint)' }}>
+                                {stats?.overdueTasks || 0}
+                            </div>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statLabel}>API Cost (30d)</div>
+                            <div className={styles.statValue} style={{ fontSize: '1.25rem' }}>
+                                {formatINR(apiUsage?.total?.cost || '0')}
+                            </div>
+                            <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>
+                                {formatIndianNumber(apiUsage?.total?.tokens || 0)} tokens
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
+
+            {/* Needs Attention Section */}
+            {!loading && hasAttention && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <div className={styles.sectionHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <AlertTriangle size={16} style={{ color: '#f59e0b' }} />
+                            <span className={styles.sectionTitle}>Needs Attention</span>
+                        </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                        {/* Unassigned Leads */}
+                        {attention.unassigned.length > 0 && (
+                            <div className={styles.attentionCard}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <UserX size={14} style={{ color: '#ef4444' }} />
+                                    <span className={styles.cardTitle}>
+                                        Unassigned ({attention.unassignedCount})
+                                    </span>
+                                </div>
+                                {attention.unassigned.map(lead => (
+                                    <Link key={lead.id} href={`/crm/leads/${lead.id}`} style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: lead.priority === 'hot' ? '#ef4444' : lead.priority === 'warm' ? '#f59e0b' : '#6b7280' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{lead.name}</div>
+                                                <div className={styles.attentionMeta}>
+                                                    {leadSourceConfig[lead.source || '']?.label || lead.source} &middot; {formatRelative(lead.created_at || '')}
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                                {attention.unassignedCount > 5 && (
+                                    <Link href="/crm/leads?status=new" style={{ fontSize: '0.75rem', color: 'var(--crm-accent)', textDecoration: 'none', display: 'block', textAlign: 'center', marginTop: '0.5rem' }}>
+                                        View all {attention.unassignedCount} unassigned
+                                    </Link>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Overdue Follow-ups */}
+                        {attention.overdueFollowups.length > 0 && (
+                            <div className={styles.attentionCard}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <Clock size={14} style={{ color: '#f59e0b' }} />
+                                    <span className={styles.cardTitle}>
+                                        Overdue Follow-ups ({attention.overdueFollowups.length})
+                                    </span>
+                                </div>
+                                {attention.overdueFollowups.map(lead => (
+                                    <Link key={lead.id} href={`/crm/leads/${lead.id}`} style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: '#f59e0b' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{lead.name}</div>
+                                                <div className={styles.attentionMeta}>
+                                                    Follow-up was {formatRelative(lead.next_follow_up_at || '')} ago
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Stale Leads */}
+                        {attention.stale.length > 0 && (
+                            <div className={styles.attentionCard}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <AlertTriangle size={14} style={{ color: '#6b7280' }} />
+                                    <span className={styles.cardTitle}>
+                                        Stale Leads (No activity 3+ days)
+                                    </span>
+                                </div>
+                                {attention.stale.map(lead => (
+                                    <Link key={lead.id} href={`/crm/leads/${lead.id}`} style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: lead.priority === 'hot' ? '#ef4444' : '#6b7280' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{lead.name}</div>
+                                                <div className={styles.attentionMeta}>
+                                                    {leadStatusConfig[lead.status || '']?.label} &middot; Last activity {formatRelative(lead.updated_at || '')}
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Upcoming Visits */}
+                        {attention.upcomingVisits && attention.upcomingVisits.length > 0 && (
+                            <div className={styles.attentionCard} style={{ borderLeftColor: '#22c55e' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <CalendarCheck size={14} style={{ color: '#22c55e' }} />
+                                    <span className={styles.cardTitle}>
+                                        Upcoming Visits ({attention.upcomingVisits.length})
+                                    </span>
+                                </div>
+                                {attention.upcomingVisits.map(visit => (
+                                    <Link key={visit.id} href={`/crm/leads/${visit.lead_id}`} style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: '#22c55e' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{visit.leads?.name || 'Unknown'}</div>
+                                                <div className={styles.attentionMeta}>
+                                                    {new Date(visit.visit_date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                    {visit.visit_time && ` at ${visit.visit_time}`}
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Charts Row */}
             <div className={styles.chartsGrid}>
@@ -176,31 +353,33 @@ export default function CRMDashboard() {
                             View Pipeline
                         </Link>
                     </div>
-                    <div className={styles.funnel}>
-                        {funnelSteps.map(step => {
-                            const count = stats?.byStatus[step] || 0
-                            const pct = maxFunnel > 0 ? (count / maxFunnel) * 100 : 0
-                            return (
-                                <div key={step} className={styles.funnelStep}>
-                                    <span className={styles.funnelLabel}>{leadStatusConfig[step]?.label}</span>
-                                    <div style={{ flex: 1 }}>
-                                        <div
-                                            className={styles.funnelBar}
-                                            style={{
-                                                width: `${Math.max(pct, 8)}%`,
-                                                backgroundColor: leadStatusConfig[step]?.color,
-                                            }}
-                                        >
-                                            {count}
+                    {loading ? <SkeletonRow /> : (
+                        <div className={styles.funnel}>
+                            {funnelSteps.map(step => {
+                                const count = stats?.byStatus[step] || 0
+                                const pct = maxFunnel > 0 ? (count / maxFunnel) * 100 : 0
+                                return (
+                                    <div key={step} className={styles.funnelStep}>
+                                        <span className={styles.funnelLabel}>{leadStatusConfig[step]?.label}</span>
+                                        <div style={{ flex: 1 }}>
+                                            <div
+                                                className={styles.funnelBar}
+                                                style={{
+                                                    width: `${Math.max(pct, 8)}%`,
+                                                    backgroundColor: leadStatusConfig[step]?.color,
+                                                }}
+                                            >
+                                                {count}
+                                            </div>
                                         </div>
+                                        <span className={styles.funnelCount}>
+                                            {maxFunnel > 0 ? `${((count / (stats?.total || 1)) * 100).toFixed(0)}%` : '0%'}
+                                        </span>
                                     </div>
-                                    <span className={styles.funnelCount}>
-                                        {maxFunnel > 0 ? `${((count / (stats?.total || 1)) * 100).toFixed(0)}%` : '0%'}
-                                    </span>
-                                </div>
-                            )
-                        })}
-                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
 
                 {/* Lead Sources - Pie Chart with distinct colors */}
@@ -211,7 +390,7 @@ export default function CRMDashboard() {
                             <div className={styles.cardSubtitle}>Where leads come from</div>
                         </div>
                     </div>
-                    {sourceData.length > 0 ? (
+                    {loading ? <SkeletonRow /> : sourceData.length > 0 ? (
                         <div>
                             <div style={{ width: '100%', height: 200 }}>
                                 <ResponsiveContainer>
@@ -278,7 +457,7 @@ export default function CRMDashboard() {
             )}
 
             {/* Bottom Grid: Recent Leads + Quick Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+            <div className={styles.bottomGrid}>
                 {/* Recent Leads */}
                 <div className={styles.card}>
                     <div className={styles.cardHeader}>
@@ -287,7 +466,7 @@ export default function CRMDashboard() {
                             View All
                         </Link>
                     </div>
-                    {recentLeads.length > 0 ? (
+                    {loading ? <SkeletonRow /> : recentLeads.length > 0 ? (
                         <table className={styles.table}>
                             <thead>
                                 <tr>
@@ -367,20 +546,22 @@ export default function CRMDashboard() {
                     {/* Status Breakdown */}
                     <div className={styles.card}>
                         <div className={styles.cardTitle} style={{ marginBottom: '0.75rem' }}>By Status</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {Object.entries(leadStatusConfig).map(([status, config]) => {
-                                const count = stats?.byStatus[status] || 0
-                                const pct = stats?.total ? ((count / stats.total) * 100).toFixed(0) : '0'
-                                return (
-                                    <div key={status} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: config.color, flexShrink: 0 }} />
-                                        <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', flex: 1 }}>{config.label}</span>
-                                        <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginRight: '0.25rem' }}>{pct}%</span>
-                                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', minWidth: '24px', textAlign: 'right' }}>{count}</span>
-                                    </div>
-                                )
-                            })}
-                        </div>
+                        {loading ? <SkeletonRow /> : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {Object.entries(leadStatusConfig).map(([status, config]) => {
+                                    const count = stats?.byStatus[status] || 0
+                                    const pct = stats?.total ? ((count / stats.total) * 100).toFixed(0) : '0'
+                                    return (
+                                        <div key={status} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: config.color, flexShrink: 0 }} />
+                                            <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', flex: 1 }}>{config.label}</span>
+                                            <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginRight: '0.25rem' }}>{pct}%</span>
+                                            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-secondary)', minWidth: '24px', textAlign: 'right' }}>{count}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -126,7 +126,7 @@ export default function ConnectorsPage() {
                                 >
                                     <div style={{
                                         width: '16px', height: '16px', borderRadius: '50%',
-                                        backgroundcolor: 'var(--crm-text-primary)',
+                                        backgroundColor: 'var(--crm-text-primary)',
                                         position: 'absolute', top: '3px',
                                         left: connector.is_active ? '21px' : '3px',
                                         transition: 'left 0.2s',

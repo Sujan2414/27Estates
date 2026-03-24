@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import {
     Search, UserPlus, Phone, ChevronLeft, ChevronRight, X, Trash2, ArrowLeft,
     Filter, Download, Star, Calendar, BarChart2, List, Users, AlertTriangle,
-    CheckCircle2, PhoneOff, Clock, RefreshCw, UserCheck,
+    CheckCircle2, PhoneOff, Clock, RefreshCw, UserCheck, Check,
 } from 'lucide-react'
 import styles from '../crm.module.css'
 import { useCRMUser, isAdmin, isSuperAdmin } from '../crm-context'
@@ -103,6 +103,8 @@ export default function LeadsPage() {
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')
+    const [searchInput, setSearchInput] = useState('')
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const [statusFilter, setStatusFilter] = useState('all')
     const [sourceFilter, setSourceFilter] = useState('all')
     const [priorityFilter, setPriorityFilter] = useState('all')
@@ -129,6 +131,65 @@ export default function LeadsPage() {
     const [showAssignModal, setShowAssignModal] = useState(false)
     const [assignLeadId, setAssignLeadId] = useState('')
     const [assignAgentId, setAssignAgentId] = useState('')
+
+    // Bulk selection state
+    const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set())
+    const [bulkAction, setBulkAction] = useState('')
+    const [bulkProcessing, setBulkProcessing] = useState(false)
+
+    const toggleSelectLead = (id: string) => {
+        setSelectedLeads(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
+
+    const toggleSelectAll = () => {
+        if (selectedLeads.size === leads.length) setSelectedLeads(new Set())
+        else setSelectedLeads(new Set(leads.map(l => l.id)))
+    }
+
+    const handleBulkStatusChange = async (newStatus: string) => {
+        if (selectedLeads.size === 0) return
+        setBulkProcessing(true)
+        const promises = Array.from(selectedLeads).map(id =>
+            fetch(`/api/crm/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
+        )
+        await Promise.all(promises)
+        showToast(`Updated ${selectedLeads.size} leads to ${leadStatusConfig[newStatus]?.label || newStatus}`)
+        setSelectedLeads(new Set())
+        setBulkProcessing(false)
+        fetchLeads()
+    }
+
+    const handleBulkAssign = async (agentId: string) => {
+        if (selectedLeads.size === 0) return
+        setBulkProcessing(true)
+        const promises = Array.from(selectedLeads).map(id =>
+            fetch('/api/crm/leads/assign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, agent_id: agentId }) })
+        )
+        await Promise.all(promises)
+        showToast(`Assigned ${selectedLeads.size} leads`)
+        setSelectedLeads(new Set())
+        setBulkProcessing(false)
+        fetchLeads()
+    }
+
+    const handleBulkDelete = async () => {
+        if (selectedLeads.size === 0) return
+        if (!confirm(`Delete ${selectedLeads.size} leads? This cannot be undone.`)) return
+        setBulkProcessing(true)
+        const promises = Array.from(selectedLeads).map(id =>
+            fetch(`/api/crm/leads/${id}`, { method: 'DELETE' })
+        )
+        await Promise.all(promises)
+        showToast(`Deleted ${selectedLeads.size} leads`)
+        setSelectedLeads(new Set())
+        setBulkProcessing(false)
+        fetchLeads()
+    }
 
     const showToast = (msg: string, ok = true) => {
         setToast({ msg, ok })
@@ -334,8 +395,13 @@ export default function LeadsPage() {
                     <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
                         <div style={{ flex: 1, position: 'relative' }}>
                             <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--crm-text-dim)' }} />
-                            <input type="text" placeholder="Search name, email, phone..." value={search}
-                                onChange={e => { setSearch(e.target.value); setPage(1) }} className={styles.searchInput} />
+                            <input type="text" placeholder="Search name, email, phone..." value={searchInput}
+                                onChange={e => {
+                                    const val = e.target.value
+                                    setSearchInput(val)
+                                    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+                                    searchTimerRef.current = setTimeout(() => { setSearch(val); setPage(1) }, 350)
+                                }} className={styles.searchInput} />
                         </div>
                         <button onClick={() => setShowFilters(!showFilters)} className={showFilters ? styles.btnPrimary : styles.btnSecondary}><Filter size={14} /> Filters</button>
                     </div>
@@ -364,7 +430,7 @@ export default function LeadsPage() {
                                     </select>
                                 </div>
                             )}
-                            <button onClick={() => { setSourceFilter('all'); setPriorityFilter('all'); setAgentFilter('all'); setSearch(''); setPage(1) }}
+                            <button onClick={() => { setSourceFilter('all'); setPriorityFilter('all'); setAgentFilter('all'); setSearch(''); setSearchInput(''); setPage(1) }}
                                 className={styles.btnSecondary} style={{ alignSelf: 'flex-end', fontSize: '0.75rem' }}>
                                 <X size={12} /> Clear
                             </button>
@@ -381,15 +447,74 @@ export default function LeadsPage() {
                         ))}
                     </div>
 
+                    {/* Bulk Action Bar */}
+                    {selectedLeads.size > 0 && (
+                        <div className={styles.bulkBar}>
+                            <span className={styles.bulkBarCount}>{selectedLeads.size} selected</span>
+                            <select
+                                value=""
+                                onChange={e => { if (e.target.value) handleBulkStatusChange(e.target.value) }}
+                                disabled={bulkProcessing}
+                                className={styles.formSelect}
+                                style={{ width: 'auto', minWidth: 140, fontSize: '0.75rem', padding: '0.375rem 0.5rem' }}
+                            >
+                                <option value="">Change Status...</option>
+                                {Object.entries(leadStatusConfig).map(([k, v]) => (
+                                    <option key={k} value={k}>{v.label}</option>
+                                ))}
+                            </select>
+                            {isAdminUser && employees.length > 0 && (
+                                <select
+                                    value=""
+                                    onChange={e => { if (e.target.value) handleBulkAssign(e.target.value) }}
+                                    disabled={bulkProcessing}
+                                    className={styles.formSelect}
+                                    style={{ width: 'auto', minWidth: 150, fontSize: '0.75rem', padding: '0.375rem 0.5rem' }}
+                                >
+                                    <option value="">Assign to...</option>
+                                    {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                                </select>
+                            )}
+                            {isSA && (
+                                <button onClick={handleBulkDelete} disabled={bulkProcessing} className={styles.btnSecondary}
+                                    style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem', color: '#ef4444', borderColor: '#ef444430' }}>
+                                    <Trash2 size={12} /> Delete
+                                </button>
+                            )}
+                            <button onClick={() => setSelectedLeads(new Set())} className={styles.btnSecondary}
+                                style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem', marginLeft: 'auto' }}>
+                                <X size={12} /> Clear
+                            </button>
+                        </div>
+                    )}
+
                     {/* Leads Table */}
                     {loading ? (
-                        <div className={styles.emptyState}>Loading...</div>
+                        <div className={styles.card} style={{ padding: 0, overflow: 'hidden' }}>
+                            {[1, 2, 3, 4, 5].map(i => (
+                                <div key={i} style={{ display: 'flex', gap: '1rem', padding: '0.875rem 1rem', borderBottom: '1px solid var(--crm-border)' }}>
+                                    <div className={styles.skeleton} style={{ width: '25%', height: '14px' }} />
+                                    <div className={styles.skeleton} style={{ width: '15%', height: '14px' }} />
+                                    <div className={styles.skeleton} style={{ width: '12%', height: '14px' }} />
+                                    <div className={styles.skeleton} style={{ width: '10%', height: '14px' }} />
+                                    <div className={styles.skeleton} style={{ width: '8%', height: '14px' }} />
+                                </div>
+                            ))}
+                        </div>
                     ) : leads.length > 0 ? (
                         <div className={styles.card} style={{ padding: 0, overflow: 'hidden' }}>
                             <div style={{ overflowX: 'auto' }}>
                                 <table className={styles.table}>
                                     <thead>
                                         <tr>
+                                            <th style={{ width: '36px' }}>
+                                                <button
+                                                    className={selectedLeads.size === leads.length && leads.length > 0 ? styles.checkboxChecked : styles.checkbox}
+                                                    onClick={toggleSelectAll}
+                                                >
+                                                    {selectedLeads.size === leads.length && leads.length > 0 && <Check size={10} />}
+                                                </button>
+                                            </th>
                                             <th>Name</th>
                                             <th>Contact</th>
                                             <th>Source</th>
@@ -406,8 +531,16 @@ export default function LeadsPage() {
                                             const isEscalated = !!lead.escalated_at
                                             const isOverdue = lead.scheduled_call_at && new Date(lead.scheduled_call_at) < new Date() && !['contacted', 'qualified', 'negotiation', 'site_visit', 'converted'].includes(lead.status)
                                             return (
-                                                <tr key={lead.id} style={{ cursor: 'pointer', background: isEscalated ? '#ef444408' : undefined }}
+                                                <tr key={lead.id} style={{ cursor: 'pointer', background: selectedLeads.has(lead.id) ? 'var(--crm-accent-bg)' : isEscalated ? '#ef444408' : undefined }}
                                                     onClick={() => window.location.href = `/crm/leads/${lead.id}`}>
+                                                    <td onClick={e => e.stopPropagation()}>
+                                                        <button
+                                                            className={selectedLeads.has(lead.id) ? styles.checkboxChecked : styles.checkbox}
+                                                            onClick={() => toggleSelectLead(lead.id)}
+                                                        >
+                                                            {selectedLeads.has(lead.id) && <Check size={10} />}
+                                                        </button>
+                                                    </td>
                                                     <td>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                             {isEscalated && <AlertTriangle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, BarChart2, Columns3, Phone, Mail } from 'lucide-react'
+import { ArrowLeft, BarChart2, Columns3, Phone, Mail, Search } from 'lucide-react'
 import styles from '../crm.module.css'
 
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
@@ -59,6 +59,7 @@ export default function PipelinePage() {
     const [draggingId, setDraggingId] = useState<string | null>(null)
     const [dragOverCol, setDragOverCol] = useState<string | null>(null)
     const [updating, setUpdating] = useState<string | null>(null)
+    const [pipelineSearch, setPipelineSearch] = useState('')
 
     const fetchLeads = useCallback(async () => {
         setLoading(true)
@@ -73,9 +74,19 @@ export default function PipelinePage() {
 
     useEffect(() => { fetchLeads() }, [fetchLeads])
 
-    // Group leads by status into kanban columns
+    // Filter leads by search, then group by status into kanban columns
+    const filteredLeads = pipelineSearch
+        ? leads.filter(l => {
+            const q = pipelineSearch.toLowerCase()
+            return l.name.toLowerCase().includes(q) ||
+                l.email?.toLowerCase().includes(q) ||
+                l.phone?.includes(q) ||
+                l.source.toLowerCase().includes(q)
+        })
+        : leads
+
     const columns = STAGES.reduce((acc, stage) => {
-        acc[stage.key] = leads.filter(l => l.status === stage.key)
+        acc[stage.key] = filteredLeads.filter(l => l.status === stage.key)
         return acc
     }, {} as Record<string, Lead[]>)
 
@@ -90,18 +101,26 @@ export default function PipelinePage() {
         const lead = leads.find(l => l.id === draggingId)
         if (!lead || lead.status === targetStatus) { setDraggingId(null); setDragOverCol(null); return }
 
-        // Optimistic update
-        setLeads(prev => prev.map(l => l.id === draggingId ? { ...l, status: targetStatus } : l))
+        const previousStatus = lead.status
         const movedId = draggingId
+
+        // Optimistic update
+        setLeads(prev => prev.map(l => l.id === movedId ? { ...l, status: targetStatus } : l))
         setDraggingId(null)
         setDragOverCol(null)
         setUpdating(movedId)
 
-        await fetch(`/api/crm/leads/${movedId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: targetStatus }),
-        }).catch(() => {})
+        try {
+            const res = await fetch(`/api/crm/leads/${movedId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: targetStatus }),
+            })
+            if (!res.ok) throw new Error('Update failed')
+        } catch {
+            // Rollback on failure
+            setLeads(prev => prev.map(l => l.id === movedId ? { ...l, status: previousStatus } : l))
+        }
         setUpdating(null)
     }
 
@@ -114,7 +133,7 @@ export default function PipelinePage() {
         return `${Math.floor(dd / 30)}mo`
     }
 
-    const totalLeads = leads.length
+    const totalLeads = filteredLeads.length
     const convertedCount = columns['converted']?.length || 0
     const lostCount = columns['lost']?.length || 0
     const activeCount = ['new', 'contacted', 'qualified', 'negotiation', 'site_visit'].reduce((s, k) => s + (columns[k]?.length || 0), 0)
@@ -124,7 +143,7 @@ export default function PipelinePage() {
 
     // Source distribution for pie chart
     const sourceData = Object.entries(
-        leads.reduce((acc: Record<string, number>, l) => { acc[l.source] = (acc[l.source] || 0) + 1; return acc }, {})
+        filteredLeads.reduce((acc: Record<string, number>, l) => { acc[l.source] = (acc[l.source] || 0) + 1; return acc }, {})
     ).map(([key, value]) => ({ name: sourceConfig[key]?.label || key, value, color: sourceConfig[key]?.color || '#6b7280' }))
         .sort((a, b) => b.value - a.value).slice(0, 7)
 
@@ -141,28 +160,52 @@ export default function PipelinePage() {
                         </p>
                     </div>
                 </div>
-                <div className={styles.pillTabs}>
-                    <button
-                        className={`${styles.pillTab} ${view === 'kanban' ? styles.pillTabActive : ''}`}
-                        onClick={() => setView('kanban')}
-                    >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Columns3 size={13} /> Kanban
-                        </span>
-                    </button>
-                    <button
-                        className={`${styles.pillTab} ${view === 'analytics' ? styles.pillTabActive : ''}`}
-                        onClick={() => setView('analytics')}
-                    >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <BarChart2 size={13} /> Analytics
-                        </span>
-                    </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {view === 'kanban' && (
+                        <div style={{ position: 'relative' }}>
+                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--crm-text-dim)' }} />
+                            <input
+                                type="text"
+                                placeholder="Search pipeline..."
+                                value={pipelineSearch}
+                                onChange={e => setPipelineSearch(e.target.value)}
+                                className={styles.searchInput}
+                                style={{ width: '200px', fontSize: '0.75rem' }}
+                            />
+                        </div>
+                    )}
+                    <div className={styles.pillTabs}>
+                        <button
+                            className={`${styles.pillTab} ${view === 'kanban' ? styles.pillTabActive : ''}`}
+                            onClick={() => setView('kanban')}
+                        >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Columns3 size={13} /> Kanban
+                            </span>
+                        </button>
+                        <button
+                            className={`${styles.pillTab} ${view === 'analytics' ? styles.pillTabActive : ''}`}
+                            onClick={() => setView('analytics')}
+                        >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <BarChart2 size={13} /> Analytics
+                            </span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {loading ? (
-                <div className={styles.emptyState}>Loading pipeline...</div>
+                <div style={{ display: 'flex', gap: '0.75rem', overflow: 'hidden', height: 'calc(100vh - 200px)' }}>
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} style={{ width: '264px', flexShrink: 0, backgroundColor: 'var(--crm-surface)', border: '1px solid var(--crm-border)', borderRadius: '0.75rem', padding: '0.75rem' }}>
+                            <div className={styles.skeleton} style={{ width: '60%', height: '14px', marginBottom: '1rem' }} />
+                            {[1, 2, 3].map(j => (
+                                <div key={j} className={styles.skeleton} style={{ height: '80px', marginBottom: '0.5rem', borderRadius: '0.5rem' }} />
+                            ))}
+                        </div>
+                    ))}
+                </div>
             ) : view === 'kanban' ? (
                 /* ── KANBAN BOARD ─────────────────────────────────── */
                 <div className={styles.kanbanBoard}>
@@ -256,8 +299,8 @@ export default function PipelinePage() {
                                     {cards.length === 0 && (
                                         <div style={{
                                             padding: '1.5rem 0.75rem', textAlign: 'center',
-                                            color: '#374151', fontSize: '0.75rem',
-                                            border: '1px dashed #2d3148', borderRadius: '0.5rem',
+                                            color: 'var(--crm-text-faint)', fontSize: '0.75rem',
+                                            border: '1px dashed var(--crm-border-subtle)', borderRadius: '0.5rem',
                                             marginTop: '0.25rem',
                                         }}>
                                             Drop leads here

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Pencil, Trash2, Mail, Phone } from 'lucide-react'
+import { proxyUrl } from '@/lib/proxy-url'
 import styles from '../admin.module.css'
 
 interface Agent {

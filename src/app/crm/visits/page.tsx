@@ -126,13 +126,13 @@ export default function VisitsPage() {
                             const isT = isToday(date)
                             return (
                                 <div key={i} style={{
-                                    backgroundColor: isT ? '#BFA27010' : 'var(--crm-surface)',
-                                    border: `1px solid ${isT ? '#BFA27040' : 'var(--crm-border)'}`,
+                                    backgroundColor: isT ? 'var(--crm-accent-bg)' : 'var(--crm-surface)',
+                                    border: `1px solid ${isT ? 'var(--crm-accent)' : 'var(--crm-border)'}`,
                                     borderRadius: '0.5rem', padding: '0.625rem', minHeight: '100px',
                                 }}>
-                                    <div style={{ fontSize: '0.6875rem', color: isT ? '#BFA270' : '#4b5563', fontWeight: isT ? 700 : 500, marginBottom: '0.5rem' }}>
+                                    <div style={{ fontSize: '0.6875rem', color: isT ? 'var(--crm-accent)' : 'var(--crm-text-faint)', fontWeight: isT ? 700 : 500, marginBottom: '0.5rem' }}>
                                         {date.toLocaleDateString('en-IN', { weekday: 'short' })}
-                                        <span style={{ display: 'block', fontSize: '1rem', color: isT ? '#BFA270' : '#9ca3af', lineHeight: 1.2 }}>{date.getDate()}</span>
+                                        <span style={{ display: 'block', fontSize: '1rem', color: isT ? 'var(--crm-accent)' : 'var(--crm-text-muted)', lineHeight: 1.2 }}>{date.getDate()}</span>
                                     </div>
                                     {dayVisits.map(v => (
                                         <Link key={v.id} href={`/crm/leads/${v.lead_id}`} style={{ textDecoration: 'none' }}>

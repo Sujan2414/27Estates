@@ -47,6 +47,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     })
 }
 
+// Allowed fields for lead updates
+const ALLOWED_LEAD_FIELDS = new Set([
+    'name', 'email', 'phone', 'source', 'priority',
+    'property_interest', 'project_interest', 'budget_min', 'budget_max',
+    'preferred_location', 'property_type', 'notes', 'tags',
+    'next_follow_up_at', 'lost_reason', 'lead_preferences',
+    'assigned_to', 'score', 'score_breakdown',
+])
+
 // PATCH /api/crm/leads/[id] - Update a lead
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -62,11 +71,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Track if a property is being assigned (for email notification)
     const newPropertyId = body.property_interest as string | undefined
 
+    // Filter to allowed fields only (prevents injection of arbitrary columns)
+    const sanitized: Record<string, unknown> = {}
+    for (const key of Object.keys(body)) {
+        if (ALLOWED_LEAD_FIELDS.has(key)) sanitized[key] = body[key]
+    }
+
     // Update remaining fields
-    if (Object.keys(body).length > 0) {
+    if (Object.keys(sanitized).length > 0) {
         const { error } = await supabase
             .from('leads')
-            .update(body)
+            .update(sanitized)
             .eq('id', id)
 
         if (error) {
