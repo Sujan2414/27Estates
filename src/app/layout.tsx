@@ -7,6 +7,7 @@ import "./globals.css";
 
 import StickyViewListingsBtn from '@/components/ui/StickyViewListingsBtn';
 import ChatWidget from '@/components/ChatWidget';
+import PageTracker from '@/components/PageTracker';
 
 const playfair = Playfair_Display({
     subsets: ["latin"],
@@ -155,6 +156,7 @@ export default function RootLayout({
                             {children}
                         </PageTransitionLayout>
                     </SmoothScroll>
+                    <PageTracker />
                     <StickyViewListingsBtn />
                     <ChatWidget />
                 </AuthProvider>

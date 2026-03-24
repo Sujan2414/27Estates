@@ -38,7 +38,7 @@ export async function GET() {
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('priority', 'hot'),
         // Unassigned active leads
         supabase.from('leads').select('id, name, created_at, priority, source', { count: 'exact' })
-            .is('assigned_agent_id', null)
+            .is('assigned_to', null)
             .not('status', 'in', '("converted","lost")')
             .order('created_at', { ascending: false })
             .limit(5),
