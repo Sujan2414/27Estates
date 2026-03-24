@@ -128,6 +128,7 @@ export default function ProjectsPage() {
                                         src={proxyUrl(project.images[0])}
                                         alt={project.project_name}
                                         fill
+                                        unoptimized
                                         className={propertyStyles.image}
                                     />
                                 ) : (

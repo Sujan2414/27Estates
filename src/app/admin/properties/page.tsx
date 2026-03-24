@@ -142,6 +142,7 @@ export default function PropertiesPage() {
                                         src={proxyUrl(property.images[0])}
                                         alt={property.title}
                                         fill
+                                        unoptimized
                                         className={propertyStyles.image}
                                     />
                                 ) : (
