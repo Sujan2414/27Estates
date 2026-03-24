@@ -75,10 +75,11 @@ export default function AgentsPage() {
                             <div className={styles.agentImageWrapper}>
                                 {agent.image ? (
                                     <Image
-                                        src={agent.image}
+                                        src={proxyUrl(agent.image)}
                                         alt={agent.name}
                                         fill
                                         className={styles.agentImage}
+                                        unoptimized
                                     />
                                 ) : (
                                     <div className={styles.agentPlaceholder}>

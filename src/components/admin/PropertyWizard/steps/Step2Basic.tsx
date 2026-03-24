@@ -81,7 +81,7 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
     const showOwnership = isResidential || isPlot || isCommercial
 
     const propertyTypes = ['Apartment', 'House', 'Villa', 'Bungalow', 'Row Villa', 'Plot', 'Farmhouse', 'Penthouse', 'Studio', 'Duplex']
-    const transactionTypes = ['New Property', 'Resale', 'Pre-Launch']
+    const transactionTypes = ['New Property', 'Resale']
     const ownershipTypes = ['Freehold', 'Leasehold', 'Power of Attorney', 'Co-operative Society']
     const bedroomOptions = ['1', '2', '2.5', '3', '3.5', '4', '4.5', '5', '6+']
     const plotSubTypes = ['Residential', 'Commercial', 'Agricultural', 'NA / Non-Agricultural', 'Industrial']

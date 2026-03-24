@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { X, Loader2, Plus } from 'lucide-react'
+import { X, Loader2, Plus, Star } from 'lucide-react'
 
 interface MultiImageUploadProps {
     images: string[]
@@ -88,13 +88,21 @@ export default function MultiImageUpload({
         onChange(images.filter((_, i) => i !== index))
     }
 
+    const setDefaultImage = (index: number) => {
+        if (index === 0) return
+        const reordered = [...displayImages]
+        const [picked] = reordered.splice(index, 1)
+        reordered.unshift(picked)
+        onChange(reordered)
+    }
+
     // Filter out empty placeholder strings for display
     const displayImages = images.filter(img => img && img.trim() !== '')
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <p style={{ fontSize: '0.8125rem', color: '#64748b', margin: 0 }}>
-                <strong>Note:</strong> The 1st image will be shown as the main card image and cover photo.
+                <strong>Note:</strong> The image marked with ★ is the cover photo. Click ☆ on any image to set it as default. If none selected, the 1st image is used.
             </p>
             <input
                 ref={inputRef}
@@ -119,7 +127,7 @@ export default function MultiImageUpload({
                                 position: 'relative',
                                 borderRadius: '10px',
                                 overflow: 'hidden',
-                                border: '1px solid #e2e8f0',
+                                border: index === 0 ? '2px solid #f59e0b' : '1px solid #e2e8f0',
                                 aspectRatio: '1',
                             }}
                         >
@@ -133,12 +141,12 @@ export default function MultiImageUpload({
                                     display: 'block',
                                 }}
                             />
-                            {/* Number Badge */}
+                            {/* Cover / number badge */}
                             <div style={{
                                 position: 'absolute',
                                 top: '8px',
                                 left: '8px',
-                                background: 'rgba(24, 60, 56, 0.9)',
+                                background: index === 0 ? 'rgba(245, 158, 11, 0.95)' : 'rgba(24, 60, 56, 0.9)',
                                 color: 'white',
                                 fontSize: '0.75rem',
                                 fontWeight: 'bold',
@@ -147,8 +155,35 @@ export default function MultiImageUpload({
                                 zIndex: 1,
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                             }}>
-                                {index + 1}
+                                {index === 0 ? '★ Cover' : index + 1}
                             </div>
+                            {/* Set as default star button (only on non-cover images) */}
+                            {index !== 0 && (
+                                <button
+                                    type="button"
+                                    title="Set as cover image"
+                                    onClick={() => setDefaultImage(index)}
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: '4px',
+                                        left: '4px',
+                                        width: '26px',
+                                        height: '26px',
+                                        borderRadius: '50%',
+                                        background: 'rgba(245, 158, 11, 0.85)',
+                                        color: 'white',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        zIndex: 2,
+                                    }}
+                                >
+                                    <Star size={13} />
+                                </button>
+                            )}
+                            {/* Remove button */}
                             <button
                                 type="button"
                                 onClick={() => removeImage(index)}
