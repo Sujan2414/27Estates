@@ -1,7 +1,7 @@
 import { AdPlatformConnector } from './base'
 import { NormalizedLead, LeadSource } from '../types'
 
-// Generic connector for 99acres, MagicBricks, Housing.com, JustDial
+// Generic connector for MagicBricks, Housing.com, JustDial
 // These platforms typically send leads via email or simple webhook/API
 // This connector handles a flat JSON payload format
 function createGenericConnector(platform: LeadSource, displayName: string): AdPlatformConnector {
@@ -10,11 +10,16 @@ function createGenericConnector(platform: LeadSource, displayName: string): AdPl
 
         parseWebhook(payload: Record<string, unknown>): NormalizedLead | null {
             try {
-                // Flexible field matching for different platforms
+                // Case-insensitive field matching for different platforms
                 const findField = (...keys: string[]): string | undefined => {
+                    const payloadKeys = Object.keys(payload)
                     for (const key of keys) {
-                        const value = payload[key] || payload[key.toLowerCase()] || payload[key.toUpperCase()]
-                        if (value && typeof value === 'string') return value
+                        const lowerKey = key.toLowerCase()
+                        const matchedKey = payloadKeys.find(pk => pk.toLowerCase() === lowerKey)
+                        if (matchedKey) {
+                            const value = payload[matchedKey]
+                            if (value && typeof value === 'string') return value
+                        }
                     }
                     return undefined
                 }
@@ -28,14 +33,14 @@ function createGenericConnector(platform: LeadSource, displayName: string): AdPl
                     email: findField('email', 'email_id', 'emailId', 'customer_email', 'buyer_email'),
                     phone: findField('phone', 'mobile', 'phone_number', 'phoneNumber', 'contact_number', 'mobile_number'),
                     source: platform,
-                    source_campaign: findField('campaign', 'campaign_name', 'listing_type'),
+                    source_campaign: findField('campaign', 'campaign_name', 'listing_type', 'project'),
                     source_ad_id: findField('listing_id', 'property_id', 'ad_id'),
                     source_raw_data: payload,
                     preferred_location: findField('location', 'city', 'area', 'locality'),
-                    property_type: findField('property_type', 'bhk', 'configuration', 'unit_type'),
+                    property_type: findField('property_type', 'bhk', 'configuration', 'unit_type', 'propertyType', 'bedroom'),
                     budget_min: payload.budget_min ? Number(payload.budget_min) : undefined,
                     budget_max: payload.budget_max ? Number(payload.budget_max) : undefined,
-                    notes: findField('message', 'comments', 'requirement', 'description', 'query'),
+                    notes: findField('message', 'comments', 'requirement', 'description', 'query', 'remarks'),
                 }
             } catch {
                 console.error(`Failed to parse ${displayName} webhook`)
@@ -55,7 +60,7 @@ function createGenericConnector(platform: LeadSource, displayName: string): AdPl
     }
 }
 
-export const ninetyNineAcresConnector = createGenericConnector('99acres', '99acres')
 export const magicBricksConnector = createGenericConnector('magicbricks', 'MagicBricks')
 export const housingConnector = createGenericConnector('housing', 'Housing.com')
 export const justDialConnector = createGenericConnector('justdial', 'JustDial')
+
