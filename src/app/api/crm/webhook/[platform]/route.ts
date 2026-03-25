@@ -64,7 +64,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Create the lead in the CRM
-    const lead = await createLead(normalizedLead)
+    let lead;
+    try {
+        lead = await createLead(normalizedLead)
+    } catch (err: any) {
+        await processWebhook(platform, 'db_error', payload, null, 'failed', err.message || 'Database error')
+        return NextResponse.json({ error: 'Database error creating lead' }, { status: 500 })
+    }
 
     if (!lead) {
         await processWebhook(platform, 'duplicate', payload, null, 'duplicate', 'Duplicate lead')

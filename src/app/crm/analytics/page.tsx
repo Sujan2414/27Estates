@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import styles from '../crm.module.css'
 
@@ -25,13 +25,13 @@ const tooltipStyle = {
 }
 
 export default function AnalyticsPage() {
-    const [leads, setLeads] = useState<Array<{ source: string; status: string; priority: string; created_at: string }>>([])
+    const [leads, setLeads] = useState<Array<{ source: string; status: string; priority: string; created_at: string; converted_at?: string | null; score?: number | null }>>([])
     const [loading, setLoading] = useState(true)
     const supabase = createClient()
 
     useEffect(() => {
         async function fetch() {
-            const { data } = await supabase.from('leads').select('source, status, priority, created_at')
+            const { data } = await supabase.from('leads').select('source, status, priority, created_at, converted_at, score')
             if (data) setLeads(data)
             setLoading(false)
         }
@@ -82,6 +82,37 @@ export default function AnalyticsPage() {
         name, key: data.key, total: data.total, converted: data.converted,
         rate: data.total > 0 ? parseFloat(((data.converted / data.total) * 100).toFixed(1)) : 0,
     })).sort((a, b) => b.total - a.total)
+
+    // Source Quality Matrix
+    const sourceQuality = Object.entries(
+        leads.reduce((acc: Record<string, { total: number; converted: number; hot: number; scores: number[]; daysToClose: number[] }>, l) => {
+            const key = l.source || 'unknown'
+            if (!acc[key]) acc[key] = { total: 0, converted: 0, hot: 0, scores: [], daysToClose: [] }
+            acc[key].total++
+            if (l.status === 'converted') {
+                acc[key].converted++
+                if (l.converted_at && l.created_at) {
+                    const days = Math.round((new Date(l.converted_at).getTime() - new Date(l.created_at).getTime()) / 86400000)
+                    if (days >= 0) acc[key].daysToClose.push(days)
+                }
+            }
+            if (l.priority === 'hot') acc[key].hot++
+            if (l.score) acc[key].scores.push(l.score)
+            return acc
+        }, {})
+    ).map(([key, d]) => {
+        const convRate = d.total > 0 ? (d.converted / d.total) * 100 : 0
+        const avgScore = d.scores.length > 0 ? Math.round(d.scores.reduce((s, v) => s + v, 0) / d.scores.length) : 0
+        const avgDays = d.daysToClose.length > 0 ? Math.round(d.daysToClose.reduce((s, v) => s + v, 0) / d.daysToClose.length) : null
+        const hotRate = d.total > 0 ? Math.round((d.hot / d.total) * 100) : 0
+        // Quality score: weighted combination (conv 40% + score 30% + hot 30%)
+        const qualityScore = Math.round((convRate * 0.4) + (avgScore * 0.3) + (hotRate * 3 * 0.3))
+        return {
+            key, label: leadSourceConfig[key]?.label || key, color: leadSourceConfig[key]?.color || '#6b7280',
+            total: d.total, converted: d.converted, convRate: parseFloat(convRate.toFixed(1)),
+            avgScore, avgDays, hotRate, hot: d.hot, qualityScore,
+        }
+    }).filter(s => s.total >= 2).sort((a, b) => b.qualityScore - a.qualityScore)
 
     if (loading) return <div className={styles.pageContent}><div className={styles.emptyState}>Loading analytics...</div></div>
 
@@ -222,6 +253,66 @@ export default function AnalyticsPage() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Source Quality Matrix */}
+            {sourceQuality.length > 0 && (
+                <div className={styles.card} style={{ marginTop: '1.5rem' }}>
+                    <div className={styles.cardHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Star size={15} style={{ color: '#f59e0b' }} />
+                            <div className={styles.cardTitle}>Source Quality Matrix</div>
+                        </div>
+                        <div className={styles.cardSubtitle}>Quality score = conv rate + avg lead score + hot rate</div>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--crm-border)' }}>
+                                    {['Rank', 'Source', 'Leads', 'Conv%', 'Avg Score', '🔥 Hot%', 'Avg Days to Close', 'Quality Score'].map(h => (
+                                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.68rem', color: 'var(--crm-text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sourceQuality.map((s, i) => (
+                                    <tr key={s.key} style={{ borderBottom: i < sourceQuality.length - 1 ? '1px solid var(--crm-border)' : 'none' }}
+                                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--crm-accent-bg)')}
+                                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                    >
+                                        <td style={{ padding: '10px 12px', fontSize: '0.875rem', fontWeight: 700, color: 'var(--crm-text-dim)' }}>#{i + 1}</td>
+                                        <td style={{ padding: '10px 12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: s.color, flexShrink: 0 }} />
+                                                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--crm-text-primary)' }}>{s.label}</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '10px 12px', fontSize: '0.875rem', color: 'var(--crm-text-secondary)' }}>{s.total}</td>
+                                        <td style={{ padding: '10px 12px', fontSize: '0.875rem', fontWeight: 700, color: s.convRate >= 15 ? '#22c55e' : s.convRate >= 5 ? '#f59e0b' : '#6b7280' }}>{s.convRate}%</td>
+                                        <td style={{ padding: '10px 12px', fontSize: '0.875rem', fontWeight: 600, color: s.avgScore >= 60 ? '#22c55e' : s.avgScore >= 40 ? '#f59e0b' : 'var(--crm-text-dim)' }}>{s.avgScore || '—'}</td>
+                                        <td style={{ padding: '10px 12px', fontSize: '0.875rem', color: s.hotRate >= 30 ? '#ef4444' : 'var(--crm-text-secondary)' }}>{s.hotRate}%</td>
+                                        <td style={{ padding: '10px 12px', fontSize: '0.875rem', color: 'var(--crm-text-secondary)' }}>
+                                            {s.avgDays != null ? `${s.avgDays}d` : '—'}
+                                        </td>
+                                        <td style={{ padding: '10px 12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ flex: 1, height: '6px', borderRadius: '3px', backgroundColor: 'var(--crm-border)', overflow: 'hidden', minWidth: '60px' }}>
+                                                    <div style={{
+                                                        width: `${Math.min(s.qualityScore, 100)}%`, height: '100%', borderRadius: '3px',
+                                                        backgroundColor: s.qualityScore >= 70 ? '#22c55e' : s.qualityScore >= 40 ? '#f59e0b' : '#ef4444',
+                                                    }} />
+                                                </div>
+                                                <span style={{ fontSize: '0.875rem', fontWeight: 700, color: s.qualityScore >= 70 ? '#22c55e' : s.qualityScore >= 40 ? '#f59e0b' : '#ef4444' }}>
+                                                    {s.qualityScore}
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

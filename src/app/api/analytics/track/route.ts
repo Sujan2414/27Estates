@@ -10,15 +10,30 @@ export async function POST(req: Request) {
             return NextResponse.json({ ok: false }, { status: 400 })
         }
 
-        // Try to get authenticated user from session cookie
         const userClient = await createClient()
         const { data: { user } } = await userClient.auth.getUser()
 
-        // Use admin client to bypass RLS for insert
         const admin = await createAdminClient()
+
+        // Fetch full_name from profiles if user is authenticated
+        let user_name: string | null = null
+        if (user?.id) {
+            const { data: profile } = await admin
+                .from('profiles')
+                .select('full_name')
+                .eq('id', user.id)
+                .single()
+            user_name = profile?.full_name ||
+                user.user_metadata?.full_name ||
+                user.user_metadata?.first_name ||
+                user.email?.split('@')[0] ||
+                null
+        }
+
         await admin.from('user_page_views').insert({
             user_id: user?.id || null,
             user_email: user?.email || null,
+            user_name,
             session_id,
             page_path,
             page_title: page_title || null,

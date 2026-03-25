@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import {
     UserPlus, Flame, Mail, Target,
     Zap, Plug, AlertTriangle, UserX, Clock, CalendarCheck, ChevronRight,
+    PhoneCall, TrendingUp, RefreshCw, Eye,
 } from 'lucide-react'
 import styles from './crm.module.css'
 import { useTheme } from './crm-context'
@@ -63,6 +64,14 @@ interface RecentLead {
     source: string; status: string; priority: string; created_at: string
 }
 
+interface SmartAlerts {
+    readyToCall: Array<{ lead_id: string; lead_name: string; priority: string; score: number; listing_count: number; last_seen: string }>
+    returnVisitorsWithoutLead: Array<{ user_id: string; full_name: string; email: string; return_visits: number; top_listing_path: string }>
+    reEngageLeads: Array<{ id: string; name: string; priority: string; status: string; score: number; silent_days: number | null }>
+    activitySpikes: Array<{ path: string; title: string; today: number; dailyAvg: number; multiplier: number; href: string }>
+    freshUncontacted: Array<{ id: string; name: string; source: string; priority: string; created_at: string }>
+}
+
 const USD_TO_INR = 83
 
 const formatINR = (usdCost: string | number) => {
@@ -91,6 +100,7 @@ export default function CRMDashboard() {
     const [stats, setStats] = useState<CRMStats | null>(null)
     const [apiUsage, setApiUsage] = useState<APIUsage | null>(null)
     const [recentLeads, setRecentLeads] = useState<RecentLead[]>([])
+    const [smartAlerts, setSmartAlerts] = useState<SmartAlerts | null>(null)
     const [loading, setLoading] = useState(true)
     const { theme } = useTheme()
 
@@ -102,14 +112,16 @@ export default function CRMDashboard() {
 
     useEffect(() => {
         async function fetchAll() {
-            const [statsRes, leadsRes, usageRes] = await Promise.all([
+            const [statsRes, leadsRes, usageRes, alertsRes] = await Promise.all([
                 fetch('/api/crm/stats').catch(() => null),
                 fetch('/api/crm/leads?limit=8').catch(() => null),
                 fetch('/api/crm/api-usage').catch(() => null),
+                fetch('/api/crm/smart-alerts').catch(() => null),
             ])
             if (statsRes?.ok) setStats(await statsRes.json())
             if (leadsRes?.ok) { const d = await leadsRes.json(); setRecentLeads(d.leads || []) }
             if (usageRes?.ok) setApiUsage(await usageRes.json())
+            if (alertsRes?.ok) setSmartAlerts(await alertsRes.json())
             setLoading(false)
         }
         fetchAll()
@@ -328,6 +340,145 @@ export default function CRMDashboard() {
                                                 <div className={styles.attentionMeta}>
                                                     {new Date(visit.visit_date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                                                     {visit.visit_time && ` at ${visit.visit_time}`}
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Smart Alerts */}
+            {!loading && smartAlerts && (
+                smartAlerts.readyToCall.length > 0 ||
+                smartAlerts.returnVisitorsWithoutLead.length > 0 ||
+                smartAlerts.reEngageLeads.length > 0 ||
+                smartAlerts.activitySpikes.length > 0 ||
+                smartAlerts.freshUncontacted.length > 0
+            ) && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <div className={styles.sectionHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Zap size={16} style={{ color: '#6366f1' }} />
+                            <span className={styles.sectionTitle}>Smart Alerts</span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--crm-text-dim)', fontWeight: 400 }}>live signals from website activity</span>
+                        </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+
+                        {/* Ready to Call */}
+                        {smartAlerts.readyToCall.length > 0 && (
+                            <div className={styles.attentionCard} style={{ borderLeftColor: '#22c55e' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <PhoneCall size={14} style={{ color: '#22c55e' }} />
+                                    <span className={styles.cardTitle}>Ready to Call — On Site Now</span>
+                                </div>
+                                {smartAlerts.readyToCall.map(l => (
+                                    <Link key={l.lead_id} href={`/crm/leads/${l.lead_id}`} style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: l.priority === 'hot' ? '#ef4444' : '#f59e0b' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{l.lead_name}</div>
+                                                <div className={styles.attentionMeta}>
+                                                    Score {l.score} · viewed {l.listing_count} listing{l.listing_count !== 1 ? 's' : ''} today
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Fresh uncontacted */}
+                        {smartAlerts.freshUncontacted.length > 0 && (
+                            <div className={styles.attentionCard} style={{ borderLeftColor: '#3b82f6' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <UserPlus size={14} style={{ color: '#3b82f6' }} />
+                                    <span className={styles.cardTitle}>Fresh Leads — Not Contacted</span>
+                                </div>
+                                {smartAlerts.freshUncontacted.map(l => (
+                                    <Link key={l.id} href={`/crm/leads/${l.id}`} style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: '#3b82f6' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{l.name}</div>
+                                                <div className={styles.attentionMeta}>{l.source} · {formatRelative(l.created_at)}</div>
+                                            </div>
+                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Re-engage */}
+                        {smartAlerts.reEngageLeads.length > 0 && (
+                            <div className={styles.attentionCard} style={{ borderLeftColor: '#f59e0b' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <RefreshCw size={14} style={{ color: '#f59e0b' }} />
+                                    <span className={styles.cardTitle}>Re-Engage — Gone Silent</span>
+                                </div>
+                                {smartAlerts.reEngageLeads.map(l => (
+                                    <Link key={l.id} href={`/crm/leads/${l.id}`} style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: l.priority === 'hot' ? '#ef4444' : '#f59e0b' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{l.name}</div>
+                                                <div className={styles.attentionMeta}>
+                                                    {l.priority} · {l.silent_days != null ? `${l.silent_days}d silent` : 'Never contacted'}
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Activity Spikes */}
+                        {smartAlerts.activitySpikes.length > 0 && (
+                            <div className={styles.attentionCard} style={{ borderLeftColor: '#8b5cf6' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <TrendingUp size={14} style={{ color: '#8b5cf6' }} />
+                                    <span className={styles.cardTitle}>Listing Spikes Today</span>
+                                </div>
+                                {smartAlerts.activitySpikes.map((s, i) => (
+                                    <Link key={i} href={s.href} target="_blank" style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: '#8b5cf6' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{s.title}</div>
+                                                <div className={styles.attentionMeta}>
+                                                    {s.today} views today ({s.multiplier}× avg)
+                                                </div>
+                                            </div>
+                                            <Eye size={12} style={{ color: 'var(--crm-text-dim)' }} />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Return visitors without lead */}
+                        {smartAlerts.returnVisitorsWithoutLead.length > 0 && (
+                            <div className={styles.attentionCard} style={{ borderLeftColor: '#10b981' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <Eye size={14} style={{ color: '#10b981' }} />
+                                    <span className={styles.cardTitle}>Return Visitors — No Lead Yet</span>
+                                </div>
+                                {smartAlerts.returnVisitorsWithoutLead.map(u => (
+                                    <Link key={u.user_id} href={`/crm/warm-audience`} style={{ textDecoration: 'none' }}>
+                                        <div className={styles.attentionItem}>
+                                            <div className={styles.attentionDot} style={{ backgroundColor: '#10b981' }} />
+                                            <div className={styles.attentionText}>
+                                                <div className={styles.attentionTitle}>{u.full_name || u.email}</div>
+                                                <div className={styles.attentionMeta}>
+                                                    Visited same listing {u.return_visits}× — no enquiry yet
                                                 </div>
                                             </div>
                                             <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />

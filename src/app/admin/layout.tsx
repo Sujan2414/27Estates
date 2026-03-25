@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import Image from 'next/image'
 import {
     LayoutDashboard,
     Building2,
@@ -123,8 +122,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {/* Sidebar */}
             <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
                 <div className={styles.sidebarHeader}>
-                    <div className={styles.logoWrapper}>
-                        <Image src="/logo without bg (1).png" alt="27 Estates" fill style={{ objectFit: 'contain', objectPosition: 'left' }} className={styles.sidebarLogo} priority />
+                    <div style={{ backgroundColor: '#183C38', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 46, height: 46, flexShrink: 0 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 38, height: 38, objectFit: 'contain', objectPosition: 'top' }} />
                     </div>
                     <span className={styles.logoText}>Admin</span>
                 </div>

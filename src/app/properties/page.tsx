@@ -420,6 +420,7 @@ const Dashboard = () => {
             setAllCommercial(commercialData || []);
             setAllWarehouse(warehouseData || []);
             setBookmarkIds(bookmarks);
+
         } catch (error) {
             console.error("Error fetching data:", (error as Error).message || error, error);
         } finally {
@@ -488,7 +489,9 @@ const Dashboard = () => {
             <div className={styles.mobileSearchHeader}>
                 <div className={styles.mobileTopRow}>
                     <a href="/" className={styles.mobileBackLogo}>
-                        <img src="/sidebar-logo.png" alt="27 Estates" className={styles.mobileBackLogoImg} />
+                        <div style={{ backgroundColor: '#183C38', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 42, height: 42 }}>
+                            <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 36, height: 36, objectFit: 'contain', objectPosition: 'top' }} />
+                        </div>
                     </a>
                     <div className={styles.searchPillWrap}>
                         <SearchIcon size={16} className={styles.searchPillIcon} />
@@ -808,6 +811,7 @@ const Dashboard = () => {
                     <SearchIcon size={18} />
                 </button>
             </div>
+
 
             {/* Section 1: PROJECTS */}
             {showProjects && (

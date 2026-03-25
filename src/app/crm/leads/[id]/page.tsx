@@ -6,10 +6,12 @@ import {
     ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, Clock,
     MessageSquare, PhoneCall, Send, StickyNote, CheckCircle2, Circle,
     Plus, Eye, Tag, IndianRupee, Star, TrendingUp, CalendarCheck,
-    Home, Edit3, Save, X, Sliders, BedDouble, Ruler, Banknote
+    Home, Edit3, Save, X, Sliders, Ruler, Banknote,
+    Globe, Bookmark, Activity
 } from 'lucide-react'
 import styles from '../../crm.module.css'
 import type { Lead, LeadActivity, LeadTask } from '@/lib/crm/types'
+import { proxyUrl } from '@/lib/proxy-url'
 
 const sourceLabels: Record<string, string> = {
     website: 'Website', meta_ads: 'Meta Ads', google_ads: 'Google Ads', '99acres': '99acres',
@@ -81,6 +83,10 @@ export default function LeadDetailPage() {
     const [tagInput, setTagInput] = useState('')
     const [saving, setSaving] = useState(false)
 
+    // Website footprint
+    const [footprint, setFootprint] = useState<any>(null)
+    const [footprintLoading, setFootprintLoading] = useState(false)
+
     // Property preferences
     const [prefEditing, setPrefEditing] = useState(false)
     const [prefData, setPrefData] = useState({
@@ -119,6 +125,14 @@ export default function LeadDetailPage() {
         setLoading(false)
     }
     useEffect(() => { fetchLead() }, [id])
+
+    useEffect(() => {
+        if (!lead?.email) return
+        setFootprintLoading(true)
+        fetch(`/api/crm/lead-footprint?email=${encodeURIComponent(lead.email)}&days=30`)
+            .then(r => r.json()).then(d => { setFootprint(d); setFootprintLoading(false) })
+            .catch(() => setFootprintLoading(false))
+    }, [lead?.email])
 
     const patch = async (body: Record<string, unknown>) => {
         await fetch(`/api/crm/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -192,6 +206,8 @@ export default function LeadDetailPage() {
         fetchLead()
     }
 
+    const fmtSecs = (s: number) => { if (!s || s < 1) return '0s'; if (s < 60) return `${s}s`; const m = Math.floor(s / 60); const sec = s % 60; if (m < 60) return sec > 0 ? `${m}m ${sec}s` : `${m}m`; return `${Math.floor(m / 60)}h ${m % 60}m` }
+    const fmtRelSec = (d: string) => { const ms = Date.now() - new Date(d).getTime(); const dd = Math.floor(ms / 86400000); if (dd === 0) return 'Today'; if (dd === 1) return 'Yesterday'; return `${dd}d ago` }
     const formatDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
     const formatDateTime = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     const formatRelative = (d: string) => {
@@ -270,6 +286,95 @@ export default function LeadDetailPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1.5rem' }}>
                 {/* Left Column */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+                    {/* Pre-Call Intelligence Brief */}
+                    {lead && (
+                        <div className={styles.card} style={{ background: 'linear-gradient(135deg, var(--crm-surface) 0%, var(--crm-accent-bg) 100%)', border: '1px solid var(--crm-accent)30' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.75rem' }}>
+                                <PhoneCall size={14} style={{ color: 'var(--crm-accent)' }} />
+                                <span className={styles.cardTitle}>Pre-Call Brief</span>
+                                <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--crm-text-dim)', fontStyle: 'italic' }}>before you dial</span>
+                            </div>
+
+                            {/* Talking points */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {/* Priority + age */}
+                                <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                    <span style={{ color: 'var(--crm-accent)', fontWeight: 700, flexShrink: 0 }}>📌</span>
+                                    <span style={{ color: 'var(--crm-text-secondary)' }}>
+                                        <strong>{lead.priority?.toUpperCase()}</strong> lead · {Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 86400000)}d old · from <strong>{sourceLabels[lead.source] || lead.source}</strong>
+                                    </span>
+                                </div>
+
+                                {/* Property intent */}
+                                {(lead.property_type || lead.preferred_location || lead.budget_min || lead.budget_max) && (
+                                    <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#3b82f6', flexShrink: 0 }}>🏠</span>
+                                        <span style={{ color: 'var(--crm-text-secondary)' }}>
+                                            Looking for{' '}
+                                            {lead.property_type ? <strong>{lead.property_type}</strong> : 'a property'}
+                                            {lead.preferred_location && <> in <strong>{lead.preferred_location}</strong></>}
+                                            {(lead.budget_min || lead.budget_max) && <> · Budget: <strong>{formatINR(lead.budget_min)} – {formatINR(lead.budget_max)}</strong></>}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Website signals */}
+                                {footprint?.linked && (
+                                    <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#8b5cf6', flexShrink: 0 }}>🌐</span>
+                                        <span style={{ color: 'var(--crm-text-secondary)' }}>
+                                            On site: <strong>{footprint.totalViews} views</strong>, <strong>{footprint.totalBookmarks} saved</strong>
+                                            {footprint.lastSeen && <> · Last seen <strong>{fmtRelSec(footprint.lastSeen)}</strong></>}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Most viewed listing */}
+                                {footprint?.viewedListings?.[0] && (
+                                    <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#f59e0b', flexShrink: 0 }}>👁️</span>
+                                        <span style={{ color: 'var(--crm-text-secondary)' }}>
+                                            Most viewed: <a href={footprint.viewedListings[0].href} target="_blank" rel="noreferrer" style={{ color: 'var(--crm-accent)', fontWeight: 600 }}>{footprint.viewedListings[0].title}</a>
+                                            {footprint.viewedListings[0].bookmarked ? ' 🔖' : ''}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Last activity */}
+                                {activities.length > 0 && (
+                                    <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#10b981', flexShrink: 0 }}>🕐</span>
+                                        <span style={{ color: 'var(--crm-text-secondary)' }}>
+                                            Last activity: <strong>{activities[0].title}</strong>
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Overdue follow-up */}
+                                {lead.next_follow_up_at && new Date(lead.next_follow_up_at) < new Date() && (
+                                    <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start', backgroundColor: '#fef3c7', padding: '6px 8px', borderRadius: '6px', marginTop: '2px' }}>
+                                        <span style={{ color: '#d97706', flexShrink: 0 }}>⏰</span>
+                                        <span style={{ color: '#92400e', fontWeight: 600 }}>
+                                            Follow-up overdue since {formatDateTime(lead.next_follow_up_at)}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Tags */}
+                                {lead.tags && lead.tags.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                                        {lead.tags.map((tag: string) => (
+                                            <span key={tag} style={{ fontSize: '0.65rem', padding: '2px 7px', borderRadius: '999px', backgroundColor: 'var(--crm-border)', color: 'var(--crm-text-dim)', fontWeight: 500 }}>
+                                                #{tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Contact Info */}
                     <div className={styles.card}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
@@ -531,6 +636,123 @@ export default function LeadDetailPage() {
                             {lead.last_contacted_at && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Last Contacted:</strong> {formatDate(lead.last_contacted_at)}</div>}
                         </div>
                     </div>
+
+                    {/* Website Activity (Digital Footprint) */}
+                    {lead.email && (
+                        <div className={styles.card} style={{ borderColor: footprint?.linked ? '#BFA27040' : undefined }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.75rem' }}>
+                                <Globe size={14} style={{ color: '#BFA270' }} />
+                                <span className={styles.cardTitle}>Website Activity</span>
+                                {footprint?.linked && (
+                                    <span style={{ marginLeft: 'auto', fontSize: '0.65rem', padding: '2px 7px', borderRadius: 999, background: '#22c55e18', color: '#22c55e', fontWeight: 600, border: '1px solid #22c55e30' }}>● Linked</span>
+                                )}
+                            </div>
+
+                            {footprintLoading ? (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--crm-text-faint)', textAlign: 'center', padding: '1rem 0' }}>Checking website activity…</div>
+                            ) : !footprint?.linked ? (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--crm-text-faint)', fontStyle: 'italic' }}>
+                                    No website account found for <strong>{lead.email}</strong>. They may have browsed as a guest.
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {/* Summary stats */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                                        {[
+                                            { icon: Eye, label: 'Page Views', value: footprint.totalViews, color: '#3b82f6' },
+                                            { icon: Activity, label: 'Sessions', value: footprint.uniqueSessions, color: '#f59e0b' },
+                                            { icon: Clock, label: 'Time Spent', value: fmtSecs(footprint.totalSecs), color: '#22c55e', text: true },
+                                            { icon: Bookmark, label: 'Bookmarks', value: footprint.totalBookmarks, color: '#8b5cf6' },
+                                        ].map(({ icon: Icon, label, value, color, text }) => (
+                                            <div key={label} style={{ padding: '0.5rem', borderRadius: '0.5rem', border: `1px solid ${color}20`, background: `${color}08`, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <Icon size={12} style={{ color, flexShrink: 0 }} />
+                                                <div>
+                                                    <div style={{ fontSize: text ? '0.8rem' : '1rem', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
+                                                    <div style={{ fontSize: '0.6rem', color: 'var(--crm-text-faint)', marginTop: 1 }}>{label}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {footprint.lastSeen && (
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <Clock size={11} /> Last seen: <strong style={{ color: 'var(--crm-text-primary)' }}>{fmtRelSec(footprint.lastSeen)}</strong>
+                                        </div>
+                                    )}
+
+                                    {/* Viewed / Bookmarked listings */}
+                                    {footprint.viewedListings?.length > 0 && (
+                                        <div>
+                                            <div style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--crm-text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>Viewed Listings</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                                {footprint.viewedListings.slice(0, 5).map((item: any) => (
+                                                    <a key={item.id} href={item.href} target="_blank" rel="noreferrer"
+                                                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.5rem', borderRadius: '0.5rem', border: '1px solid var(--crm-border)', background: 'var(--crm-elevated)', textDecoration: 'none', transition: 'border-color 0.15s' }}
+                                                        onMouseEnter={e => (e.currentTarget.style.borderColor = '#BFA270')}
+                                                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--crm-border)')}
+                                                    >
+                                                        {item.image
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            ? <img src={proxyUrl(item.image)} alt="" style={{ width: 36, height: 36, borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />
+                                                            : <div style={{ width: 36, height: 36, borderRadius: 5, background: 'var(--crm-border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                                                                {item.type === 'property' ? '🏠' : '🏗️'}
+                                                            </div>
+                                                        }
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                                                            <div style={{ fontSize: '0.65rem', color: 'var(--crm-text-faint)' }}>{item.location}</div>
+                                                        </div>
+                                                        <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                                                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#3b82f6' }}>{item.views}×</div>
+                                                            {item.bookmarked && <div style={{ fontSize: '0.6rem', color: '#8b5cf6' }}>🔖 saved</div>}
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Saved but not viewed in listings above */}
+                                    {footprint.savedListings?.filter((s: any) => !footprint.viewedListings?.find((v: any) => v.id === s.id)).length > 0 && (
+                                        <div>
+                                            <div style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--crm-text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>Bookmarked</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                                {footprint.savedListings.filter((s: any) => !footprint.viewedListings?.find((v: any) => v.id === s.id)).slice(0, 3).map((item: any) => (
+                                                    <a key={item.id} href={item.href} target="_blank" rel="noreferrer"
+                                                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.5rem', borderRadius: '0.5rem', border: '1px solid #8b5cf620', background: '#8b5cf608', textDecoration: 'none' }}>
+                                                        {item.image
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            ? <img src={proxyUrl(item.image)} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
+                                                            : <div style={{ width: 32, height: 32, borderRadius: 4, background: 'var(--crm-border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem' }}>🔖</div>
+                                                        }
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                                                            <div style={{ fontSize: '0.65rem', color: 'var(--crm-text-faint)' }}>Saved {fmtRelSec(item.savedAt)}</div>
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Top pages (non-listing) */}
+                                    {footprint.topPages?.filter((p: any) => !p.path.match(/\/(properties|projects)\/[a-f0-9-]{36}/)).length > 0 && (
+                                        <div>
+                                            <div style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--crm-text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.375rem' }}>Top Pages</div>
+                                            {footprint.topPages.filter((p: any) => !p.path.match(/\/(properties|projects)\/[a-f0-9-]{36}/)).slice(0, 4).map((p: any) => (
+                                                <div key={p.path} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.25rem 0', borderBottom: '1px solid var(--crm-border-subtle)' }}>
+                                                    <span style={{ color: 'var(--crm-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>
+                                                        {p.title !== p.path ? p.title : p.path}
+                                                    </span>
+                                                    <span style={{ color: 'var(--crm-text-faint)', flexShrink: 0 }}>{p.visits}× · {fmtSecs(p.totalSecs)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Column — Timeline + Tasks + Visits */}

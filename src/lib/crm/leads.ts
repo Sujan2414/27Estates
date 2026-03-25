@@ -2,6 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 import { NormalizedLead, Lead } from './types'
 import { sendEmailByCategory } from './email'
 
+// UUID v4 format check
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
+
 // Server-side Supabase client for CRM operations
 function getSupabase() {
     return createClient(
@@ -25,6 +29,11 @@ export function calculateScore(data: {
     status?: string
     activity_count?: number
     last_contacted_at?: string | null
+    // Behavioural signals from website (optional — fetched separately)
+    web_page_views?: number
+    web_bookmarks?: number
+    web_return_visits?: number   // times revisited same listing 2+
+    web_last_seen_days?: number  // days since last seen on site
 }): { score: number; breakdown: Record<string, number> } {
     const breakdown: Record<string, number> = {}
 
@@ -64,10 +73,37 @@ export function calculateScore(data: {
         breakdown.recency = 0
     }
 
+    // ── Behavioural boost (0–20) ────────────────────────────────
+    let webScore = 0
+    const views = data.web_page_views || 0
+    const bkm   = data.web_bookmarks  || 0
+    const ret   = data.web_return_visits || 0
+    const lastSeenDays = data.web_last_seen_days
+
+    if (views >= 10)      webScore += 5
+    else if (views >= 5)  webScore += 3
+    else if (views >= 1)  webScore += 1
+
+    if (bkm >= 3)         webScore += 7
+    else if (bkm >= 1)    webScore += 4
+
+    if (ret >= 3)         webScore += 5  // returned to same listing multiple times = very hot
+    else if (ret >= 1)    webScore += 2
+
+    if (lastSeenDays !== undefined) {
+        if (lastSeenDays === 0)       webScore += 3  // on site today
+        else if (lastSeenDays <= 2)   webScore += 2
+        else if (lastSeenDays <= 7)   webScore += 1
+    }
+
+    breakdown.web_behaviour = Math.min(webScore, 20)
+    // ────────────────────────────────────────────────────────────
+
     const score = Math.min(
         100,
         breakdown.source + breakdown.contact + breakdown.budget +
-        breakdown.profile + breakdown.engagement + breakdown.recency
+        breakdown.profile + breakdown.engagement + breakdown.recency +
+        breakdown.web_behaviour
     )
 
     return { score, breakdown }
@@ -106,15 +142,22 @@ export async function createLead(data: NormalizedLead): Promise<Lead | null> {
     const supabase = getSupabase()
 
     // Check for duplicate by phone or email (within last 24 hours from same source)
-    if (data.email || data.phone) {
-        const duplicateQuery = supabase
+    const isTestLead = data.name && data.name.toLowerCase().includes('test')
+
+    if (!isTestLead && (data.email || data.phone)) {
+        let duplicateQuery = supabase
             .from('leads')
             .select('id')
             .eq('source', data.source)
             .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 
-        if (data.email) duplicateQuery.eq('email', data.email)
-        else if (data.phone) duplicateQuery.eq('phone', data.phone)
+        if (data.email && data.phone) {
+            duplicateQuery = duplicateQuery.or(`email.eq.${data.email},phone.eq.${data.phone}`)
+        } else if (data.email) {
+            duplicateQuery = duplicateQuery.eq('email', data.email)
+        } else if (data.phone) {
+            duplicateQuery = duplicateQuery.eq('phone', data.phone)
+        }
 
         const { data: existing } = await duplicateQuery.limit(1)
         if (existing && existing.length > 0) {
@@ -133,6 +176,21 @@ export async function createLead(data: NormalizedLead): Promise<Lead | null> {
         notes: data.notes,
     })
 
+    // property_interest and project_interest are UUID FK columns in the DB.
+    // Webhook connectors may send project/property names as strings; store those
+    // in notes instead of the FK columns to avoid Postgres type errors.
+    const propertyId = isUUID(data.property_interest) ? data.property_interest : null
+    const projectId  = isUUID(data.project_interest)  ? data.project_interest  : null
+
+    // Append non-UUID project/property names to notes so they aren't lost
+    let notes = data.notes || ''
+    if (data.project_interest && !projectId) {
+        notes = notes ? `${notes} | Project: ${data.project_interest}` : `Project: ${data.project_interest}`
+    }
+    if (data.property_interest && !propertyId) {
+        notes = notes ? `${notes} | Property: ${data.property_interest}` : `Property: ${data.property_interest}`
+    }
+
     const { data: lead, error } = await supabase
         .from('leads')
         .insert({
@@ -144,13 +202,13 @@ export async function createLead(data: NormalizedLead): Promise<Lead | null> {
             source_ad_id: data.source_ad_id || null,
             source_form_id: data.source_form_id || null,
             source_raw_data: data.source_raw_data || null,
-            property_interest: data.property_interest || null,
-            project_interest: data.project_interest || null,
+            property_interest: propertyId,
+            project_interest: projectId,
             preferred_location: data.preferred_location || null,
             property_type: data.property_type || null,
             budget_min: data.budget_min || null,
             budget_max: data.budget_max || null,
-            notes: data.notes || null,
+            notes: notes || null,
             status: 'new',
             priority: scoreToPriority(score),
             score,
@@ -161,7 +219,7 @@ export async function createLead(data: NormalizedLead): Promise<Lead | null> {
 
     if (error) {
         console.error('Failed to create lead:', error)
-        return null
+        throw new Error(error.message || 'Database error while creating lead')
     }
 
     // Log creation activity
@@ -249,7 +307,7 @@ export async function processWebhook(
     })
 
     if (status === 'processed') {
-        await supabase.rpc('increment_connector_leads', { p_platform: platform }).catch(() => {})
+        try { await supabase.rpc('increment_connector_leads', { p_platform: platform }) } catch { }
     }
 }
 

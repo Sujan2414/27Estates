@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, BarChart2, Columns3, Phone, Mail, Search } from 'lucide-react'
+import { ArrowLeft, BarChart2, Columns3, Phone, Mail, Search, IndianRupee } from 'lucide-react'
 import styles from '../crm.module.css'
 
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
@@ -20,7 +20,22 @@ const Legend = dynamic(() => import('recharts').then(m => m.Legend), { ssr: fals
 interface Lead {
     id: string; name: string; email: string | null; phone: string | null
     source: string; status: string; priority: string; created_at: string
+    budget_min?: number | null; budget_max?: number | null
     projects?: { project_name: string } | null
+}
+
+// Weighted conversion probability per stage
+const STAGE_PROB: Record<string, number> = {
+    new: 0.05, contacted: 0.15, qualified: 0.35,
+    negotiation: 0.60, site_visit: 0.75, converted: 1.0, lost: 0,
+}
+
+const COMMISSION_RATE = 0.02  // 2%
+
+function fmtCr(val: number): string {
+    if (val >= 1e7) return `₹${(val / 1e7).toFixed(2)}Cr`
+    if (val >= 1e5) return `₹${(val / 1e5).toFixed(1)}L`
+    return `₹${val.toLocaleString('en-IN')}`
 }
 
 const STAGES = [
@@ -55,7 +70,7 @@ const tooltipStyle = {
 export default function PipelinePage() {
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
-    const [view, setView] = useState<'kanban' | 'analytics'>('kanban')
+    const [view, setView] = useState<'kanban' | 'analytics' | 'revenue'>('kanban')
     const [draggingId, setDraggingId] = useState<string | null>(null)
     const [dragOverCol, setDragOverCol] = useState<string | null>(null)
     const [updating, setUpdating] = useState<string | null>(null)
@@ -141,6 +156,28 @@ export default function PipelinePage() {
 
     const funnelData = STAGES.map(s => ({ name: s.label, count: columns[s.key]?.length || 0, color: s.color }))
 
+    // Revenue Intelligence
+    const leadsWithBudget = filteredLeads.filter(l => l.budget_min || l.budget_max)
+    const stageRevenue = STAGES.map(stage => {
+        const stageLeads = (columns[stage.key] || []).filter(l => l.budget_min || l.budget_max)
+        const totalBudget = stageLeads.reduce((s, l) => {
+            const mid = ((l.budget_min || 0) + (l.budget_max || l.budget_min || 0)) / 2
+            return s + mid
+        }, 0)
+        const weighted = totalBudget * (STAGE_PROB[stage.key] || 0)
+        return { ...stage, leads: stageLeads.length, totalBudget, weighted }
+    })
+    const totalPipeline = stageRevenue.reduce((s, r) => s + r.totalBudget, 0)
+    const weightedPipeline = stageRevenue.reduce((s, r) => s + r.weighted, 0)
+    const estCommission = weightedPipeline * COMMISSION_RATE
+    const maxBudget = Math.max(...stageRevenue.map(r => r.totalBudget), 1)
+    const topLeadsByValue = [...leadsWithBudget]
+        .sort((a, b) => {
+            const av = ((a.budget_min || 0) + (a.budget_max || a.budget_min || 0)) / 2
+            const bv = ((b.budget_min || 0) + (b.budget_max || b.budget_min || 0)) / 2
+            return bv - av
+        }).slice(0, 10)
+
     // Source distribution for pie chart
     const sourceData = Object.entries(
         filteredLeads.reduce((acc: Record<string, number>, l) => { acc[l.source] = (acc[l.source] || 0) + 1; return acc }, {})
@@ -189,6 +226,14 @@ export default function PipelinePage() {
                         >
                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <BarChart2 size={13} /> Analytics
+                            </span>
+                        </button>
+                        <button
+                            className={`${styles.pillTab} ${view === 'revenue' ? styles.pillTabActive : ''}`}
+                            onClick={() => setView('revenue')}
+                        >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <IndianRupee size={13} /> Revenue
                             </span>
                         </button>
                     </div>
@@ -311,7 +356,7 @@ export default function PipelinePage() {
                         )
                     })}
                 </div>
-            ) : (
+            ) : view === 'analytics' ? (
                 /* ── ANALYTICS VIEW ───────────────────────────────── */
                 <div>
                     {/* Stats */}
@@ -412,6 +457,108 @@ export default function PipelinePage() {
                         </div>
                     </div>
                 </div>
+            ) : (
+                /* ── REVENUE INTELLIGENCE ─────────────────────────── */
+                <div>
+                            {/* Summary cards */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                                {[
+                                    { label: 'Total Pipeline', value: fmtCr(totalPipeline), sub: `${leadsWithBudget.length} leads with budget`, color: '#6366f1' },
+                                    { label: 'Weighted Pipeline', value: fmtCr(weightedPipeline), sub: 'probability-adjusted', color: '#3b82f6' },
+                                    { label: 'Est. Commission (2%)', value: fmtCr(estCommission), sub: 'on weighted value', color: '#10b981' },
+                                    { label: 'Avg Deal Size', value: leadsWithBudget.length > 0 ? fmtCr(totalPipeline / leadsWithBudget.length) : '—', sub: 'across all stages', color: '#f59e0b' },
+                                ].map(s => (
+                                    <div key={s.label} className={styles.statCard}>
+                                        <div className={styles.statLabel} style={{ color: s.color }}>{s.label}</div>
+                                        <div className={styles.statValue} style={{ color: s.color, fontSize: '1.4rem' }}>{s.value}</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--crm-text-dim)', marginTop: '2px' }}>{s.sub}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Stage revenue breakdown */}
+                            <div className={styles.card} style={{ marginBottom: '1rem' }}>
+                                <div className={styles.cardHeader}>
+                                    <span className={styles.cardTitle}>Weighted Pipeline by Stage</span>
+                                    <span className={styles.cardSubtitle}>Budget × conversion probability</span>
+                                </div>
+                                {stageRevenue.filter(r => r.totalBudget > 0).length === 0 ? (
+                                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--crm-text-dim)', fontSize: '0.875rem' }}>
+                                        Add budget ranges to leads to see revenue intelligence
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {stageRevenue.map(r => {
+                                            const barPct = maxBudget > 0 ? (r.totalBudget / maxBudget) * 100 : 0
+                                            const prob = STAGE_PROB[r.key] * 100
+                                            return (
+                                                <div key={r.key} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 80px 80px 60px', alignItems: 'center', gap: '10px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: r.color, flexShrink: 0 }} />
+                                                        <span style={{ fontSize: '0.78rem', color: 'var(--crm-text-secondary)', fontWeight: 500 }}>{r.label}</span>
+                                                    </div>
+                                                    <div style={{ height: '8px', borderRadius: '4px', backgroundColor: 'var(--crm-border)', overflow: 'hidden' }}>
+                                                        <div style={{ width: `${barPct}%`, height: '100%', backgroundColor: r.color, borderRadius: '4px' }} />
+                                                    </div>
+                                                    <div style={{ fontSize: '0.78rem', color: 'var(--crm-text-primary)', fontWeight: 600, textAlign: 'right' }}>{fmtCr(r.totalBudget)}</div>
+                                                    <div style={{ fontSize: '0.78rem', color: r.color, fontWeight: 700, textAlign: 'right' }}>{fmtCr(r.weighted)}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--crm-text-dim)', textAlign: 'right' }}>{prob}% prob</div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Top leads by value */}
+                            {topLeadsByValue.length > 0 && (
+                                <div className={styles.card}>
+                                    <div className={styles.cardHeader}>
+                                        <span className={styles.cardTitle}>Top Leads by Deal Value</span>
+                                    </div>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '1px solid var(--crm-border)' }}>
+                                                {['Lead', 'Stage', 'Budget Range', 'Weighted Value', 'Commission'].map(h => (
+                                                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: '0.68rem', color: 'var(--crm-text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {topLeadsByValue.map((l, i) => {
+                                                const mid = ((l.budget_min || 0) + (l.budget_max || l.budget_min || 0)) / 2
+                                                const weighted = mid * (STAGE_PROB[l.status] || 0)
+                                                const commission = weighted * COMMISSION_RATE
+                                                const stageInfo = STAGES.find(s => s.key === l.status)
+                                                return (
+                                                    <tr key={l.id} style={{ borderBottom: i < topLeadsByValue.length - 1 ? '1px solid var(--crm-border)' : 'none' }}
+                                                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--crm-accent-bg)')}
+                                                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                                    >
+                                                        <td style={{ padding: '8px 10px' }}>
+                                                            <a href={`/crm/leads/${l.id}`} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--crm-text-primary)', textDecoration: 'none' }}>{l.name}</a>
+                                                        </td>
+                                                        <td style={{ padding: '8px 10px' }}>
+                                                            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: stageInfo?.color || 'var(--crm-text-dim)', backgroundColor: `${stageInfo?.color || '#6b7280'}15`, padding: '2px 8px', borderRadius: '999px' }}>
+                                                                {stageInfo?.label || l.status}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '8px 10px', fontSize: '0.8rem', color: 'var(--crm-text-secondary)' }}>
+                                                            {l.budget_min && l.budget_max
+                                                                ? `${fmtCr(l.budget_min)} – ${fmtCr(l.budget_max)}`
+                                                                : fmtCr(l.budget_min || l.budget_max || 0)
+                                                            }
+                                                        </td>
+                                                        <td style={{ padding: '8px 10px', fontSize: '0.875rem', fontWeight: 700, color: '#6366f1' }}>{fmtCr(weighted)}</td>
+                                                        <td style={{ padding: '8px 10px', fontSize: '0.875rem', fontWeight: 700, color: '#10b981' }}>{fmtCr(commission)}</td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
             )}
         </div>
     )

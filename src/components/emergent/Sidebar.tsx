@@ -52,7 +52,9 @@ const Sidebar = () => {
             {/* Logo */}
             <div className={styles.logoSection}>
                 <Link href="/" className={styles.logoLink} title="Back to Home">
-                    <img src="/sidebar-logo.png" alt="27 Estates" className={styles.logoIcon} />
+                    <div style={{ backgroundColor: '#183C38', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, flexShrink: 0 }}>
+                        <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 46, height: 46, objectFit: 'contain', objectPosition: 'top' }} />
+                    </div>
                 </Link>
             </div>
 

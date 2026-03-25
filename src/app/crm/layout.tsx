@@ -9,7 +9,7 @@ import {
     Settings, LogOut, Menu, X, BarChart3, Zap, Bell,
     CalendarCheck, TrendingUp, ChevronRight,
     Building2, Users2, ClipboardList, Clock, Calendar, Sliders,
-    Sun, Moon, MousePointerClick,
+    Sun, Moon, MousePointerClick, ListChecks, Flame, Trophy,
 } from 'lucide-react'
 import styles from './crm.module.css'
 import { CRMContext, type CRMUser, type CRMRole, ThemeProvider, useTheme } from './crm-context'
@@ -143,6 +143,9 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                         { name: 'Analytics', href: '/crm/analytics', icon: BarChart3 },
                         { name: 'Reports', href: '/crm/reports', icon: TrendingUp },
                         { name: 'User Analytics', href: '/crm/user-analytics', icon: MousePointerClick },
+                        { name: 'Listings', href: '/crm/listings', icon: ListChecks },
+                        { name: 'Warm Audience', href: '/crm/warm-audience', icon: Flame },
+                        { name: 'Performance', href: '/crm/performance', icon: Trophy },
                     ] : []),
                 ],
             },
@@ -159,6 +162,7 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                 items: [
                     { name: 'Connectors', href: '/crm/connectors', icon: Plug },
                     { name: 'Email', href: '/crm/emails', icon: Mail },
+                    { name: 'Nurture', href: '/crm/nurture', icon: Zap },
                 ],
             }] : []),
             {
@@ -242,7 +246,10 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                 {/* Sidebar */}
                 <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`} data-lenis-prevent>
                     <div className={styles.sidebarHeader}>
-                        <div className={styles.logoMark}>27</div>
+                        <div style={{ backgroundColor: '#183C38', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 46, height: 46 }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 38, height: 38, objectFit: 'contain', objectPosition: 'top' }} />
+                        </div>
                         <div>
                             <div className={styles.logoTitle}>27 Estates</div>
                             <div className={styles.logoSub}>CRM Platform</div>
