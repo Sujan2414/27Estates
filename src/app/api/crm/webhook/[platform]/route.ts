@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getConnector } from '@/lib/crm/connectors'
 import { createLead, processWebhook } from '@/lib/crm/leads'
