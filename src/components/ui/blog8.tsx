@@ -112,6 +112,7 @@ const Blog8 = ({
                                                 width={640}
                                                 height={360}
                                                 className="h-full w-full object-cover transition-opacity duration-200 hover:opacity-70"
+                                                unoptimized
                                             />
                                         </div>
                                     </Link>

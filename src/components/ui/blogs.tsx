@@ -129,6 +129,7 @@ const BlogCards: React.FC<BlogCardsProps> = ({
                                             fill
                                             sizes="(max-width: 768px) 100vw, 33vw"
                                             className={styles.image}
+                                            unoptimized
                                         />
                                     </div>
                                     <div className={styles.content}>
