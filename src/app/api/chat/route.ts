@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic'
-
 import { NextRequest } from 'next/server'
 import { AzureOpenAI } from 'openai'
 import { createClient } from '@supabase/supabase-js'
