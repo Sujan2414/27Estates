@@ -18,9 +18,22 @@ export async function GET(request: NextRequest) {
     const priority = searchParams.get('priority')
     const search = searchParams.get('search')
     const assignedTo = searchParams.get('assigned_to')
-    const page = parseInt(searchParams.get('page') || '1')
+    const managerId  = searchParams.get('manager_id')   // fetch leads of manager's team members
+    const page  = parseInt(searchParams.get('page')  || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = (page - 1) * limit
+
+    // If manager_id provided, resolve team member ids first
+    let teamMemberIds: string[] | null = null
+    if (managerId) {
+        const { data: teamMembers } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('reporting_manager_id', managerId)
+        teamMemberIds = (teamMembers || []).map((m: { id: string }) => m.id)
+        // Manager also sees their own leads
+        teamMemberIds.push(managerId)
+    }
 
     let query = supabase
         .from('leads')
@@ -36,7 +49,8 @@ export async function GET(request: NextRequest) {
     if (status && status !== 'all') query = query.eq('status', status)
     if (source && source !== 'all') query = query.eq('source', source)
     if (priority && priority !== 'all') query = query.eq('priority', priority)
-    if (assignedTo === 'unassigned') query = query.is('assigned_to', null)
+    if (teamMemberIds) query = query.in('assigned_to', teamMemberIds)
+    else if (assignedTo === 'unassigned') query = query.is('assigned_to', null)
     else if (assignedTo) query = query.eq('assigned_to', assignedTo)
     if (search) {
         query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`)

@@ -11,21 +11,19 @@ const supabase = createClient(
 // GET /api/crm/hrm/employees — list all CRM employees (profiles with crm roles)
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
-    const search = searchParams.get('search') || ''
-    const role = searchParams.get('role') || ''
+    const search             = searchParams.get('search') || ''
+    const role               = searchParams.get('role') || ''
+    const reportingManagerId = searchParams.get('reporting_manager_id') || ''
 
     let query = supabase
         .from('profiles')
         .select('id, full_name, email, role, created_at, avatar_url, reporting_manager_id, manager:reporting_manager_id(id, full_name)')
-        .in('role', ['admin', 'super_admin', 'agent'])
+        .in('role', ['admin', 'super_admin', 'agent', 'manager'])
         .order('full_name', { ascending: true })
 
-    if (role && role !== 'all') {
-        query = query.eq('role', role)
-    }
-    if (search) {
-        query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
-    }
+    if (role && role !== 'all') query = query.eq('role', role)
+    if (reportingManagerId)     query = query.eq('reporting_manager_id', reportingManagerId)
+    if (search) query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
 
     const { data, error } = await query
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })

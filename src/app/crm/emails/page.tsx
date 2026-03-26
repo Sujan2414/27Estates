@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Mail, Edit3, Trash2, Eye, X } from 'lucide-react'
+import { Plus, Mail, Edit3, Trash2, Eye, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { wrapWithBrandedTemplate, extractInnerContent } from '@/lib/email-template'
 import styles from '../crm.module.css'
@@ -84,12 +84,9 @@ export default function EmailTemplatesPage() {
     return (
         <div className={styles.pageContent}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
-                    <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Email Templates</h1>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Manage automated email templates</p>
-                    </div>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Email Templates</h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Manage automated email templates</p>
                 </div>
                 <button onClick={openNew} className={styles.btnPrimary}>
                     <Plus size={14} /> New Template

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, CalendarCheck, Phone, Clock, CheckCircle2, XCircle, AlertCircle, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarCheck, Phone, Clock, CheckCircle2, XCircle, AlertCircle, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from '../crm.module.css'
 
 interface Visit {
@@ -89,14 +89,9 @@ export default function VisitsPage() {
 
     return (
         <div className={styles.pageContent}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
-                    <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Site Visits</h1>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Track and manage all scheduled site visits</p>
-                    </div>
-                </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Site Visits</h1>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Track and manage all scheduled site visits</p>
             </div>
 
             {/* View Toggle */}

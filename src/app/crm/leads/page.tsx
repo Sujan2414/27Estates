@@ -5,7 +5,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import {
-    Search, UserPlus, Phone, ChevronLeft, ChevronRight, X, Trash2, ArrowLeft,
+    Search, UserPlus, Phone, ChevronLeft, ChevronRight, X, Trash2,
     Filter, Download, Star, Calendar, BarChart2, List, Users, AlertTriangle,
     CheckCircle2, PhoneOff, Clock, RefreshCw, UserCheck, Check,
 } from 'lucide-react'
@@ -346,19 +346,16 @@ export default function LeadsPage() {
         <div className={styles.pageContent}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
-                    <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>
-                            Leads
-                            {escalatedLeads.length > 0 && (
-                                <span style={{ marginLeft: '0.5rem', fontSize: '0.8125rem', background: '#ef4444', color: 'white', borderRadius: '999px', padding: '2px 8px', fontWeight: 700 }}>
-                                    ⚠ {escalatedLeads.length} escalated
-                                </span>
-                            )}
-                        </h1>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>{total} leads · {unassignedLeads.length} unassigned</p>
-                    </div>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>
+                        Leads
+                        {escalatedLeads.length > 0 && (
+                            <span style={{ marginLeft: '0.5rem', fontSize: '0.8125rem', background: '#ef4444', color: 'white', borderRadius: '999px', padding: '2px 8px', fontWeight: 700 }}>
+                                ⚠ {escalatedLeads.length} escalated
+                            </span>
+                        )}
+                    </h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>{total} leads · {unassignedLeads.length} unassigned</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {isAdminUser && (

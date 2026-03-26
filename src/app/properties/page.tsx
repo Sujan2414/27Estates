@@ -489,8 +489,8 @@ const Dashboard = () => {
             <div className={styles.mobileSearchHeader}>
                 <div className={styles.mobileTopRow}>
                     <a href="/" className={styles.mobileBackLogo}>
-                        <div style={{ backgroundColor: '#183C38', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 42, height: 42 }}>
-                            <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 36, height: 36, objectFit: 'contain', objectPosition: 'top' }} />
+                        <div style={{ backgroundColor: '#183C38', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 52, height: 52, overflow: 'hidden' }}>
+                            <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 60, height: 60, objectFit: 'contain', transform: 'scale(1.6)', transformOrigin: 'center' }} />
                         </div>
                     </a>
                     <div className={styles.searchPillWrap}>

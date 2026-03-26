@@ -161,18 +161,14 @@ export default function CRMDashboard() {
     return (
         <div className={styles.pageContent}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)', marginBottom: '0.25rem' }}>Dashboard</h1>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>
-                        Welcome back. Here&apos;s your CRM overview.
-                    </p>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Welcome back. Here&apos;s your CRM overview.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <Link href="/crm/leads?new=true" className={styles.btnPrimary}>
-                        <UserPlus size={14} /> Add Lead
-                    </Link>
-                </div>
+                <Link href="/crm/leads?new=true" className={styles.btnPrimary}>
+                    <UserPlus size={14} /> Add Lead
+                </Link>
             </div>
 
             {/* Stats Row */}
@@ -363,128 +359,125 @@ export default function CRMDashboard() {
                 <div style={{ marginBottom: '1.5rem' }}>
                     <div className={styles.sectionHeader}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Zap size={16} style={{ color: '#6366f1' }} />
+                            <Zap size={15} style={{ color: '#6366f1' }} />
                             <span className={styles.sectionTitle}>Smart Alerts</span>
                             <span style={{ fontSize: '0.72rem', color: 'var(--crm-text-dim)', fontWeight: 400 }}>live signals from website activity</span>
                         </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.875rem' }}>
 
                         {/* Ready to Call */}
                         {smartAlerts.readyToCall.length > 0 && (
-                            <div className={styles.attentionCard} style={{ borderLeftColor: '#22c55e' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                    <PhoneCall size={14} style={{ color: '#22c55e' }} />
-                                    <span className={styles.cardTitle}>Ready to Call — On Site Now</span>
+                            <div className={styles.smartAlertCard}>
+                                <div className={styles.smartAlertHeader} style={{ background: 'rgba(34,197,94,0.06)' }}>
+                                    <PhoneCall size={13} style={{ color: '#22c55e', flexShrink: 0 }} />
+                                    <span className={styles.smartAlertTitle}>Ready to Call</span>
+                                    <span className={styles.smartAlertCount} style={{ background: 'rgba(34,197,94,0.1)', color: '#16a34a' }}>{smartAlerts.readyToCall.length}</span>
                                 </div>
-                                {smartAlerts.readyToCall.map(l => (
-                                    <Link key={l.lead_id} href={`/crm/leads/${l.lead_id}`} style={{ textDecoration: 'none' }}>
-                                        <div className={styles.attentionItem}>
-                                            <div className={styles.attentionDot} style={{ backgroundColor: l.priority === 'hot' ? '#ef4444' : '#f59e0b' }} />
-                                            <div className={styles.attentionText}>
-                                                <div className={styles.attentionTitle}>{l.lead_name}</div>
-                                                <div className={styles.attentionMeta}>
-                                                    Score {l.score} · viewed {l.listing_count} listing{l.listing_count !== 1 ? 's' : ''} today
-                                                </div>
+                                <div className={styles.smartAlertBody}>
+                                    {smartAlerts.readyToCall.map(l => (
+                                        <Link key={l.lead_id} href={`/crm/leads/${l.lead_id}`} className={styles.smartAlertRow}>
+                                            <div className={styles.smartAlertDot} style={{ backgroundColor: l.priority === 'hot' ? '#ef4444' : '#f59e0b' }} />
+                                            <div className={styles.smartAlertRowText}>
+                                                <div className={styles.smartAlertRowName}>{l.lead_name}</div>
+                                                <div className={styles.smartAlertRowMeta}>Score {l.score} · {l.listing_count} listing{l.listing_count !== 1 ? 's' : ''} today</div>
                                             </div>
-                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
-                                        </div>
-                                    </Link>
-                                ))}
+                                            <ChevronRight size={13} style={{ color: 'var(--crm-text-dim)', flexShrink: 0 }} />
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
                         {/* Fresh uncontacted */}
                         {smartAlerts.freshUncontacted.length > 0 && (
-                            <div className={styles.attentionCard} style={{ borderLeftColor: '#3b82f6' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                    <UserPlus size={14} style={{ color: '#3b82f6' }} />
-                                    <span className={styles.cardTitle}>Fresh Leads — Not Contacted</span>
+                            <div className={styles.smartAlertCard}>
+                                <div className={styles.smartAlertHeader} style={{ background: 'rgba(59,130,246,0.06)' }}>
+                                    <UserPlus size={13} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                                    <span className={styles.smartAlertTitle}>Fresh — Not Contacted</span>
+                                    <span className={styles.smartAlertCount} style={{ background: 'rgba(59,130,246,0.1)', color: '#2563eb' }}>{smartAlerts.freshUncontacted.length}</span>
                                 </div>
-                                {smartAlerts.freshUncontacted.map(l => (
-                                    <Link key={l.id} href={`/crm/leads/${l.id}`} style={{ textDecoration: 'none' }}>
-                                        <div className={styles.attentionItem}>
-                                            <div className={styles.attentionDot} style={{ backgroundColor: '#3b82f6' }} />
-                                            <div className={styles.attentionText}>
-                                                <div className={styles.attentionTitle}>{l.name}</div>
-                                                <div className={styles.attentionMeta}>{l.source} · {formatRelative(l.created_at)}</div>
+                                <div className={styles.smartAlertBody}>
+                                    {smartAlerts.freshUncontacted.map(l => (
+                                        <Link key={l.id} href={`/crm/leads/${l.id}`} className={styles.smartAlertRow}>
+                                            <div className={styles.smartAlertDot} style={{ backgroundColor: '#3b82f6' }} />
+                                            <div className={styles.smartAlertRowText}>
+                                                <div className={styles.smartAlertRowName}>{l.name}</div>
+                                                <div className={styles.smartAlertRowMeta}>{l.source} · {formatRelative(l.created_at)}</div>
                                             </div>
-                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
-                                        </div>
-                                    </Link>
-                                ))}
+                                            <ChevronRight size={13} style={{ color: 'var(--crm-text-dim)', flexShrink: 0 }} />
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
                         {/* Re-engage */}
                         {smartAlerts.reEngageLeads.length > 0 && (
-                            <div className={styles.attentionCard} style={{ borderLeftColor: '#f59e0b' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                    <RefreshCw size={14} style={{ color: '#f59e0b' }} />
-                                    <span className={styles.cardTitle}>Re-Engage — Gone Silent</span>
+                            <div className={styles.smartAlertCard}>
+                                <div className={styles.smartAlertHeader} style={{ background: 'rgba(245,158,11,0.06)' }}>
+                                    <RefreshCw size={13} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                                    <span className={styles.smartAlertTitle}>Re-Engage — Gone Silent</span>
+                                    <span className={styles.smartAlertCount} style={{ background: 'rgba(245,158,11,0.1)', color: '#d97706' }}>{smartAlerts.reEngageLeads.length}</span>
                                 </div>
-                                {smartAlerts.reEngageLeads.map(l => (
-                                    <Link key={l.id} href={`/crm/leads/${l.id}`} style={{ textDecoration: 'none' }}>
-                                        <div className={styles.attentionItem}>
-                                            <div className={styles.attentionDot} style={{ backgroundColor: l.priority === 'hot' ? '#ef4444' : '#f59e0b' }} />
-                                            <div className={styles.attentionText}>
-                                                <div className={styles.attentionTitle}>{l.name}</div>
-                                                <div className={styles.attentionMeta}>
-                                                    {l.priority} · {l.silent_days != null ? `${l.silent_days}d silent` : 'Never contacted'}
-                                                </div>
+                                <div className={styles.smartAlertBody}>
+                                    {smartAlerts.reEngageLeads.map(l => (
+                                        <Link key={l.id} href={`/crm/leads/${l.id}`} className={styles.smartAlertRow}>
+                                            <div className={styles.smartAlertDot} style={{ backgroundColor: l.priority === 'hot' ? '#ef4444' : '#f59e0b' }} />
+                                            <div className={styles.smartAlertRowText}>
+                                                <div className={styles.smartAlertRowName}>{l.name}</div>
+                                                <div className={styles.smartAlertRowMeta}>{l.priority} · {l.silent_days != null ? `${l.silent_days}d silent` : 'Never contacted'}</div>
                                             </div>
-                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
-                                        </div>
-                                    </Link>
-                                ))}
+                                            <ChevronRight size={13} style={{ color: 'var(--crm-text-dim)', flexShrink: 0 }} />
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
-                        {/* Activity Spikes */}
+                        {/* Listing Spikes */}
                         {smartAlerts.activitySpikes.length > 0 && (
-                            <div className={styles.attentionCard} style={{ borderLeftColor: '#8b5cf6' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                    <TrendingUp size={14} style={{ color: '#8b5cf6' }} />
-                                    <span className={styles.cardTitle}>Listing Spikes Today</span>
+                            <div className={styles.smartAlertCard}>
+                                <div className={styles.smartAlertHeader} style={{ background: 'rgba(139,92,246,0.06)' }}>
+                                    <TrendingUp size={13} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+                                    <span className={styles.smartAlertTitle}>Listing Spikes Today</span>
+                                    <span className={styles.smartAlertCount} style={{ background: 'rgba(139,92,246,0.1)', color: '#7c3aed' }}>{smartAlerts.activitySpikes.length}</span>
                                 </div>
-                                {smartAlerts.activitySpikes.map((s, i) => (
-                                    <Link key={i} href={s.href} target="_blank" style={{ textDecoration: 'none' }}>
-                                        <div className={styles.attentionItem}>
-                                            <div className={styles.attentionDot} style={{ backgroundColor: '#8b5cf6' }} />
-                                            <div className={styles.attentionText}>
-                                                <div className={styles.attentionTitle}>{s.title}</div>
-                                                <div className={styles.attentionMeta}>
-                                                    {s.today} views today ({s.multiplier}× avg)
-                                                </div>
+                                <div className={styles.smartAlertBody}>
+                                    {smartAlerts.activitySpikes.map((s, i) => (
+                                        <Link key={i} href={s.href} target="_blank" className={styles.smartAlertRow}>
+                                            <div className={styles.smartAlertDot} style={{ backgroundColor: '#8b5cf6' }} />
+                                            <div className={styles.smartAlertRowText}>
+                                                <div className={styles.smartAlertRowName}>{s.title}</div>
+                                                <div className={styles.smartAlertRowMeta}>{s.today} views today · {s.multiplier}× avg</div>
                                             </div>
-                                            <Eye size={12} style={{ color: 'var(--crm-text-dim)' }} />
-                                        </div>
-                                    </Link>
-                                ))}
+                                            <Eye size={12} style={{ color: 'var(--crm-text-dim)', flexShrink: 0 }} />
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
-                        {/* Return visitors without lead */}
+                        {/* Return Visitors */}
                         {smartAlerts.returnVisitorsWithoutLead.length > 0 && (
-                            <div className={styles.attentionCard} style={{ borderLeftColor: '#10b981' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                    <Eye size={14} style={{ color: '#10b981' }} />
-                                    <span className={styles.cardTitle}>Return Visitors — No Lead Yet</span>
+                            <div className={styles.smartAlertCard}>
+                                <div className={styles.smartAlertHeader} style={{ background: 'rgba(16,185,129,0.06)' }}>
+                                    <Eye size={13} style={{ color: '#10b981', flexShrink: 0 }} />
+                                    <span className={styles.smartAlertTitle}>Return Visitors — No Lead</span>
+                                    <span className={styles.smartAlertCount} style={{ background: 'rgba(16,185,129,0.1)', color: '#059669' }}>{smartAlerts.returnVisitorsWithoutLead.length}</span>
                                 </div>
-                                {smartAlerts.returnVisitorsWithoutLead.map(u => (
-                                    <Link key={u.user_id} href={`/crm/warm-audience`} style={{ textDecoration: 'none' }}>
-                                        <div className={styles.attentionItem}>
-                                            <div className={styles.attentionDot} style={{ backgroundColor: '#10b981' }} />
-                                            <div className={styles.attentionText}>
-                                                <div className={styles.attentionTitle}>{u.full_name || u.email}</div>
-                                                <div className={styles.attentionMeta}>
-                                                    Visited same listing {u.return_visits}× — no enquiry yet
-                                                </div>
+                                <div className={styles.smartAlertBody}>
+                                    {smartAlerts.returnVisitorsWithoutLead.map(u => (
+                                        <Link key={u.user_id} href="/crm/warm-audience" className={styles.smartAlertRow}>
+                                            <div className={styles.smartAlertDot} style={{ backgroundColor: '#10b981' }} />
+                                            <div className={styles.smartAlertRowText}>
+                                                <div className={styles.smartAlertRowName}>{u.full_name || u.email}</div>
+                                                <div className={styles.smartAlertRowMeta}>Visited {u.return_visits}× — no enquiry yet</div>
                                             </div>
-                                            <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
-                                        </div>
-                                    </Link>
-                                ))}
+                                            <ChevronRight size={13} style={{ color: 'var(--crm-text-dim)', flexShrink: 0 }} />
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>

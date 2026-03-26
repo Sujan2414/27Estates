@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import {
     Users, Eye, Clock, MousePointerClick, TrendingUp, Globe,
-    Bookmark, Search, ChevronDown, X, ArrowLeft, ExternalLink
+    Bookmark, Search, ChevronDown, X, ExternalLink
 } from 'lucide-react'
 import styles from '../crm.module.css'
 import { proxyUrl } from '@/lib/proxy-url'

@@ -7,12 +7,12 @@ import { createClient } from '@/lib/supabase/client'
 import {
     LayoutDashboard, Users, Plug, Mail,
     Settings, LogOut, Menu, X, BarChart3, Zap, Bell,
-    CalendarCheck, TrendingUp, ChevronRight,
-    Building2, Users2, ClipboardList, Clock, Calendar, Sliders,
+    CalendarCheck, TrendingUp, Shield, LayoutGrid,
     Sun, Moon, MousePointerClick, ListChecks, Flame, Trophy,
 } from 'lucide-react'
 import styles from './crm.module.css'
 import { CRMContext, type CRMUser, type CRMRole, ThemeProvider, useTheme } from './crm-context'
+import ProfileModal from '@/components/ProfileModal'
 
 interface Notification {
     id: string; type: string; title: string; body?: string; link?: string; is_read: boolean; created_at: string
@@ -30,14 +30,11 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
     const [crmUser, setCrmUser] = useState<CRMUser | null>(null)
     const [loading, setLoading] = useState(true)
     const [sidebarOpen, setSidebarOpen] = useState(false)
+    const [showProfile, setShowProfile] = useState(false)
     const [newLeadsCount, setNewLeadsCount] = useState(0)
-    const [pendingRegCount, setPendingRegCount] = useState(0)
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [showNotifs, setShowNotifs] = useState(false)
-    const [openSections, setOpenSections] = useState<Set<string>>(
-        new Set(['overview', 'sales', 'automation', 'hrm', 'system'])
-    )
     const notifRef = useRef<HTMLDivElement>(null)
     const router = useRouter()
     const pathname = usePathname()
@@ -52,18 +49,21 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
 
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('full_name, role')
+                    .select('full_name, role, reporting_manager_id, avatar_url')
                     .eq('id', authUser.id)
                     .single()
 
-                if (!profile || !['admin', 'super_admin', 'agent'].includes(profile.role)) {
+                if (!profile || !['admin', 'super_admin', 'agent', 'manager'].includes(profile.role)) {
                     router.push('/admin/login'); setLoading(false); return
                 }
 
                 setCrmUser({
                     id: authUser.id,
                     full_name: profile.full_name || 'User',
+                    email: authUser.email,
                     role: profile.role as CRMRole,
+                    reporting_manager_id: profile.reporting_manager_id || null,
+                    avatar_url: profile.avatar_url || null,
                 })
 
                 const { count } = await supabase
@@ -72,14 +72,7 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                     .eq('status', 'new')
                 setNewLeadsCount(count || 0)
 
-                // Pending regularizations count (super_admin only)
-                if (profile.role === 'super_admin') {
-                    const { count: regCount } = await supabase
-                        .from('hrm_regularizations')
-                        .select('id', { count: 'exact', head: true })
-                        .eq('status', 'pending')
-                    setPendingRegCount(regCount || 0)
-                }
+
             } catch (err) {
                 console.error('CRM init error:', err)
             } finally {
@@ -131,21 +124,24 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
     // ── Role-based nav ─────────────────────────────────────────
     const navGroups: NavGroup[] = useMemo(() => {
         const role = crmUser?.role
-        const isSA = role === 'super_admin'
+        const isSA  = role === 'super_admin'
         const isAdm = role === 'super_admin' || role === 'admin'
+        const isMgr = role === 'super_admin' || role === 'admin' || role === 'manager'
 
         const groups: NavGroup[] = [
             {
                 id: 'overview', label: 'Overview',
                 items: [
                     { name: 'Dashboard', href: '/crm', icon: LayoutDashboard, exact: true },
+                    ...(isMgr ? [
+                        { name: 'Performance', href: '/crm/performance', icon: Trophy },
+                    ] : []),
                     ...(isAdm ? [
                         { name: 'Analytics', href: '/crm/analytics', icon: BarChart3 },
                         { name: 'Reports', href: '/crm/reports', icon: TrendingUp },
                         { name: 'User Analytics', href: '/crm/user-analytics', icon: MousePointerClick },
                         { name: 'Listings', href: '/crm/listings', icon: ListChecks },
                         { name: 'Warm Audience', href: '/crm/warm-audience', icon: Flame },
-                        { name: 'Performance', href: '/crm/performance', icon: Trophy },
                     ] : []),
                 ],
             },
@@ -153,6 +149,7 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                 id: 'sales', label: 'Sales',
                 items: [
                     { name: 'Leads', href: '/crm/leads', icon: Users, badge: newLeadsCount > 0 ? newLeadsCount : undefined },
+                    { name: 'Pipeline', href: '/crm/pipeline', icon: TrendingUp },
                     { name: 'Site Visits', href: '/crm/visits', icon: CalendarCheck },
                 ],
             },
@@ -165,27 +162,6 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                     { name: 'Nurture', href: '/crm/nurture', icon: Zap },
                 ],
             }] : []),
-            {
-                id: 'hrm', label: 'HRM',
-                items: [
-                    { name: 'Overview', href: '/crm/hrm', icon: Building2, exact: true },
-                    // Employees: admin+ only
-                    ...(isAdm ? [{ name: 'Employees', href: '/crm/hrm/employees', icon: Users2 }] : []),
-                    { name: 'Tasks', href: '/crm/hrm/tasks', icon: ClipboardList },
-                    // Attendance admin view: admin+; agents can only see their own
-                    ...(isAdm
-                        ? [{ name: 'Attendance', href: '/crm/hrm/attendance', icon: Clock }]
-                        : [{ name: 'My Attendance', href: '/crm/hrm/attendance', icon: Clock }]
-                    ),
-                    { name: 'Leaves', href: '/crm/hrm/leaves', icon: Calendar },
-                    // Regularisations: visible to all, badge for super_admin
-                    { name: 'Regularisations', href: '/crm/hrm/regularizations', icon: Clock, badge: isSA && pendingRegCount > 0 ? pendingRegCount : undefined },
-                    // Leave Allocations: super_admin only
-                    ...(isSA ? [{ name: 'Leave Allocations', href: '/crm/hrm/allocations', icon: Sliders }] : []),
-                    // Work Settings: super_admin only
-                    ...(isSA ? [{ name: 'Work Settings', href: '/crm/hrm/work-settings', icon: Settings }] : []),
-                ],
-            },
             // System: admin+ only
             ...(isAdm ? [{
                 id: 'system', label: 'System',
@@ -197,16 +173,7 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
         ]
 
         return groups.filter(g => g.items.length > 0)
-    }, [crmUser, newLeadsCount, pendingRegCount])
-
-    const toggleSection = (id: string) => {
-        setOpenSections(prev => {
-            const next = new Set(prev)
-            if (next.has(id)) next.delete(id)
-            else next.add(id)
-            return next
-        })
-    }
+    }, [crmUser, newLeadsCount])
 
     const formatRelative = (d: string) => {
         const ms = Date.now() - new Date(d).getTime()
@@ -222,8 +189,9 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
     // Role badge colours
     const roleBadge: Record<string, { label: string; color: string }> = {
         super_admin: { label: 'Super Admin', color: '#8b5cf6' },
-        admin: { label: 'Admin', color: 'var(--crm-btn-primary-bg)' },
-        agent: { label: 'Agent', color: '#3b82f6' },
+        admin:       { label: 'Admin',       color: 'var(--crm-btn-primary-bg)' },
+        manager:     { label: 'Manager',     color: '#f59e0b' },
+        agent:       { label: 'Agent',       color: '#3b82f6' },
     }
     const badge = roleBadge[crmUser?.role || '']
 
@@ -246,9 +214,9 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                 {/* Sidebar */}
                 <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`} data-lenis-prevent>
                     <div className={styles.sidebarHeader}>
-                        <div style={{ backgroundColor: '#183C38', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 46, height: 46 }}>
+                        <div style={{ backgroundColor: '#183C38', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 56, height: 56, overflow: 'hidden' }}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 38, height: 38, objectFit: 'contain', objectPosition: 'top' }} />
+                            <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 64, height: 64, objectFit: 'contain', transform: 'scale(1.6)', transformOrigin: 'center' }} />
                         </div>
                         <div>
                             <div className={styles.logoTitle}>27 Estates</div>
@@ -257,88 +225,65 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <nav className={styles.nav} data-lenis-prevent>
-                        {navGroups.map(group => {
-                            const isOpen = openSections.has(group.id)
-                            const hasActiveItem = group.items.some(item =>
-                                item.exact ? pathname === item.href : pathname?.startsWith(item.href)
-                            )
-                            return (
-                                <div key={group.id}>
-                                    <button
-                                        onClick={() => toggleSection(group.id)}
-                                        className={styles.navSectionToggle}
-                                    >
-                                        <span
-                                            className={styles.navSectionLabel}
-                                            style={hasActiveItem && !isOpen ? { color: 'var(--crm-accent)' } : undefined}
+                        {navGroups.map(group => (
+                            <div key={group.id} className={styles.navGroup}>
+                                <div className={styles.navSection}>{group.label}</div>
+                                {group.items.map(item => {
+                                    const isActive = item.exact
+                                        ? pathname === item.href
+                                        : pathname?.startsWith(item.href)
+                                    return (
+                                        <Link
+                                            key={item.name}
+                                            href={item.href}
+                                            className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+                                            onClick={() => setSidebarOpen(false)}
                                         >
-                                            {group.label}
-                                        </span>
-                                        <ChevronRight
-                                            size={12}
-                                            style={{
-                                                transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                                                transition: 'transform 0.2s',
-                                                color: 'var(--crm-text-dim)',
-                                            }}
-                                        />
-                                    </button>
-
-                                    {isOpen && group.items.map(item => {
-                                        const isActive = item.exact
-                                            ? pathname === item.href
-                                            : pathname?.startsWith(item.href)
-                                        return (
-                                            <Link
-                                                key={item.name}
-                                                href={item.href}
-                                                className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-                                                onClick={() => setSidebarOpen(false)}
-                                                style={{ paddingLeft: '1.25rem' }}
-                                            >
-                                                {item.icon && <item.icon size={15} />}
-                                                <span>{item.name}</span>
-                                                {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
-                                            </Link>
-                                        )
-                                    })}
-                                </div>
-                            )
-                        })}
+                                            {item.icon && <item.icon size={15} />}
+                                            <span>{item.name}</span>
+                                            {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
+                                        </Link>
+                                    )
+                                })}
+                            </div>
+                        ))}
                     </nav>
 
                     <div className={styles.sidebarFooter}>
-                        <Link href="/admin" className={styles.navItem} style={{ fontSize: '0.75rem', color: 'var(--crm-btn-primary-bg)', fontWeight: 600 }}>
-                            ← Back to Admin
-                        </Link>
-                        <div style={{ padding: '0.625rem 0.75rem' }}>
-                            {/* Role badge */}
-                            {badge && (
-                                <div style={{ marginBottom: '0.5rem' }}>
-                                    <span style={{
-                                        fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase',
-                                        letterSpacing: '0.06em', color: badge.color,
-                                        backgroundColor: `${badge.color}15`, padding: '2px 8px', borderRadius: '999px',
-                                    }}>
-                                        {badge.label}
-                                    </span>
-                                </div>
-                            )}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                                <div style={{
-                                    width: '28px', height: '28px', borderRadius: '50%',
-                                    backgroundColor: 'var(--crm-btn-primary-bg)', color: 'var(--crm-btn-primary-text)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.75rem', fontWeight: 700,
-                                }}>
-                                    {crmUser?.full_name?.charAt(0) || 'U'}
-                                </div>
-                                <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-tertiary)', flex: 1 }}>{crmUser?.full_name}</span>
-                                <button onClick={handleLogout} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-faint)', padding: '4px' }}>
-                                    <LogOut size={14} />
-                                </button>
+                        {/* Profile card — above portal buttons */}
+                        <button
+                            onClick={() => { setSidebarOpen(false); setShowProfile(true) }}
+                            className={styles.profileBtn}
+                        >
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--crm-btn-primary-bg)', color: 'var(--crm-btn-primary-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                                {crmUser?.avatar_url
+                                    ? <img src={crmUser.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    : crmUser?.full_name?.charAt(0) || 'U'
+                                }
                             </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--crm-text-secondary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{crmUser?.full_name}</div>
+                                {badge && <span style={{ fontSize: '0.6rem', fontWeight: 700, color: badge.color }}>{badge.label}</span>}
+                            </div>
+                        </button>
+
+                        {/* Portal switcher — 3 fixed buttons, CRM is current */}
+                        <div className={styles.footerPortalBtns}>
+                            <span className={`${styles.footerBtn} ${styles.footerBtnCurrent}`}>
+                                <TrendingUp size={13} /> CRM
+                            </span>
+                            <Link href="/admin" className={styles.footerBtn}>
+                                <Shield size={13} /> CMS
+                            </Link>
+                            <Link href="/hrms" className={styles.footerBtn}>
+                                <LayoutGrid size={13} /> HRMS
+                            </Link>
                         </div>
+
+                        {/* Sign out */}
+                        <button onClick={handleLogout} className={`${styles.footerBtn} ${styles.footerBtnFull}`}>
+                            <LogOut size={13} /> Sign out
+                        </button>
                     </div>
                 </aside>
 
@@ -346,40 +291,24 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
 
                 {/* Main content */}
                 <main className={styles.main} data-lenis-prevent>
-                    {/* Top bar: theme toggle + notification bell */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.75rem 1.5rem 0', position: 'relative', gap: '0.5rem', alignItems: 'center' }} ref={notifRef}>
-                        {/* Theme toggle */}
-                        <button
-                            onClick={toggleTheme}
-                            className={styles.themeToggle}
-                            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-                        >
-                            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                    {/* Top bar */}
+                    <header className={styles.topBar} ref={notifRef}>
+                        <button className={styles.mobileSidebarBtn} onClick={() => setSidebarOpen(!sidebarOpen)}>
+                            <Menu size={20} />
                         </button>
-
-                        {/* Notification bell */}
-                        <button
-                            onClick={() => setShowNotifs(!showNotifs)}
-                            style={{
-                                position: 'relative', border: 'none', background: 'none', cursor: 'pointer',
-                                color: unreadCount > 0 ? 'var(--crm-accent)' : 'var(--crm-text-dim)', padding: '6px',
-                            }}
-                        >
-                            <Bell size={20} />
-                            {unreadCount > 0 && (
-                                <span style={{
-                                    position: 'absolute', top: '0', right: '0',
-                                    width: '18px', height: '18px', borderRadius: '50%',
-                                    backgroundColor: '#ef4444', color: '#fff',
-                                    fontSize: '0.625rem', fontWeight: 700,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
-                            )}
-                        </button>
-
+                        <span style={{ flex: 1 }} />
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <button onClick={toggleTheme} className={styles.themeToggle} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+                                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                            </button>
+                            <button onClick={() => setShowNotifs(!showNotifs)} className={styles.topBarIconBtn}>
+                                <Bell size={18} />
+                                {unreadCount > 0 && <span className={styles.notifBadge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
+                            </button>
+                        </div>
                         {showNotifs && (
                             <div style={{
-                                position: 'absolute', top: '100%', right: '1.5rem', zIndex: 100,
+                                position: 'absolute', top: '100%', right: '0.75rem', zIndex: 100,
                                 width: '340px', maxHeight: '480px', overflow: 'hidden',
                                 backgroundColor: 'var(--crm-surface)', border: '1px solid var(--crm-border-subtle)',
                                 borderRadius: '0.75rem', boxShadow: '0 20px 40px var(--crm-shadow)',
@@ -387,28 +316,19 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid var(--crm-border)' }}>
                                     <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>Notifications</span>
-                                    <button onClick={markAllRead} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-accent)', fontSize: '0.75rem' }}>
-                                        Mark all read
-                                    </button>
+                                    <button onClick={markAllRead} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-accent)', fontSize: '0.75rem' }}>Mark all read</button>
                                 </div>
                                 <div style={{ overflowY: 'auto', flex: 1 }}>
                                     {notifications.length === 0 ? (
                                         <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--crm-text-dim)', fontSize: '0.875rem' }}>No notifications</div>
                                     ) : notifications.map(n => (
-                                        <div
-                                            key={n.id}
-                                            onClick={() => handleNotifClick(n)}
-                                            style={{
-                                                padding: '0.75rem 1rem', cursor: 'pointer',
-                                                borderBottom: '1px solid var(--crm-border)',
-                                                backgroundColor: n.is_read ? 'transparent' : 'var(--crm-accent-bg)',
-                                                display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
-                                            }}
-                                        >
-                                            <div style={{
-                                                width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, marginTop: '6px',
-                                                backgroundColor: n.is_read ? 'transparent' : (notifTypeColor[n.type] || '#6b7280'),
-                                            }} />
+                                        <div key={n.id} onClick={() => handleNotifClick(n)} style={{
+                                            padding: '0.75rem 1rem', cursor: 'pointer',
+                                            borderBottom: '1px solid var(--crm-border)',
+                                            backgroundColor: n.is_read ? 'transparent' : 'var(--crm-accent-bg)',
+                                            display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+                                        }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, marginTop: '6px', backgroundColor: n.is_read ? 'transparent' : (notifTypeColor[n.type] || '#6b7280') }} />
                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div style={{ fontSize: '0.8125rem', fontWeight: n.is_read ? 400 : 600, color: 'var(--crm-text-secondary)', marginBottom: '2px' }}>{n.title}</div>
                                                 {n.body && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.body}</div>}
@@ -419,11 +339,18 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </header>
 
                     {children}
                 </main>
             </div>
+            {showProfile && crmUser && (
+                <ProfileModal
+                    user={{ ...crmUser, email: crmUser.email || '' }}
+                    onClose={() => setShowProfile(false)}
+                    onUpdate={u => setCrmUser(prev => prev ? { ...prev, ...u } : prev)}
+                />
+            )}
         </CRMContext.Provider>
     )
 }

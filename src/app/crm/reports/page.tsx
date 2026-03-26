@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, TrendingUp, Users, CheckCircle, XCircle, CalendarCheck, Download } from 'lucide-react'
+import { TrendingUp, Users, CheckCircle, XCircle, CalendarCheck, Download } from 'lucide-react'
 import styles from '../crm.module.css'
 
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
@@ -78,12 +78,9 @@ export default function ReportsPage() {
     return (
         <div className={styles.pageContent}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
-                    <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Reports</h1>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Analytics and performance overview</p>
-                    </div>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Reports</h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Analytics and performance overview</p>
                 </div>
                 <button onClick={handleExport} disabled={exporting} className={styles.btnSecondary}>
                     <Download size={14} /> {exporting ? 'Exporting...' : 'Export All Leads'}

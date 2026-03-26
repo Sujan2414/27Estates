@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, Plug, Copy, CheckCircle, ExternalLink, RefreshCw } from 'lucide-react'
+import { Plug, Copy, CheckCircle, ExternalLink, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import styles from '../crm.module.css'
 
@@ -66,12 +65,9 @@ export default function ConnectorsPage() {
 
     return (
         <div className={styles.pageContent}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
-                <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Connectors</h1>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Manage ad platform integrations and webhooks</p>
-                </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Connectors</h1>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Manage ad platform integrations and webhooks</p>
             </div>
 
             {/* How it works */}

@@ -2,12 +2,15 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 
-export type CRMRole = 'super_admin' | 'admin' | 'agent'
+export type CRMRole = 'super_admin' | 'admin' | 'manager' | 'agent'
 
 export interface CRMUser {
     id: string
     full_name: string
+    email?: string
     role: CRMRole
+    reporting_manager_id?: string | null
+    avatar_url?: string | null
 }
 
 export const CRMContext = createContext<CRMUser | null>(null)
@@ -16,10 +19,32 @@ export function useCRMUser(): CRMUser | null {
     return useContext(CRMContext)
 }
 
-// Role helpers
+// ── Role hierarchy helpers ─────────────────────────────────────
+// super_admin > admin > manager > agent
 export const isSuperAdmin = (u: CRMUser | null) => u?.role === 'super_admin'
-export const isAdmin = (u: CRMUser | null) => u?.role === 'super_admin' || u?.role === 'admin'
-export const isAgent = (u: CRMUser | null) => u?.role === 'agent'
+export const isAdmin      = (u: CRMUser | null) => u?.role === 'super_admin' || u?.role === 'admin'
+export const isManager    = (u: CRMUser | null) => u?.role === 'super_admin' || u?.role === 'admin' || u?.role === 'manager'
+export const isAgent      = (u: CRMUser | null) => u?.role === 'agent'
+
+// Who can approve whose leave/regularization:
+//   agent      → manager (or admin if no manager assigned)
+//   manager    → admin
+//   admin      → super_admin
+//   super_admin→ no one above (auto-flagged for self-review)
+export function approverRoleFor(role: CRMRole): CRMRole | null {
+    if (role === 'agent')      return 'manager'   // falls back to admin if no manager
+    if (role === 'manager')    return 'admin'
+    if (role === 'admin')      return 'super_admin'
+    return null  // super_admin has no approver
+}
+
+// Display label for roles
+export const ROLE_LABELS: Record<CRMRole, string> = {
+    super_admin: 'Super Admin (CEO)',
+    admin:       'Admin',
+    manager:     'Manager',
+    agent:       'Agent',
+}
 
 // ── Theme ──────────────────────────────────────────────
 export type CRMTheme = 'light' | 'dark'

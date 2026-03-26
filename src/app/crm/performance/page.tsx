@@ -70,7 +70,7 @@ export default function PerformancePage() {
     const thC: React.CSSProperties = { ...thS, textAlign: 'center' }
 
     return (
-        <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ padding: '1.5rem', width: '100%' }}>
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>

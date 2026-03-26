@@ -232,7 +232,7 @@ export default function ChatWidget() {
 
     // Hide on admin, crm, auth, dashboard, and detail pages
     const isDetailPage = /^\/(properties|projects|blog|careers)\/[^/]+$/.test(pathname || '')
-    const isHidden = pathname?.startsWith('/admin') || pathname?.startsWith('/crm') || pathname?.startsWith('/auth') || pathname?.startsWith('/dashboard') || isDetailPage
+    const isHidden = pathname?.startsWith('/admin') || pathname?.startsWith('/crm') || pathname?.startsWith('/hrms') || pathname?.startsWith('/auth') || pathname?.startsWith('/dashboard') || isDetailPage
     if (isHidden) return null
     if (!ready) return null
 

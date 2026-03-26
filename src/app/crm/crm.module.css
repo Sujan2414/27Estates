@@ -76,6 +76,7 @@
 .crmLayout {
     display: flex;
     min-height: 100vh;
+    overflow-x: hidden;
     background-color: var(--crm-bg);
     color: var(--crm-text-secondary);
 }
@@ -88,6 +89,7 @@
     bottom: 0;
     width: 240px;
     background-color: var(--crm-surface);
+    overflow: hidden;
     border-right: 1px solid var(--crm-border);
     display: flex;
     flex-direction: column;
@@ -139,17 +141,23 @@
     flex-direction: column;
     gap: 2px;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--crm-border-subtle) transparent;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.nav::-webkit-scrollbar { display: none; }
+
+.navGroup {
+    margin-bottom: 0.25rem;
 }
 
 .navSection {
-    font-size: 0.6875rem;
-    font-weight: 600;
+    font-size: 0.6rem;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--crm-text-dim);
-    padding: 1rem 0.75rem 0.5rem;
+    padding: 0.875rem 0.75rem 0.3rem;
 }
 
 .navItem {
@@ -195,14 +203,62 @@
     padding: 0.75rem;
     border-top: 1px solid var(--crm-border);
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
+
+.profileBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    background: var(--crm-elevated);
+    border: 1px solid var(--crm-border);
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+.profileBtn:hover {
+    background: var(--crm-nav-active-bg);
+}
+
+/* Footer portal buttons */
+.footerPortalBtns {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+.footerBtn {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 0.5rem 0.4rem; border-radius: 8px;
+    font-size: 0.7rem; font-weight: 600;
+    background: var(--crm-elevated);
+    border: 1px solid var(--crm-border);
+    color: var(--crm-text-muted);
+    cursor: pointer; text-decoration: none;
+    transition: all 0.15s; white-space: nowrap;
+}
+.footerBtn:hover { background: var(--crm-nav-active-bg); color: var(--crm-text-secondary); }
+.footerBtnCurrent {
+    background: var(--crm-nav-active-bg);
+    color: var(--crm-nav-active-text);
+    border-color: var(--crm-nav-active-bg);
+    cursor: default;
+    pointer-events: none;
+}
+.footerBtnFull { width: 100%; }
 
 /* Main Content */
 .main {
     flex: 1;
     margin-left: 240px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
     min-height: 100vh;
-    overflow-y: auto;
 }
 
 .topBar {
@@ -211,17 +267,53 @@
     z-index: 30;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1.5rem;
-    background-color: color-mix(in srgb, var(--crm-bg) 80%, transparent);
+    gap: 12px;
+    height: 52px;
+    padding: 0 1.5rem;
+    background-color: color-mix(in srgb, var(--crm-surface) 90%, transparent);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--crm-border);
+}
+.topBarTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--crm-text-primary);
+    flex: 1;
+}
+.mobileSidebarBtn {
+    display: none;
+    padding: 6px;
+    border: none;
+    background: none;
+    color: var(--crm-text-secondary);
+    cursor: pointer;
+    border-radius: 6px;
+}
+@media (max-width: 1024px) { .mobileSidebarBtn { display: flex; } }
+.topBarIconBtn {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px;
+    border: 1px solid var(--crm-border);
+    background: var(--crm-surface);
+    color: var(--crm-text-muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.topBarIconBtn:hover { color: var(--crm-text-secondary); background: var(--crm-elevated); }
+.notifBadge {
+    position: absolute; top: -2px; right: -2px;
+    min-width: 16px; height: 16px; border-radius: 999px;
+    padding: 0 3px;
+    background: #ef4444; color: #fff;
+    font-size: 0.575rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
 }
 
 .pageContent {
     padding: 1.5rem;
-    max-width: 1600px;
-    margin: 0 auto;
+    width: 100%;
 }
 
 /* Cards */
@@ -414,8 +506,8 @@
     .mobileMenuBtn { display: flex; }
     .sidebar { transform: translateX(-100%); }
     .sidebarOpen { transform: translateX(0); }
-    .main { margin-left: 0; }
-    .pageContent { padding: 1rem; padding-top: 4rem; }
+    .main { margin-left: 0; min-height: 100vh; }
+    .pageContent { padding: 1rem; }
     .table { font-size: 0.75rem; }
     .table th, .table td { padding: 0.5rem; }
 }
@@ -796,6 +888,48 @@
     height: 32px;
     margin-bottom: 0.5rem;
 }
+
+/* ── Smart Alert Cards ────────────────────────────── */
+.smartAlertCard {
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.smartAlertHeader {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--crm-border);
+}
+.smartAlertTitle {
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--crm-text-secondary);
+    flex: 1;
+}
+.smartAlertCount {
+    font-size: 0.65rem; font-weight: 700;
+    padding: 0.125rem 0.5rem; border-radius: 999px;
+    background: var(--crm-elevated); color: var(--crm-text-muted);
+}
+.smartAlertBody { padding: 0.25rem 0; }
+.smartAlertRow {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer; text-decoration: none;
+    border-bottom: 1px solid var(--crm-border);
+    transition: background 0.12s;
+}
+.smartAlertRow:last-child { border-bottom: none; }
+.smartAlertRow:hover { background: var(--crm-elevated); }
+.smartAlertDot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.smartAlertRowText { flex: 1; min-width: 0; }
+.smartAlertRowName {
+    font-size: 0.8125rem; font-weight: 600;
+    color: var(--crm-text-secondary);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.smartAlertRowMeta { font-size: 0.7rem; color: var(--crm-text-dim); margin-top: 1px; }
 
 /* ── Attention Card ───────────────────────────────── */
 .attentionCard {

@@ -7,7 +7,6 @@ export async function updateSession(request: NextRequest) {
     })
 
     const url = request.nextUrl
-    const isAdminRoute = url.pathname.startsWith('/admin')
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,13 +18,10 @@ export async function updateSession(request: NextRequest) {
                 },
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
+                    supabaseResponse = NextResponse.next({ request })
                     cookiesToSet.forEach(({ name, value, options }) =>
                         supabaseResponse.cookies.set(name, value, {
                             ...options,
-                            // Always persist auth cookies for 1 year so users stay logged in
                             maxAge: name.startsWith('sb-') ? 365 * 24 * 60 * 60 : options?.maxAge,
                         })
                     )
@@ -34,44 +30,24 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // Refreshing the auth token
-    const { data: { user } } = await supabase.auth.getUser()
+    // Read session from cookie only — no network call, no DB query.
+    // Full role-based auth is handled inside each layout (client-side) which
+    // can afford the extra round-trip without triggering middleware timeouts.
+    const { data: { session } } = await supabase.auth.getSession()
 
-    // Protect /admin routes - redirect to admin login if not authenticated
-    if (isAdminRoute && !url.pathname.startsWith('/admin/login')) {
-        if (!user) {
-            const loginUrl = new URL('/admin/login', request.url)
-            return NextResponse.redirect(loginUrl)
-        }
+    // Redirect unauthenticated users away from protected routes
+    const isProtected =
+        url.pathname.startsWith('/admin') && !url.pathname.startsWith('/admin/login')
 
-        // Check if user is admin (you can customize this check)
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .limit(1)
-            .maybeSingle()
-
-        const allowedRoles = ['admin', 'super_admin', 'agent']
-        if (!profile || !allowedRoles.includes(profile.role)) {
-            const homeUrl = new URL('/', request.url)
-            return NextResponse.redirect(homeUrl)
-        }
-
-        // Restrict /admin/users to admin and super_admin only
-        if (url.pathname.startsWith('/admin/users') && !['admin', 'super_admin'].includes(profile.role)) {
-            const adminUrl = new URL('/admin', request.url)
-            return NextResponse.redirect(adminUrl)
-        }
+    if (isProtected && !session) {
+        const loginUrl = new URL('/admin/login', request.url)
+        return NextResponse.redirect(loginUrl)
     }
 
-    // Protect /profile routes - redirect to login if not authenticated
-    if (url.pathname.startsWith('/profile')) {
-        if (!user) {
-            const loginUrl = new URL('/login', request.url)
-            loginUrl.searchParams.set('redirect', url.pathname)
-            return NextResponse.redirect(loginUrl)
-        }
+    if (url.pathname.startsWith('/profile') && !session) {
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirect', url.pathname)
+        return NextResponse.redirect(loginUrl)
     }
 
     return supabaseResponse

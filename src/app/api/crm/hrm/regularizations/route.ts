@@ -59,14 +59,37 @@ export async function GET(request: NextRequest) {
     }
 }
 
+function approverRoleFor(role: string): string {
+    if (role === 'agent')   return 'manager'
+    if (role === 'manager') return 'admin'
+    if (role === 'admin')   return 'super_admin'
+    return 'super_admin'
+}
+function roleWeight(role: string): number {
+    const w: Record<string, number> = { agent: 1, manager: 2, admin: 3, super_admin: 4 }
+    return w[role] ?? 0
+}
+
 // POST /api/crm/hrm/regularizations — employee applies
-// Body: { employee_id, date, reason, actual_hours }
+// Body: { employee_id, date, reason, actual_hours, requesting_user_id, requesting_user_role }
 export async function POST(request: NextRequest) {
     try {
-        const { employee_id, date, reason, actual_hours } = await request.json()
+        const { employee_id, date, reason, actual_hours, requesting_user_id, requesting_user_role } = await request.json()
         if (!employee_id || !date || !reason) {
             return NextResponse.json({ error: 'employee_id, date, and reason are required' }, { status: 400 })
         }
+
+        // Ownership check: agents & managers can only apply for themselves
+        if (requesting_user_id && requesting_user_role) {
+            const isPrivileged = requesting_user_role === 'admin' || requesting_user_role === 'super_admin'
+            if (!isPrivileged && requesting_user_id !== employee_id) {
+                return NextResponse.json({ error: 'You can only submit regularization for yourself' }, { status: 403 })
+            }
+        }
+
+        // Set requires_approval_from based on employee role
+        const { data: emp } = await supabase.from('profiles').select('role').eq('id', employee_id).single()
+        const requires_approval_from = approverRoleFor(emp?.role || 'agent')
 
         // Check monthly quota usage
         const monthStr = date.slice(0, 7) // YYYY-MM
@@ -101,7 +124,7 @@ export async function POST(request: NextRequest) {
         const { data, error } = await supabase
             .from('hrm_regularizations')
             .upsert(
-                { employee_id, date, reason, actual_hours: actual_hours || null, status: 'pending' },
+                { employee_id, date, reason, actual_hours: actual_hours || null, status: 'pending', requires_approval_from },
                 { onConflict: 'employee_id,date' }
             )
             .select(`*, employee:employee_id (id, full_name)`)
@@ -114,14 +137,37 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// PATCH /api/crm/hrm/regularizations — super_admin approves/rejects
-// Body: { id, status: 'approved'|'rejected', approved_by, admin_notes? }
+// PATCH /api/crm/hrm/regularizations — approve/reject (chain-enforced)
+// Body: { id, status, approved_by, approver_role, admin_notes? }
 export async function PATCH(request: NextRequest) {
     try {
-        const { id, status, approved_by, admin_notes } = await request.json()
+        const { id, status, approved_by, approver_role, admin_notes } = await request.json()
         if (!id || !status) return NextResponse.json({ error: 'id and status required' }, { status: 400 })
         if (!['approved', 'rejected'].includes(status)) {
             return NextResponse.json({ error: 'status must be approved or rejected' }, { status: 400 })
+        }
+
+        // Fetch regularization to check approval authority
+        const { data: reg } = await supabase
+            .from('hrm_regularizations')
+            .select('*, employee:employee_id (id, role, reporting_manager_id)')
+            .eq('id', id)
+            .single()
+
+        if (!reg) return NextResponse.json({ error: 'Regularization not found' }, { status: 404 })
+
+        const emp = reg.employee as { id: string; role: string; reporting_manager_id?: string | null } | null
+        const empRole = emp?.role || 'agent'
+        const neededRole = approverRoleFor(empRole)
+
+        if (approver_role && roleWeight(approver_role) < roleWeight(neededRole)) {
+            return NextResponse.json({
+                error: `Regularization requires approval from a ${neededRole} or above`
+            }, { status: 403 })
+        }
+
+        if (approver_role === 'manager' && approved_by && emp?.reporting_manager_id !== approved_by) {
+            return NextResponse.json({ error: 'Managers can only approve regularizations for their direct reports' }, { status: 403 })
         }
 
         const { data, error } = await supabase

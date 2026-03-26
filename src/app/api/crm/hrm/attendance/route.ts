@@ -96,13 +96,14 @@ export async function POST(request: NextRequest) {
 // Body: { employee_id, action: 'check_in'|'check_out', lat?, lng?, address? }
 export async function PATCH(request: NextRequest) {
     try {
+        const request_body = await request.json()
         const {
             employee_id,
             action,
             lat,
             lng,
             address,
-        } = await request.json()
+        } = request_body
 
         if (!employee_id || !action) {
             return NextResponse.json({ error: 'employee_id and action required' }, { status: 400 })
@@ -115,16 +116,19 @@ export async function PATCH(request: NextRequest) {
         const today = now.toISOString().split('T')[0]
 
         if (action === 'check_in') {
-            // Upsert: create or update today's record with check-in time
+            // Map 'work_from_home' page value → 'wfh' DB value
+            const rawMode = request_body?.work_mode || 'office'
+            const workMode = rawMode === 'work_from_home' ? 'wfh' : rawMode
+            const checkInStatus = rawMode === 'work_from_home' ? 'work_from_home' : 'present'
             const { data, error } = await supabase
                 .from('hrm_attendance')
                 .upsert(
                     {
                         employee_id,
                         date: today,
-                        status: 'present',
-                        work_mode: lat ? 'remote' : 'office',
-                        check_in_time: now.toISOString(),
+                        status: checkInStatus,
+                        work_mode: workMode,
+                        check_in: now.toISOString(),
                         check_in_lat: lat || null,
                         check_in_lng: lng || null,
                         check_in_address: address || null,
@@ -141,14 +145,14 @@ export async function PATCH(request: NextRequest) {
         // check_out: fetch existing record to compute hours_worked
         const { data: existing } = await supabase
             .from('hrm_attendance')
-            .select('check_in_time')
+            .select('check_in')
             .eq('employee_id', employee_id)
             .eq('date', today)
             .single()
 
         let hoursWorked: number | null = null
-        if (existing?.check_in_time) {
-            const diffMs = now.getTime() - new Date(existing.check_in_time).getTime()
+        if (existing?.check_in) {
+            const diffMs = now.getTime() - new Date(existing.check_in).getTime()
             hoursWorked = Math.round((diffMs / 3600000) * 100) / 100 // 2 decimal places
         }
 
@@ -176,7 +180,7 @@ export async function PATCH(request: NextRequest) {
                     employee_id,
                     date: today,
                     status: autoStatus,
-                    check_out_time: now.toISOString(),
+                    check_out: now.toISOString(),
                     check_out_lat: lat || null,
                     check_out_lng: lng || null,
                     check_out_address: address || null,

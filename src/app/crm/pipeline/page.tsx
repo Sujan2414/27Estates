@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, BarChart2, Columns3, Phone, Mail, Search, IndianRupee } from 'lucide-react'
+import { BarChart2, Columns3, Phone, Mail, Search, IndianRupee } from 'lucide-react'
 import styles from '../crm.module.css'
+import { useCRMUser, isAdmin, isManager } from '../crm-context'
 
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
 const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false })
@@ -68,6 +68,7 @@ const tooltipStyle = {
 }
 
 export default function PipelinePage() {
+    const crmUser = useCRMUser()
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
     const [view, setView] = useState<'kanban' | 'analytics' | 'revenue'>('kanban')
@@ -77,9 +78,16 @@ export default function PipelinePage() {
     const [pipelineSearch, setPipelineSearch] = useState('')
 
     const fetchLeads = useCallback(async () => {
+        if (!crmUser) return
         setLoading(true)
-        // fetch up to 500 leads for kanban
-        const res = await fetch('/api/crm/leads?limit=500').catch(() => null)
+        // Role-based filtering: admin/super_admin see all; manager sees team; agent sees own
+        const params = new URLSearchParams({ limit: '500' })
+        if (!isAdmin(crmUser) && !isManager(crmUser)) {
+            params.set('assigned_to', crmUser.id)
+        } else if (isManager(crmUser) && !isAdmin(crmUser)) {
+            params.set('manager_id', crmUser.id)
+        }
+        const res = await fetch(`/api/crm/leads?${params}`).catch(() => null)
         if (res?.ok) {
             const d = await res.json()
             setLeads(d.leads || [])
@@ -87,7 +95,7 @@ export default function PipelinePage() {
         setLoading(false)
     }, [])
 
-    useEffect(() => { fetchLeads() }, [fetchLeads])
+    useEffect(() => { if (crmUser) fetchLeads() }, [fetchLeads, crmUser])
 
     // Filter leads by search, then group by status into kanban columns
     const filteredLeads = pipelineSearch
@@ -188,14 +196,11 @@ export default function PipelinePage() {
         <div className={styles.pageContent} style={{ maxWidth: '100%' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
-                    <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Pipeline</h1>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>
-                            Drag leads between stages · {totalLeads.toLocaleString('en-IN')} total
-                        </p>
-                    </div>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Pipeline</h1>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>
+                        Drag leads between stages · {totalLeads.toLocaleString('en-IN')} total
+                    </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     {view === 'kanban' && (

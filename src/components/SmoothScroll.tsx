@@ -9,8 +9,14 @@ const SmoothScroll: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const pathname = usePathname();
 
     useEffect(() => {
-        // Disable Lenis on /properties, /auth, and /admin pages
-        if (pathname?.startsWith('/properties') || pathname?.startsWith('/auth') || pathname?.startsWith('/admin')) {
+        // Disable Lenis on portal pages and certain routes
+        if (
+            pathname?.startsWith('/properties') ||
+            pathname?.startsWith('/auth') ||
+            pathname?.startsWith('/admin') ||
+            pathname?.startsWith('/hrms') ||
+            pathname?.startsWith('/crm')
+        ) {
             return;
         }
 

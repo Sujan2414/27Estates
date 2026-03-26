@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Key, Globe, Bot, Mail, Shield, Save } from 'lucide-react'
+import { Key, Globe, Bot, Mail, Shield, Save } from 'lucide-react'
 import styles from '../crm.module.css'
 
 export default function SettingsPage() {
@@ -17,12 +17,9 @@ export default function SettingsPage() {
 
     return (
         <div className={styles.pageContent}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <Link href="/crm" style={{ color: 'var(--crm-text-faint)' }}><ArrowLeft size={20} /></Link>
-                <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Settings</h1>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>CRM configuration and API keys</p>
-                </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Settings</h1>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>CRM configuration and API keys</p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '1.5rem' }}>
