@@ -43,9 +43,10 @@ const StickyViewListingsBtn: React.FC = () => {
     const isProjectsPage = pathname?.startsWith('/projects');
     const isAdminPage = pathname?.startsWith('/admin');
     const isCrmPage = pathname?.startsWith('/crm');
+    const isHrmsPage = pathname?.startsWith('/hrms');
     const isAuthPage = pathname?.startsWith('/auth') || pathname?.startsWith('/login') || pathname?.startsWith('/signup');
 
-    if (isPropertiesPage || isProjectsPage || isAdminPage || isCrmPage || isAuthPage) return null;
+    if (isPropertiesPage || isProjectsPage || isAdminPage || isCrmPage || isHrmsPage || isAuthPage) return null;
 
     return (
         <div className="fixed top-6 right-6 z-50">
