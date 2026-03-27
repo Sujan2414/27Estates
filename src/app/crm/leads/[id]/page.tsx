@@ -257,9 +257,7 @@ export default function LeadDetailPage() {
                 <div className={styles.card} style={{ marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', gap: '0.375rem', overflowX: 'auto' }}>
                         {statusSteps.map((step, i) => (
-                            <button key={step} onClick={() => handleStatusChange(step)} style={{
-                                flex: 1, padding: '0.625rem 0.375rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer',
-                                fontSize: '0.6875rem', fontWeight: 600, minWidth: '80px', transition: 'all 0.2s',
+                            <button key={step} onClick={() => handleStatusChange(step)} className={styles.pipelineBtn} style={{
                                 backgroundColor: i <= currentStep ? statusConfig[step]?.color : 'var(--crm-elevated)',
                                 color: i <= currentStep ? '#fff' : 'var(--crm-text-muted)',
                             }}>{statusConfig[step]?.label}</button>

@@ -68,7 +68,7 @@ export async function PATCH(request: NextRequest) {
         const { id, ...updates } = await request.json()
         if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-        const allowed = ['title', 'description', 'assigned_to', 'status', 'priority', 'category', 'due_date']
+        const allowed = ['title', 'description', 'assigned_to', 'status', 'priority', 'category', 'due_date', 'attachment_url']
         const safe = Object.fromEntries(Object.entries(updates).filter(([k]) => allowed.includes(k)))
 
         const { data, error } = await supabase
