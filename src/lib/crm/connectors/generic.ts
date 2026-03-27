@@ -24,7 +24,7 @@ function createGenericConnector(platform: LeadSource, displayName: string): AdPl
                     return undefined
                 }
 
-                const name = findField('name', 'full_name', 'fullName', 'customer_name', 'buyer_name', 'user_name', 'contact_name')
+                const name = findField('name', 'contact', 'full_name', 'fullName', 'customer_name', 'buyer_name', 'user_name', 'contact_name')
 
                 if (!name) return null
 
