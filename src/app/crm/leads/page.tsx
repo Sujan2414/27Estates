@@ -527,8 +527,32 @@ export default function LeadsPage() {
                                         {leads.map(lead => {
                                             const isEscalated = !!lead.escalated_at
                                             const isOverdue = lead.scheduled_call_at && new Date(lead.scheduled_call_at) < new Date() && !['contacted', 'qualified', 'negotiation', 'site_visit', 'converted'].includes(lead.status)
+
+                                            // Row highlight logic
+                                            const rowBg = selectedLeads.has(lead.id)
+                                                ? 'var(--crm-accent-bg)'
+                                                : isEscalated
+                                                ? 'rgba(239,68,68,0.07)'
+                                                : isOverdue
+                                                ? 'rgba(245,158,11,0.06)'
+                                                : lead.priority === 'hot'
+                                                ? 'rgba(239,68,68,0.04)'
+                                                : lead.priority === 'warm'
+                                                ? 'rgba(245,158,11,0.04)'
+                                                : undefined
+
+                                            const rowBorderLeft = isEscalated
+                                                ? '3px solid #ef4444'
+                                                : isOverdue
+                                                ? '3px solid #f59e0b'
+                                                : lead.priority === 'hot'
+                                                ? '3px solid #ef444460'
+                                                : lead.priority === 'warm'
+                                                ? '3px solid #f59e0b50'
+                                                : '3px solid transparent'
+
                                             return (
-                                                <tr key={lead.id} style={{ cursor: 'pointer', background: selectedLeads.has(lead.id) ? 'var(--crm-accent-bg)' : isEscalated ? '#ef444408' : undefined }}
+                                                <tr key={lead.id} style={{ cursor: 'pointer', background: rowBg, borderLeft: rowBorderLeft }}
                                                     onClick={() => window.location.href = `/crm/leads/${lead.id}`}>
                                                     <td onClick={e => e.stopPropagation()}>
                                                         <button
