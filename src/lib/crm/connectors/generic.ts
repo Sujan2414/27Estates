@@ -28,19 +28,53 @@ function createGenericConnector(platform: LeadSource, displayName: string): AdPl
 
                 if (!name) return null
 
+                // Build phone: combine countryCode + mobile if separate
+                let phone = findField('phone', 'mobile', 'phone_number', 'phoneNumber', 'contact_number', 'mobile_number')
+                const countryCode = findField('countryCode', 'country_code', 'isd_code')
+                if (phone && countryCode && !phone.startsWith('+') && !phone.startsWith(countryCode)) {
+                    phone = `+${countryCode}${phone}`
+                }
+
+                // Budget: support single budget field or min/max
+                const budgetRaw = findField('budget', 'leadExpectedBudget', 'expected_budget')
+                const budgetMin = payload.budget_min ? Number(payload.budget_min)
+                    : budgetRaw ? Number(budgetRaw) : undefined
+                const budgetMax = payload.budget_max ? Number(payload.budget_max) : undefined
+
+                // Location: prefer locality over city
+                const preferred_location = findField('locality', 'location', 'area', 'city', 'preferred_location')
+
+                // Property type: combine property + propertyType if available
+                const propType = findField('propertyType', 'property_type', 'bhk', 'configuration', 'unit_type', 'bedroom')
+                const propCategory = findField('property', 'category', 'listing_type')
+                const property_type = propType && propCategory
+                    ? `${propCategory} - ${propType}`
+                    : propType || propCategory
+
+                // Campaign: project name or subsource
+                const source_campaign = findField('project', 'campaign', 'campaign_name', 'subsource', 'listing_name')
+
+                // Lead ID from MagicBricks for dedup/reference
+                const source_ad_id = findField('LeadId', 'lead_id', 'listing_id', 'property_id', 'ad_id')
+
+                // Notes: combine message + lead status if available
+                const noteBase = findField('notes', 'message', 'comments', 'requirement', 'query', 'remarks')
+                const leadStatus = findField('leadStatus', 'lead_status')
+                const notes = [noteBase, leadStatus ? `Lead Status: ${leadStatus}` : ''].filter(Boolean).join(' | ') || undefined
+
                 return {
                     name,
                     email: findField('email', 'email_id', 'emailId', 'customer_email', 'buyer_email'),
-                    phone: findField('phone', 'mobile', 'phone_number', 'phoneNumber', 'contact_number', 'mobile_number'),
+                    phone,
                     source: platform,
-                    source_campaign: findField('campaign', 'campaign_name', 'listing_type', 'project'),
-                    source_ad_id: findField('listing_id', 'property_id', 'ad_id'),
+                    source_campaign,
+                    source_ad_id,
                     source_raw_data: payload,
-                    preferred_location: findField('location', 'city', 'area', 'locality'),
-                    property_type: findField('property_type', 'bhk', 'configuration', 'unit_type', 'propertyType', 'bedroom'),
-                    budget_min: payload.budget_min ? Number(payload.budget_min) : undefined,
-                    budget_max: payload.budget_max ? Number(payload.budget_max) : undefined,
-                    notes: findField('message', 'comments', 'requirement', 'description', 'query', 'remarks'),
+                    preferred_location,
+                    property_type,
+                    budget_min: budgetMin,
+                    budget_max: budgetMax,
+                    notes,
                 }
             } catch {
                 console.error(`Failed to parse ${displayName} webhook`)
