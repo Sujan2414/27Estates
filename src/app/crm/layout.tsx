@@ -8,7 +8,7 @@ import {
     LayoutDashboard, Users, Plug, Mail,
     Settings, LogOut, Menu, X, BarChart3, Zap, Bell,
     CalendarCheck, TrendingUp, Shield, LayoutGrid,
-    Sun, Moon, MousePointerClick, ListChecks, Flame, Trophy,
+    Sun, Moon, MousePointerClick, Flame, Trophy,
 } from 'lucide-react'
 import styles from './crm.module.css'
 import { CRMContext, type CRMUser, type CRMRole, ThemeProvider, useTheme } from './crm-context'
@@ -140,7 +140,6 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                         { name: 'Analytics', href: '/crm/analytics', icon: BarChart3 },
                         { name: 'Reports', href: '/crm/reports', icon: TrendingUp },
                         { name: 'User Analytics', href: '/crm/user-analytics', icon: MousePointerClick },
-                        { name: 'Listings', href: '/crm/listings', icon: ListChecks },
                         { name: 'Warm Audience', href: '/crm/warm-audience', icon: Flame },
                     ] : []),
                 ],
