@@ -68,18 +68,6 @@ export default function PropertiesPage() {
         setDeleteId(null)
     }
 
-    const toggleFeatured = async (id: string, currentValue: boolean) => {
-        const { error } = await supabase
-            .from('properties')
-            .update({ is_featured: !currentValue })
-            .eq('id', id)
-
-        if (!error) {
-            setProperties(properties.map(p =>
-                p.id === id ? { ...p, is_featured: !currentValue } : p
-            ))
-        }
-    }
 
     const filteredProperties = properties.filter(property =>
         property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -129,6 +117,14 @@ export default function PropertiesPage() {
                 />
             </div>
 
+            {/* Info note */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 16px', marginBottom: '1.25rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px' }}>
+                <span style={{ fontSize: '1rem', flexShrink: 0, marginTop: 1 }}>💡</span>
+                <div style={{ fontSize: '0.8125rem', color: '#166534', lineHeight: 1.5 }}>
+                    <strong>Homepage Priority:</strong> Individual property listings are shown on the website in order of date added. To feature specific <strong>Projects</strong> at the top of the homepage (slots 1–6), go to the <strong>Projects</strong> section and click the ☆ star on any project card.
+                </div>
+            </div>
+
             {/* Properties Grid */}
             {loading ? (
                 <div className={styles.emptyState}>Loading properties...</div>
@@ -171,7 +167,7 @@ export default function PropertiesPage() {
                                             {property.bathrooms > 0 && <span>{property.bathrooms} Baths</span>}
                                             {property.sqft > 0 && <span>{property.sqft.toLocaleString()} sqft</span>}
                                             {property.furnishing && <span>{property.furnishing}</span>}
-                                            {!property.furnishing && (property as Record<string, unknown>).ownership && <span>{String((property as Record<string, unknown>).ownership)}</span>}
+                                            {!property.furnishing && (property as unknown as Record<string, unknown>).ownership && <span>{String((property as unknown as Record<string, unknown>).ownership)}</span>}
                                         </>
                                     )}
                                 </div>
