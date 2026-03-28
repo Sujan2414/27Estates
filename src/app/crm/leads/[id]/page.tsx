@@ -318,17 +318,24 @@ export default function LeadDetailPage() {
                                 )}
 
                                 {/* Property interested in */}
-                                {(lead.properties?.title || lead.projects?.project_name || lead.property_interest || lead.project_interest) && (
-                                    <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                                        <span style={{ color: '#f59e0b', flexShrink: 0 }}>🏢</span>
-                                        <span style={{ color: 'var(--crm-text-secondary)' }}>
-                                            Interested in:{' '}
-                                            <strong>
-                                                {lead.properties?.title || lead.projects?.project_name || lead.property_interest || lead.project_interest}
-                                            </strong>
-                                        </span>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const directName = lead.properties?.title || lead.projects?.project_name || lead.property_interest || lead.project_interest
+                                    // Fallback: parse from 99acres-style notes "| Project: XYZ" or "for Sale in XYZ,"
+                                    const notesName = !directName && lead.notes
+                                        ? (lead.notes.match(/\|\s*Project:\s*([^|]+)/i)?.[1]?.trim()
+                                            || lead.notes.match(/for (?:Sale|Rent) in ([^,|]+)/i)?.[1]?.trim())
+                                        : null
+                                    const display = directName || notesName
+                                    if (!display) return null
+                                    return (
+                                        <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                            <span style={{ color: '#f59e0b', flexShrink: 0 }}>🏢</span>
+                                            <span style={{ color: 'var(--crm-text-secondary)' }}>
+                                                Interested in: <strong>{display}</strong>
+                                            </span>
+                                        </div>
+                                    )
+                                })()}
 
                                 {/* Website signals */}
                                 {footprint?.linked && (

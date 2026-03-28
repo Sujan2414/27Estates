@@ -28,16 +28,28 @@ export const ninetyNineAcresConnector: AdPlatformConnector = {
             if (!name) return null
 
             // Extract remarks — 99acres often includes location info here
-            // e.g. "Sale in Ultima Lifestyle, Waghodia Road, Vadodara"
+            // e.g. "20625000, 3Bed Apartment for Sale in House of Hiranandani Glenridge, Hebbal, Bangalore North | Project: House of Hiranandani Glenridge"
             const remarks = getField(payload, 'remarks', 'remark', 'Remarks')
 
-            // Parse location from remarks if possible (format: "Sale in Project, Road, City")
+            // Parse location from remarks if possible (format: "..., Area, City | Project: ...")
             let location: string | undefined
+            let remarksProjectName: string | undefined
             if (remarks) {
-                const parts = remarks.split(',').map(s => s.trim())
+                // Extract project name from "| Project: ..." part
+                const projectMatch = remarks.match(/\|\s*Project:\s*(.+?)(?:\s*\||$)/i)
+                if (projectMatch) remarksProjectName = projectMatch[1].trim()
+
+                // Extract location: last comma-separated part before the "|" pipe
+                const beforePipe = remarks.split('|')[0]
+                const parts = beforePipe.split(',').map((s: string) => s.trim())
                 if (parts.length >= 2) {
-                    // Last part is usually the city
                     location = parts[parts.length - 1]
+                }
+
+                // Also try parsing "for Sale in {PropertyName}," pattern for property name
+                if (!remarksProjectName) {
+                    const saleMatch = remarks.match(/for (?:Sale|Rent) in ([^,|]+)/i)
+                    if (saleMatch) remarksProjectName = saleMatch[1].trim()
                 }
             }
 
@@ -64,8 +76,8 @@ export const ninetyNineAcresConnector: AdPlatformConnector = {
                 email: getField(payload, 'Email', 'email'),
                 phone: getField(payload, 'Mobile', 'mobile', 'phone', 'Phone'),
                 source: '99acres',
-                source_campaign: getField(payload, 'Project', 'project'),
-                project_interest: getField(payload, 'Project', 'project'),
+                source_campaign: getField(payload, 'Project', 'project') || remarksProjectName,
+                project_interest: getField(payload, 'Project', 'project') || remarksProjectName,
                 source_raw_data: payload,
                 preferred_location: location,
                 property_type: propertyType,
