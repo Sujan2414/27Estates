@@ -192,7 +192,8 @@ export default function LeadDetailPage() {
     }
     const handleAddTask = async () => {
         if (!newTask.title || !newTask.due_date) return
-        await fetch('/api/crm/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newTask }) })
+        const due_date = new Date(newTask.due_date).toISOString()
+        await fetch('/api/crm/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newTask, due_date }) })
         setShowAddTask(false); setNewTask({ title: '', due_date: '', description: '' }); fetchLead()
     }
     const handleToggleTask = async (taskId: string, completed: boolean) => {
@@ -208,7 +209,8 @@ export default function LeadDetailPage() {
     }
     const handleSaveEditTask = async () => {
         if (!editingTaskId || !editTaskData.title) return
-        await fetch('/api/crm/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingTaskId, ...editTaskData }) })
+        const due_date = editTaskData.due_date ? new Date(editTaskData.due_date).toISOString() : undefined
+        await fetch('/api/crm/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingTaskId, ...editTaskData, ...(due_date ? { due_date } : {}) }) })
         setEditingTaskId(null); fetchLead()
     }
     const handleAddVisit = async () => {
