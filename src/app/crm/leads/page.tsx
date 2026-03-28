@@ -234,8 +234,8 @@ export default function LeadsPage() {
     useEffect(() => { if (view === 'schedule') fetchSchedules() }, [view, fetchSchedules])
     useEffect(() => { fetchEmployees() }, [fetchEmployees])
 
-    const CSV_TEMPLATE = `name,email,phone,source,priority,preferred_location,property_type,budget_min,budget_max,notes
-John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,8000000,Interested in ready-to-move`
+    const CSV_TEMPLATE = `name,email,phone,source,priority,preferred_location,property_type,budget_min,budget_max,property_interest,project_interest,notes
+John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,8000000,Lumina Heights,,Interested in ready-to-move`
 
     const downloadTemplate = () => {
         const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv' })
@@ -277,6 +277,8 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                 property_type: row.property_type || undefined,
                 budget_min: row.budget_min ? Number(row.budget_min) : undefined,
                 budget_max: row.budget_max ? Number(row.budget_max) : undefined,
+                property_interest: row.property_interest || undefined,
+                project_interest: row.project_interest || undefined,
                 notes: row.notes || undefined,
             }
             const res = await fetch('/api/crm/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
@@ -973,7 +975,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
 
                                 {/* CSV columns reference */}
                                 <div style={{ fontSize: '0.7rem', color: 'var(--crm-text-faint)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
-                                    <strong>Columns:</strong> name* · email · phone · source · priority · preferred_location · property_type · budget_min · budget_max · notes
+                                    <strong>Columns:</strong> name* · email · phone · source · priority · preferred_location · property_type · budget_min · budget_max · property_interest · project_interest · notes
                                 </div>
 
                                 {/* File upload */}
