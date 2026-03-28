@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, Search, FileSpreadsheet } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, FileSpreadsheet, Star } from 'lucide-react'
 import BulkUploadModal from '@/components/admin/BulkUploadModal'
 import { proxyUrl } from '@/lib/proxy-url'
 import styles from '../admin.module.css'
@@ -27,6 +27,7 @@ interface Property {
     project_name: string | null
     property_type: string
     is_featured: boolean
+    display_order: number | null
     images: string[]
     created_at: string
 }
@@ -48,12 +49,18 @@ export default function PropertiesPage() {
             .from('properties')
             .select('*')
             .not('category', 'in', '("Commercial","Office","Offices","Warehouse")')
+            .order('display_order', { ascending: true, nullsFirst: false })
             .order('created_at', { ascending: false })
 
         if (!error && data) {
             setProperties(data)
         }
         setLoading(false)
+    }
+
+    const setPosition = async (id: string, position: number | null) => {
+        await supabase.from('properties').update({ display_order: position, is_featured: position !== null }).eq('id', id)
+        fetchProperties()
     }
 
     const handleDelete = async (id: string) => {
@@ -117,11 +124,11 @@ export default function PropertiesPage() {
                 />
             </div>
 
-            {/* Info note */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 16px', marginBottom: '1.25rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px' }}>
-                <span style={{ fontSize: '1rem', flexShrink: 0, marginTop: 1 }}>💡</span>
-                <div style={{ fontSize: '0.8125rem', color: '#166534', lineHeight: 1.5 }}>
-                    <strong>Homepage Priority:</strong> Individual property listings are shown on the website in order of date added. To feature specific <strong>Projects</strong> at the top of the homepage (slots 1–6), go to the <strong>Projects</strong> section and click the ☆ star on any project card.
+            {/* Priority note */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 16px', marginBottom: '1.25rem', backgroundColor: '#fefce8', border: '1px solid #fde68a', borderRadius: '10px' }}>
+                <Star size={16} fill="#d97706" stroke="#d97706" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div style={{ fontSize: '0.8125rem', color: '#92400e', lineHeight: 1.5 }}>
+                    <strong>Featured Priority (1–6):</strong> Click the ☆ star on any property card to feature it on the website. The next available slot (1→6) is auto-assigned. Featured properties appear first in the Properties section in that order. Click a filled star to remove it.
                 </div>
             </div>
 
@@ -132,7 +139,7 @@ export default function PropertiesPage() {
                 <div className={propertyStyles.grid}>
                     {filteredProperties.map((property) => (
                         <div key={property.id} className={propertyStyles.card}>
-                            <div className={propertyStyles.imageContainer}>
+                            <div className={propertyStyles.imageContainer} style={{ position: 'relative' }}>
                                 {property.images && property.images.length > 0 ? (
                                     <Image
                                         src={proxyUrl(property.images[0])}
@@ -144,6 +151,23 @@ export default function PropertiesPage() {
                                 ) : (
                                     <div className={propertyStyles.noImage}>No Image</div>
                                 )}
+                                {/* Star badge */}
+                                {(() => {
+                                    const isActive = !!property.display_order
+                                    const usedSlots = properties.filter(p => p.display_order !== null).map(p => p.display_order as number)
+                                    const nextSlot = [1,2,3,4,5,6].find(n => !usedSlots.includes(n))
+                                    const canAdd = !isActive && !!nextSlot && usedSlots.length < 6
+                                    return (
+                                        <button
+                                            title={isActive ? `Featured #${property.display_order} — click to remove` : canAdd ? `Click to feature as #${nextSlot}` : 'All 6 slots taken'}
+                                            onClick={() => (canAdd || isActive) ? setPosition(property.id, isActive ? null : nextSlot!) : undefined}
+                                            style={{ position: 'absolute', top: 8, left: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: canAdd || isActive ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 0, padding: 0, backgroundColor: isActive ? '#183C38' : 'rgba(255,255,255,0.88)', boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}
+                                        >
+                                            <Star size={14} fill={isActive ? '#c9a96e' : 'none'} stroke={isActive ? '#c9a96e' : '#9ca3af'} />
+                                            {isActive && <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#c9a96e', lineHeight: 1, marginTop: '-1px' }}>{property.display_order}</span>}
+                                        </button>
+                                    )
+                                })()}
                             </div>
 
                             <div className={propertyStyles.content}>
