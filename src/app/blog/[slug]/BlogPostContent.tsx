@@ -3,7 +3,6 @@
 import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowLeft, Clock, Calendar, ArrowRight, Share2 } from 'lucide-react';
 import { BlogPost } from '@/lib/blog-data';
 import styles from './blogpost.module.css';
@@ -120,12 +119,11 @@ export default function BlogPostContent({ post, relatedPosts: relatedPostsProp }
             {/* Hero Section */}
             <section ref={heroRef} className={styles.hero}>
                 <motion.div className={styles.heroImageWrap} style={{ y: heroY }}>
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                         src={post.heroImage}
                         alt={post.title}
-                        fill
-                        priority
-                        className="object-cover"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                 </motion.div>
 
@@ -238,12 +236,12 @@ export default function BlogPostContent({ post, relatedPosts: relatedPostsProp }
                             {post.contentImages && post.contentImages.length > 0 && (
                                 <figure className={styles.featuredImage}>
                                     <div className={styles.featuredImageInner}>
-                                        <Image
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
                                             src={post.contentImages[0]}
                                             alt={`${post.title} - illustration`}
-                                            width={1200}
-                                            height={680}
                                             className={styles.featuredImg}
+                                            style={{ width: '100%', height: 'auto' }}
                                         />
                                     </div>
                                 </figure>
@@ -322,11 +320,12 @@ export default function BlogPostContent({ post, relatedPosts: relatedPostsProp }
                                             className={styles.relatedCardLink}
                                         >
                                             <div className={styles.relatedCardImage}>
-                                                <Image
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
                                                     src={relatedPost.thumbnailImage}
                                                     alt={relatedPost.title}
-                                                    fill
                                                     className={styles.relatedCardImg}
+                                                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                                                 />
                                                 <div className={styles.relatedCardBadge}>
                                                     {relatedPost.category}
