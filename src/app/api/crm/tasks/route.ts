@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 // POST /api/crm/tasks - Create a task
 export async function POST(request: NextRequest) {
     try {
-        const { lead_id, title, description, due_date, assigned_to } = await request.json()
+        const { lead_id, title, description, due_date, assigned_to, created_by } = await request.json()
 
         if (!lead_id || !title || !due_date) {
             return NextResponse.json(
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
                 description: description || null,
                 due_date,
                 assigned_to: assigned_to || null,
+                created_by: created_by || null,
             })
             .select()
             .single()

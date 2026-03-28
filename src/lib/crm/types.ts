@@ -66,6 +66,8 @@ export interface LeadTask {
     is_completed: boolean
     completed_at: string | null
     assigned_to: string | null
+    created_by: string | null
+    creator_name?: string
     created_at: string
 }
 

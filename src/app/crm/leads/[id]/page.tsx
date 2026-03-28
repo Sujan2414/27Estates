@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import {
     ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, Clock,
     MessageSquare, PhoneCall, Send, StickyNote, CheckCircle2, Circle,
@@ -84,6 +85,8 @@ export default function LeadDetailPage() {
     const [editData, setEditData] = useState<Partial<Lead & { budget_min: number | null; budget_max: number | null; next_follow_up_at: string | null }>>({})
     const [tagInput, setTagInput] = useState('')
     const [saving, setSaving] = useState(false)
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    const [currentUserName, setCurrentUserName] = useState<string | null>(null)
 
     // Website footprint
     const [footprint, setFootprint] = useState<any>(null)
@@ -127,6 +130,16 @@ export default function LeadDetailPage() {
         setLoading(false)
     }
     useEffect(() => { fetchLead() }, [id])
+    useEffect(() => {
+        const supabase = createClient()
+        supabase.auth.getUser().then(({ data }) => {
+            if (data.user) {
+                setCurrentUserId(data.user.id)
+                supabase.from('profiles').select('full_name').eq('id', data.user.id).single()
+                    .then(({ data: p }) => { if (p?.full_name) setCurrentUserName(p.full_name) })
+            }
+        })
+    }, [])
 
     useEffect(() => {
         if (!lead?.email) return
@@ -193,7 +206,7 @@ export default function LeadDetailPage() {
     const handleAddTask = async () => {
         if (!newTask.title || !newTask.due_date) return
         const due_date = new Date(newTask.due_date).toISOString()
-        await fetch('/api/crm/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newTask, due_date }) })
+        await fetch('/api/crm/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newTask, due_date, created_by: currentUserId || undefined }) })
         setShowAddTask(false); setNewTask({ title: '', due_date: '', description: '' }); fetchLead()
     }
     const handleToggleTask = async (taskId: string, completed: boolean) => {
@@ -892,6 +905,11 @@ export default function LeadDetailPage() {
                                                     <div style={{ fontSize: '0.6875rem', color: overdue ? '#ef4444' : 'var(--crm-text-faint)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                         <Calendar size={10} />{formatDateTime(t.due_date)} {overdue && '· Overdue'}
                                                     </div>
+                                                    {t.creator_name && (
+                                                        <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '2px' }}>
+                                                            Added by {t.creator_name}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
                                                     <button onClick={() => handleStartEditTask(t)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-muted)', padding: '2px 4px', borderRadius: '4px' }} title="Edit">

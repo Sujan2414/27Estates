@@ -79,10 +79,23 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     // Persist updated score silently
     supabase.from('leads').update({ score, score_breakdown: breakdown }).eq('id', id).then(() => {})
 
+    // Resolve creator names for tasks
+    const rawTasks = tasksResult.data || []
+    const taskCreatorIds = [...new Set(rawTasks.map((t: { created_by: string | null }) => t.created_by).filter((id): id is string => !!id && id.includes('-')))]
+    let taskCreatorMap: Record<string, string> = {}
+    if (taskCreatorIds.length > 0) {
+        const { data: taskCreators } = await supabase.from('profiles').select('id, full_name').in('id', taskCreatorIds)
+        if (taskCreators) taskCreatorMap = Object.fromEntries(taskCreators.map((c: { id: string; full_name: string }) => [c.id, c.full_name]))
+    }
+    const tasks = rawTasks.map((t: { created_by: string | null; [key: string]: unknown }) => ({
+        ...t,
+        creator_name: t.created_by ? (taskCreatorMap[t.created_by] || t.created_by) : null,
+    }))
+
     return NextResponse.json({
         lead: { ...lead, score, score_breakdown: breakdown, ...webSignals },
         activities,
-        tasks: tasksResult.data || [],
+        tasks,
     })
 }
 
