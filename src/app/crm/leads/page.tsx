@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import {
     Search, UserPlus, Phone, ChevronLeft, ChevronRight, X, Trash2,
     Filter, Download, Star, Calendar, BarChart2, List, Users, AlertTriangle,
-    CheckCircle2, PhoneOff, Clock, RefreshCw, UserCheck, Check,
+    CheckCircle2, PhoneOff, Clock, RefreshCw, UserCheck, Check, Upload, FileText,
 } from 'lucide-react'
 import styles from '../crm.module.css'
 import { useCRMUser, isAdmin, isSuperAdmin } from '../crm-context'
@@ -114,6 +114,10 @@ export default function LeadsPage() {
     const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', source: 'manual', notes: '', priority: 'warm', preferred_location: '', property_type: '', budget_min: '', budget_max: '' })
     const [saving, setSaving] = useState(false)
     const [exporting, setExporting] = useState(false)
+    const [addModalTab, setAddModalTab] = useState<'single' | 'bulk'>('single')
+    const [bulkRows, setBulkRows] = useState<Record<string, string>[]>([])
+    const [bulkImporting, setBulkImporting] = useState(false)
+    const [bulkResult, setBulkResult] = useState<{ success: number; failed: number } | null>(null)
     const [employees, setEmployees] = useState<Employee[]>([])
     const [assigning, setAssigning] = useState<string | null>(null)
     const [escalating, setEscalating] = useState(false)
@@ -229,6 +233,58 @@ export default function LeadsPage() {
     useEffect(() => { fetchLeads() }, [fetchLeads])
     useEffect(() => { if (view === 'schedule') fetchSchedules() }, [view, fetchSchedules])
     useEffect(() => { fetchEmployees() }, [fetchEmployees])
+
+    const CSV_TEMPLATE = `name,email,phone,source,priority,preferred_location,property_type,budget_min,budget_max,notes
+John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,8000000,Interested in ready-to-move`
+
+    const downloadTemplate = () => {
+        const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a'); a.href = url; a.download = 'leads_template.csv'; a.click()
+        URL.revokeObjectURL(url)
+    }
+
+    const parseCSV = (text: string): Record<string, string>[] => {
+        const lines = text.trim().split('\n')
+        if (lines.length < 2) return []
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+        return lines.slice(1).filter(l => l.trim()).map(line => {
+            const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+            return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']))
+        })
+    }
+
+    const handleBulkFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]; if (!file) return
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+            const rows = parseCSV(ev.target?.result as string)
+            setBulkRows(rows); setBulkResult(null)
+        }
+        reader.readAsText(file)
+    }
+
+    const handleBulkImport = async () => {
+        if (!bulkRows.length) return
+        setBulkImporting(true); setBulkResult(null)
+        let success = 0; let failed = 0
+        for (const row of bulkRows) {
+            if (!row.name) { failed++; continue }
+            const payload = {
+                name: row.name, email: row.email || undefined, phone: row.phone || undefined,
+                source: row.source || 'manual', priority: row.priority || 'warm',
+                preferred_location: row.preferred_location || undefined,
+                property_type: row.property_type || undefined,
+                budget_min: row.budget_min ? Number(row.budget_min) : undefined,
+                budget_max: row.budget_max ? Number(row.budget_max) : undefined,
+                notes: row.notes || undefined,
+            }
+            const res = await fetch('/api/crm/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            if (res.ok) success++; else failed++
+        }
+        setBulkImporting(false); setBulkResult({ success, failed })
+        if (success > 0) { fetchLeads(); showToast(`${success} lead${success > 1 ? 's' : ''} imported`) }
+    }
 
     const handleAddLead = async () => {
         if (!newLead.name) return; setSaving(true)
@@ -820,71 +876,155 @@ export default function LeadsPage() {
 
             {/* Add Lead Modal */}
             {showAddModal && (
-                <div className={styles.modal} onClick={() => setShowAddModal(false)}>
-                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>Add New Lead</h3>
-                            <button onClick={() => setShowAddModal(false)} className={styles.btnIcon}><X size={16} /></button>
+                <div className={styles.modal} onClick={() => { setShowAddModal(false); setAddModalTab('single'); setBulkRows([]); setBulkResult(null) }}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: addModalTab === 'bulk' ? 560 : undefined }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>Add Lead</h3>
+                            <button onClick={() => { setShowAddModal(false); setAddModalTab('single'); setBulkRows([]); setBulkResult(null) }} className={styles.btnIcon}><X size={16} /></button>
                         </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Name *</label>
-                            <input type="text" value={newLead.name} onChange={e => setNewLead({ ...newLead, name: e.target.value })} className={styles.formInput} />
+
+                        {/* Tab switcher */}
+                        <div style={{ display: 'flex', gap: 4, marginBottom: '1.25rem', background: 'var(--crm-elevated)', padding: 4, borderRadius: 8 }}>
+                            <button onClick={() => setAddModalTab('single')} style={{ flex: 1, padding: '0.4rem', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, background: addModalTab === 'single' ? 'var(--crm-surface)' : 'transparent', color: addModalTab === 'single' ? 'var(--crm-text-secondary)' : 'var(--crm-text-muted)', boxShadow: addModalTab === 'single' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>
+                                <UserPlus size={13} style={{ marginRight: 5, verticalAlign: 'middle' }} />Single Lead
+                            </button>
+                            <button onClick={() => setAddModalTab('bulk')} style={{ flex: 1, padding: '0.4rem', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, background: addModalTab === 'bulk' ? 'var(--crm-surface)' : 'transparent', color: addModalTab === 'bulk' ? 'var(--crm-text-secondary)' : 'var(--crm-text-muted)', boxShadow: addModalTab === 'bulk' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>
+                                <Upload size={13} style={{ marginRight: 5, verticalAlign: 'middle' }} />Bulk CSV Upload
+                            </button>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            <div className={styles.formGroup} style={{ flex: 1 }}>
-                                <label className={styles.formLabel}>Email</label>
-                                <input type="email" value={newLead.email} onChange={e => setNewLead({ ...newLead, email: e.target.value })} className={styles.formInput} />
-                            </div>
-                            <div className={styles.formGroup} style={{ flex: 1 }}>
-                                <label className={styles.formLabel}>Phone</label>
-                                <input type="tel" value={newLead.phone} onChange={e => setNewLead({ ...newLead, phone: e.target.value })} className={styles.formInput} />
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            <div className={styles.formGroup} style={{ flex: 1 }}>
-                                <label className={styles.formLabel}>Source</label>
-                                <select value={newLead.source} onChange={e => setNewLead({ ...newLead, source: e.target.value })} className={styles.formSelect}>
-                                    {sources.filter(s => s !== 'all').map(s => <option key={s} value={s}>{leadSourceConfig[s]?.label || s}</option>)}
-                                </select>
-                            </div>
-                            <div className={styles.formGroup} style={{ flex: 1 }}>
-                                <label className={styles.formLabel}>Priority</label>
-                                <select value={newLead.priority} onChange={e => setNewLead({ ...newLead, priority: e.target.value })} className={styles.formSelect}>
-                                    <option value="hot">🔥 Hot</option><option value="warm">🟡 Warm</option><option value="cold">🔵 Cold</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            <div className={styles.formGroup} style={{ flex: 1 }}>
-                                <label className={styles.formLabel}>Preferred Location</label>
-                                <input type="text" value={newLead.preferred_location} onChange={e => setNewLead({ ...newLead, preferred_location: e.target.value })} placeholder="e.g. Whitefield" className={styles.formInput} />
-                            </div>
-                            <div className={styles.formGroup} style={{ flex: 1 }}>
-                                <label className={styles.formLabel}>Property Type</label>
-                                <input type="text" value={newLead.property_type} onChange={e => setNewLead({ ...newLead, property_type: e.target.value })} placeholder="e.g. 2BHK Flat" className={styles.formInput} />
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            <div className={styles.formGroup} style={{ flex: 1 }}>
-                                <label className={styles.formLabel}>Budget Min (₹)</label>
-                                <input type="number" value={newLead.budget_min} onChange={e => setNewLead({ ...newLead, budget_min: e.target.value })} className={styles.formInput} />
-                            </div>
-                            <div className={styles.formGroup} style={{ flex: 1 }}>
-                                <label className={styles.formLabel}>Budget Max (₹)</label>
-                                <input type="number" value={newLead.budget_max} onChange={e => setNewLead({ ...newLead, budget_max: e.target.value })} className={styles.formInput} />
-                            </div>
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Notes</label>
-                            <textarea value={newLead.notes} onChange={e => setNewLead({ ...newLead, notes: e.target.value })} rows={3} className={styles.formInput} style={{ resize: 'vertical' }} />
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem' }}>
-                            ⚡ Lead will be auto-assigned via round-robin after creation
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setShowAddModal(false)} className={styles.btnSecondary}>Cancel</button>
-                            <button onClick={handleAddLead} className={styles.btnPrimary} disabled={saving || !newLead.name}>{saving ? 'Saving...' : 'Add & Assign Lead'}</button>
-                        </div>
+                        {/* ── Single Lead ── */}
+                        {addModalTab === 'single' && (
+                            <>
+                                <div className={styles.formGroup}>
+                                    <label className={styles.formLabel}>Name *</label>
+                                    <input type="text" value={newLead.name} onChange={e => setNewLead({ ...newLead, name: e.target.value })} className={styles.formInput} />
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                                        <label className={styles.formLabel}>Email</label>
+                                        <input type="email" value={newLead.email} onChange={e => setNewLead({ ...newLead, email: e.target.value })} className={styles.formInput} />
+                                    </div>
+                                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                                        <label className={styles.formLabel}>Phone</label>
+                                        <input type="tel" value={newLead.phone} onChange={e => setNewLead({ ...newLead, phone: e.target.value })} className={styles.formInput} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                                        <label className={styles.formLabel}>Source</label>
+                                        <select value={newLead.source} onChange={e => setNewLead({ ...newLead, source: e.target.value })} className={styles.formSelect}>
+                                            {sources.filter(s => s !== 'all').map(s => <option key={s} value={s}>{leadSourceConfig[s]?.label || s}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                                        <label className={styles.formLabel}>Priority</label>
+                                        <select value={newLead.priority} onChange={e => setNewLead({ ...newLead, priority: e.target.value })} className={styles.formSelect}>
+                                            <option value="hot">🔥 Hot</option><option value="warm">🟡 Warm</option><option value="cold">🔵 Cold</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                                        <label className={styles.formLabel}>Preferred Location</label>
+                                        <input type="text" value={newLead.preferred_location} onChange={e => setNewLead({ ...newLead, preferred_location: e.target.value })} placeholder="e.g. Whitefield" className={styles.formInput} />
+                                    </div>
+                                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                                        <label className={styles.formLabel}>Property Type</label>
+                                        <input type="text" value={newLead.property_type} onChange={e => setNewLead({ ...newLead, property_type: e.target.value })} placeholder="e.g. 2BHK Flat" className={styles.formInput} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                                        <label className={styles.formLabel}>Budget Min (₹)</label>
+                                        <input type="number" value={newLead.budget_min} onChange={e => setNewLead({ ...newLead, budget_min: e.target.value })} className={styles.formInput} />
+                                    </div>
+                                    <div className={styles.formGroup} style={{ flex: 1 }}>
+                                        <label className={styles.formLabel}>Budget Max (₹)</label>
+                                        <input type="number" value={newLead.budget_max} onChange={e => setNewLead({ ...newLead, budget_max: e.target.value })} className={styles.formInput} />
+                                    </div>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label className={styles.formLabel}>Notes</label>
+                                    <textarea value={newLead.notes} onChange={e => setNewLead({ ...newLead, notes: e.target.value })} rows={3} className={styles.formInput} style={{ resize: 'vertical' }} />
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem' }}>
+                                    ⚡ Lead will be auto-assigned via round-robin after creation
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                    <button onClick={() => setShowAddModal(false)} className={styles.btnSecondary}>Cancel</button>
+                                    <button onClick={handleAddLead} className={styles.btnPrimary} disabled={saving || !newLead.name}>{saving ? 'Saving...' : 'Add & Assign Lead'}</button>
+                                </div>
+                            </>
+                        )}
+
+                        {/* ── Bulk CSV Upload ── */}
+                        {addModalTab === 'bulk' && (
+                            <>
+                                {/* Template download */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--crm-text-muted)' }}>
+                                        <FileText size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />
+                                        Download the CSV template, fill it in, then upload below.
+                                    </div>
+                                    <button onClick={downloadTemplate} className={styles.btnSecondary} style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                        <Download size={12} /> Template
+                                    </button>
+                                </div>
+
+                                {/* CSV columns reference */}
+                                <div style={{ fontSize: '0.7rem', color: 'var(--crm-text-faint)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+                                    <strong>Columns:</strong> name* · email · phone · source · priority · preferred_location · property_type · budget_min · budget_max · notes
+                                </div>
+
+                                {/* File upload */}
+                                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1.5rem', border: '2px dashed var(--crm-border)', borderRadius: '0.75rem', cursor: 'pointer', marginBottom: '1rem', background: 'var(--crm-bg)' }}>
+                                    <Upload size={22} style={{ color: 'var(--crm-text-muted)' }} />
+                                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>{bulkRows.length > 0 ? `${bulkRows.length} leads loaded — click to change file` : 'Click to upload CSV file'}</span>
+                                    <input type="file" accept=".csv" onChange={handleBulkFile} style={{ display: 'none' }} />
+                                </label>
+
+                                {/* Preview table */}
+                                {bulkRows.length > 0 && (
+                                    <div style={{ maxHeight: 200, overflowY: 'auto', borderRadius: '0.5rem', border: '1px solid var(--crm-border)', marginBottom: '1rem', fontSize: '0.75rem' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <thead>
+                                                <tr style={{ background: 'var(--crm-elevated)', position: 'sticky', top: 0 }}>
+                                                    {['#', 'Name', 'Phone', 'Email', 'Source', 'Priority'].map(h => (
+                                                        <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--crm-text-muted)', borderBottom: '1px solid var(--crm-border)' }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {bulkRows.map((row, i) => (
+                                                    <tr key={i} style={{ borderBottom: '1px solid var(--crm-border)', background: !row.name ? '#fef2f230' : undefined }}>
+                                                        <td style={{ padding: '5px 8px', color: 'var(--crm-text-faint)' }}>{i + 1}</td>
+                                                        <td style={{ padding: '5px 8px', color: row.name ? 'var(--crm-text-secondary)' : '#ef4444', fontWeight: 500 }}>{row.name || '⚠ missing'}</td>
+                                                        <td style={{ padding: '5px 8px', color: 'var(--crm-text-muted)' }}>{row.phone || '—'}</td>
+                                                        <td style={{ padding: '5px 8px', color: 'var(--crm-text-muted)' }}>{row.email || '—'}</td>
+                                                        <td style={{ padding: '5px 8px', color: 'var(--crm-text-muted)' }}>{row.source || 'manual'}</td>
+                                                        <td style={{ padding: '5px 8px', color: 'var(--crm-text-muted)' }}>{row.priority || 'warm'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
+                                {/* Result */}
+                                {bulkResult && (
+                                    <div style={{ padding: '0.625rem 0.875rem', borderRadius: '0.5rem', marginBottom: '0.75rem', background: bulkResult.failed === 0 ? '#f0fdf4' : '#fefce8', border: `1px solid ${bulkResult.failed === 0 ? '#bbf7d0' : '#fde68a'}`, fontSize: '0.8rem', color: bulkResult.failed === 0 ? '#166534' : '#92400e' }}>
+                                        ✅ {bulkResult.success} imported{bulkResult.failed > 0 ? ` · ⚠ ${bulkResult.failed} failed (missing name)` : ''}
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                    <button onClick={() => { setBulkRows([]); setBulkResult(null) }} className={styles.btnSecondary} disabled={bulkImporting}>Clear</button>
+                                    <button onClick={handleBulkImport} className={styles.btnPrimary} disabled={bulkImporting || bulkRows.length === 0}>
+                                        {bulkImporting ? `Importing… (${bulkRows.length})` : `Import ${bulkRows.length} Lead${bulkRows.length !== 1 ? 's' : ''}`}
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
