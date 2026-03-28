@@ -317,6 +317,19 @@ export default function LeadDetailPage() {
                                     </div>
                                 )}
 
+                                {/* Property interested in */}
+                                {(lead.properties?.title || lead.projects?.project_name || lead.property_interest || lead.project_interest) && (
+                                    <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                        <span style={{ color: '#f59e0b', flexShrink: 0 }}>🏢</span>
+                                        <span style={{ color: 'var(--crm-text-secondary)' }}>
+                                            Interested in:{' '}
+                                            <strong>
+                                                {lead.properties?.title || lead.projects?.project_name || lead.property_interest || lead.project_interest}
+                                            </strong>
+                                        </span>
+                                    </div>
+                                )}
+
                                 {/* Website signals */}
                                 {footprint?.linked && (
                                     <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
