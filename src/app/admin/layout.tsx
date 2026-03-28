@@ -126,9 +126,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
                 {/* Brand */}
                 <div className={styles.sidebarHeader}>
-                    <div style={{ backgroundColor: '#183C38', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, flexShrink: 0, overflow: 'hidden' }}>
+                    <div style={{ backgroundColor: '#183C38', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 52, height: 52, flexShrink: 0 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 64, height: 64, objectFit: 'contain', transform: 'scale(1.6)', transformOrigin: 'center' }} />
+                        <img src="/27 Estates_Logo.png" alt="27 Estates" style={{ width: 60, height: 60, objectFit: 'contain', transform: 'scale(1.6)', transformOrigin: 'center' }} />
                     </div>
                     <div>
                         <div className={styles.logoText}>27 Estates</div>

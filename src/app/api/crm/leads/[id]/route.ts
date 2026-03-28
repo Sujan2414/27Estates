@@ -56,8 +56,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         }
     }
 
-    // Recalculate score with behavioural boost
-    const activities = activitiesResult.data || []
+    // Resolve creator names for activities
+    const rawActivities = activitiesResult.data || []
+    const creatorIds = [...new Set(rawActivities.map((a: { created_by: string }) => a.created_by).filter((id: string) => id && id !== 'admin' && id.includes('-')))]
+    let creatorMap: Record<string, string> = {}
+    if (creatorIds.length > 0) {
+        const { data: creators } = await supabase.from('profiles').select('id, full_name').in('id', creatorIds)
+        if (creators) creatorMap = Object.fromEntries(creators.map((c: { id: string; full_name: string }) => [c.id, c.full_name]))
+    }
+    const activities = rawActivities.map((a: { created_by: string; [key: string]: unknown }) => ({
+        ...a,
+        creator_name: creatorMap[a.created_by] || (a.created_by === 'admin' ? 'Admin' : a.created_by),
+    }))
     const { score, breakdown } = calculateScore({
         source: lead.source, email: lead.email, phone: lead.phone,
         budget_min: lead.budget_min, budget_max: lead.budget_max,

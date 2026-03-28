@@ -390,9 +390,9 @@ const Dashboard = () => {
                 { data: warehouseData },
             ] = await Promise.all([
                 supabase.from('properties').select('*').order('created_at', { ascending: false }),
-                supabase.from('projects').select('*').eq('section', 'residential').order('created_at', { ascending: false }),
-                supabase.from('projects').select('*').eq('section', 'commercial').order('created_at', { ascending: false }),
-                supabase.from('projects').select('*').eq('section', 'warehouse').order('created_at', { ascending: false }),
+                supabase.from('projects').select('*').eq('section', 'residential').order('display_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
+                supabase.from('projects').select('*').eq('section', 'commercial').order('display_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
+                supabase.from('projects').select('*').eq('section', 'warehouse').order('display_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
             ]);
 
             if (propsError) throw propsError;

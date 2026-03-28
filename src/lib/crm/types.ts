@@ -53,6 +53,7 @@ export interface LeadActivity {
     description: string | null
     metadata: Record<string, unknown> | null
     created_by: string
+    creator_name?: string
     created_at: string
 }
 

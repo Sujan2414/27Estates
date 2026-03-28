@@ -24,6 +24,7 @@ interface Project {
     min_price: string | null
     max_price: string | null
     is_featured: boolean
+    display_order: number | null
     images: string[]
     created_at: string
 }
@@ -45,6 +46,7 @@ export default function ProjectsPage() {
             .from('projects')
             .select('*')
             .or('section.eq.residential,section.is.null')
+            .order('display_order', { ascending: true, nullsFirst: false })
             .order('created_at', { ascending: false })
 
         if (!error && data) {
@@ -65,18 +67,14 @@ export default function ProjectsPage() {
         setDeleteId(null)
     }
 
-    const toggleFeatured = async (id: string, currentValue: boolean) => {
+    const setPosition = async (id: string, position: number | null) => {
         const { error } = await supabase
             .from('projects')
-            .update({ is_featured: !currentValue })
+            .update({ display_order: position, is_featured: position !== null })
             .eq('id', id)
-
-        if (!error) {
-            setProjects(projects.map(p =>
-                p.id === id ? { ...p, is_featured: !currentValue } : p
-            ))
-        }
+        if (!error) fetchProjects()
     }
+
 
     const filteredProjects = projects.filter(project =>
         project.project_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -122,7 +120,7 @@ export default function ProjectsPage() {
                 <div className={propertyStyles.grid}>
                     {filteredProjects.map((project) => (
                         <div key={project.id} className={propertyStyles.card}>
-                            <div className={propertyStyles.imageContainer}>
+                            <div className={propertyStyles.imageContainer} style={{ position: 'relative' }}>
                                 {project.images && project.images.length > 0 ? (
                                     <Image
                                         src={proxyUrl(project.images[0])}
@@ -134,12 +132,37 @@ export default function ProjectsPage() {
                                 ) : (
                                     <div className={propertyStyles.noImage}>No Image</div>
                                 )}
+
+                                {/* Priority position badge */}
+                                <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4, zIndex: 10 }}>
+                                    {[1,2,3,4,5,6].map(n => {
+                                        const isActive = project.display_order === n
+                                        const takenBy = projects.find(p => p.display_order === n && p.id !== project.id)
+                                        return (
+                                            <button
+                                                key={n}
+                                                title={takenBy ? `Slot ${n} taken by "${takenBy.project_name}"` : isActive ? `Remove from slot ${n}` : `Set as slot ${n}`}
+                                                onClick={() => setPosition(project.id, isActive ? null : n)}
+                                                style={{
+                                                    width: 22, height: 22, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                                                    fontSize: '0.65rem', fontWeight: 700, lineHeight: 1,
+                                                    backgroundColor: isActive ? '#183C38' : takenBy ? '#9ca3af' : 'rgba(255,255,255,0.85)',
+                                                    color: isActive ? '#c9a96e' : takenBy ? '#fff' : '#374151',
+                                                    boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                                                    outline: isActive ? '2px solid #c9a96e' : 'none',
+                                                    outlineOffset: 1,
+                                                }}
+                                            >{n}</button>
+                                        )
+                                    })}
+                                </div>
                             </div>
 
                             <div className={propertyStyles.content}>
                                 <div className={propertyStyles.tags}>
                                     <span className={propertyStyles.tag}>{project.status}</span>
                                     <span className={propertyStyles.tag}>{project.category}</span>
+                                    {project.display_order && <span className={propertyStyles.tag} style={{ background: '#183C38', color: '#c9a96e' }}>#{project.display_order} Featured</span>}
                                 </div>
 
                                 <h3 className={propertyStyles.title}>{project.project_name}</h3>

@@ -7,7 +7,7 @@ import {
     MessageSquare, PhoneCall, Send, StickyNote, CheckCircle2, Circle,
     Plus, Eye, Tag, IndianRupee, Star, TrendingUp, CalendarCheck,
     Home, Edit3, Save, X, Sliders, Ruler, Banknote,
-    Globe, Bookmark, Activity
+    Globe, Bookmark, Activity, Trash2, Pencil
 } from 'lucide-react'
 import styles from '../../crm.module.css'
 import type { Lead, LeadActivity, LeadTask } from '@/lib/crm/types'
@@ -76,6 +76,8 @@ export default function LeadDetailPage() {
     const [showLostModal, setShowLostModal] = useState(false)
     const [newActivity, setNewActivity] = useState({ type: 'note', title: '', description: '' })
     const [newTask, setNewTask] = useState({ title: '', due_date: '', description: '' })
+    const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
+    const [editTaskData, setEditTaskData] = useState({ title: '', description: '', due_date: '' })
     const [newVisit, setNewVisit] = useState({ visit_date: '', visit_time: '', notes: '' })
     const [lostReason, setLostReason] = useState('')
     const [editing, setEditing] = useState(false)
@@ -195,6 +197,19 @@ export default function LeadDetailPage() {
     }
     const handleToggleTask = async (taskId: string, completed: boolean) => {
         await fetch('/api/crm/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: taskId, is_completed: !completed }) }); fetchLead()
+    }
+    const handleDeleteTask = async (taskId: string) => {
+        if (!confirm('Delete this task?')) return
+        await fetch(`/api/crm/tasks?id=${taskId}`, { method: 'DELETE' }); fetchLead()
+    }
+    const handleStartEditTask = (t: LeadTask) => {
+        setEditingTaskId(t.id)
+        setEditTaskData({ title: t.title, description: t.description || '', due_date: t.due_date?.slice(0, 16) || '' })
+    }
+    const handleSaveEditTask = async () => {
+        if (!editingTaskId || !editTaskData.title) return
+        await fetch('/api/crm/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingTaskId, ...editTaskData }) })
+        setEditingTaskId(null); fetchLead()
     }
     const handleAddVisit = async () => {
         if (!newVisit.visit_date) return
@@ -821,7 +836,7 @@ export default function LeadDetailPage() {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{a.title}</div>
                                         {a.description && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '0.125rem' }}>{a.description}</div>}
-                                        <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>{formatRelative(a.created_at)} · {a.created_by}</div>
+                                        <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>{formatRelative(a.created_at)} · {a.creator_name || a.created_by}</div>
                                     </div>
                                 </div>
                             )) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No activity yet</div>}
@@ -848,21 +863,44 @@ export default function LeadDetailPage() {
                             )}
                             {tasks.length > 0 ? tasks.map(t => {
                                 const overdue = !t.is_completed && new Date(t.due_date) < new Date()
+                                const isEditing = editingTaskId === t.id
                                 return (
                                     <div key={t.id} style={{
-                                        display: 'flex', alignItems: 'flex-start', gap: '0.625rem', padding: '0.625rem', borderRadius: '0.375rem', marginBottom: '0.375rem',
-                                        backgroundColor: overdue ? '#ef444410' : 'var(--crm-elevated)', border: `1px solid ${overdue ? '#ef444430' : 'var(--crm-border)'}`, opacity: t.is_completed ? 0.5 : 1,
+                                        borderRadius: '0.375rem', marginBottom: '0.375rem',
+                                        backgroundColor: overdue ? '#ef444410' : 'var(--crm-elevated)', border: `1px solid ${overdue ? '#ef444430' : 'var(--crm-border)'}`, opacity: t.is_completed ? 0.55 : 1,
                                     }}>
-                                        <button onClick={() => handleToggleTask(t.id, t.is_completed)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: t.is_completed ? '#22c55e' : 'var(--crm-text-muted)', marginTop: '2px' }}>
-                                            {t.is_completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
-                                        </button>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--crm-text-secondary)', textDecoration: t.is_completed ? 'line-through' : 'none' }}>{t.title}</div>
-                                            {t.description && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '2px' }}>{t.description}</div>}
-                                            <div style={{ fontSize: '0.6875rem', color: overdue ? '#ef4444' : 'var(--crm-text-faint)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <Calendar size={10} />{formatDateTime(t.due_date)} {overdue && '· Overdue'}
+                                        {isEditing ? (
+                                            <div style={{ padding: '0.625rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                                <input type="text" value={editTaskData.title} onChange={e => setEditTaskData({ ...editTaskData, title: e.target.value })} className={styles.formInput} placeholder="Task title" />
+                                                <input type="datetime-local" value={editTaskData.due_date} onChange={e => setEditTaskData({ ...editTaskData, due_date: e.target.value })} className={styles.formInput} />
+                                                <textarea value={editTaskData.description} onChange={e => setEditTaskData({ ...editTaskData, description: e.target.value })} placeholder="Notes (optional)" rows={2} className={styles.formInput} style={{ resize: 'vertical' }} />
+                                                <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'flex-end' }}>
+                                                    <button onClick={() => setEditingTaskId(null)} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Cancel</button>
+                                                    <button onClick={handleSaveEditTask} className={styles.btnPrimary} style={{ fontSize: '0.75rem' }} disabled={!editTaskData.title}>Save</button>
+                                                </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.625rem', padding: '0.625rem' }}>
+                                                <button onClick={() => handleToggleTask(t.id, t.is_completed)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: t.is_completed ? '#22c55e' : 'var(--crm-text-muted)', marginTop: '2px', flexShrink: 0 }}>
+                                                    {t.is_completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                                                </button>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--crm-text-secondary)', textDecoration: t.is_completed ? 'line-through' : 'none' }}>{t.title}</div>
+                                                    {t.description && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '2px' }}>{t.description}</div>}
+                                                    <div style={{ fontSize: '0.6875rem', color: overdue ? '#ef4444' : 'var(--crm-text-faint)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <Calendar size={10} />{formatDateTime(t.due_date)} {overdue && '· Overdue'}
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+                                                    <button onClick={() => handleStartEditTask(t)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-muted)', padding: '2px 4px', borderRadius: '4px' }} title="Edit">
+                                                        <Pencil size={13} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteTask(t.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px 4px', borderRadius: '4px' }} title="Delete">
+                                                        <Trash2 size={13} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )
                             }) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No tasks</div>}

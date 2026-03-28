@@ -10,7 +10,8 @@ export default async function HomePage() {
     // Fetch featured projects for SEO
     const { data: projects } = await supabase
         .from('projects')
-        .select('id, project_name, location, city, category, developer_name, min_price, max_price, bhk_options')
+        .select('id, project_name, location, city, category, developer_name, min_price, max_price, bhk_options, display_order')
+        .order('display_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(20);
 

@@ -73,13 +73,22 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// PATCH /api/crm/tasks - Complete a task
+// PATCH /api/crm/tasks - Update a task (complete, edit title/description/due_date)
 export async function PATCH(request: NextRequest) {
     try {
-        const { id, is_completed } = await request.json()
+        const body = await request.json()
+        const { id, is_completed, title, description, due_date } = body
 
-        const updateData: Record<string, unknown> = { is_completed }
-        if (is_completed) updateData.completed_at = new Date().toISOString()
+        if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+        const updateData: Record<string, unknown> = {}
+        if (typeof is_completed === 'boolean') {
+            updateData.is_completed = is_completed
+            if (is_completed) updateData.completed_at = new Date().toISOString()
+        }
+        if (title !== undefined) updateData.title = title
+        if (description !== undefined) updateData.description = description || null
+        if (due_date !== undefined) updateData.due_date = due_date
 
         const { data, error } = await supabase
             .from('lead_tasks')
@@ -88,12 +97,20 @@ export async function PATCH(request: NextRequest) {
             .select()
             .single()
 
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 })
-        }
-
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
         return NextResponse.json({ task: data })
     } catch {
         return NextResponse.json({ error: 'Failed to update task' }, { status: 500 })
     }
+}
+
+// DELETE /api/crm/tasks - Delete a task
+export async function DELETE(request: NextRequest) {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+    const { error } = await supabase.from('lead_tasks').delete().eq('id', id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
 }
