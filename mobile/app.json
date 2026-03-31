@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "21 Estates",
+    "slug": "21-estates-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.estates21.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "21 Estates tracks your location during your work shift to help your team coordinate.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "21 Estates tracks your location in the background during your work shift.",
+        "NSMicrophoneUsageDescription": "21 Estates uses the microphone for call recording with AI summarisation.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.estates21.mobile",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "21 Estates needs location access to verify site visits and track attendance."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#C9930A"
+        }
+      ],
+      "expo-asset",
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsImpl": "mapbox",
+          "RNMapboxMapsDownloadToken": "sk.REPLACE_WITH_YOUR_MAPBOX_SECRET_TOKEN"
+        }
+      ]
+    ],
+    "scheme": "estates21",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
