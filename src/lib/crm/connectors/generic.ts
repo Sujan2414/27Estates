@@ -94,7 +94,6 @@ function createGenericConnector(platform: LeadSource, displayName: string): AdPl
     }
 }
 
-export const magicBricksConnector = createGenericConnector('magicbricks', 'MagicBricks')
 export const housingConnector = createGenericConnector('housing', 'Housing.com')
 export const justDialConnector = createGenericConnector('justdial', 'JustDial')
 
