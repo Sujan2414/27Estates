@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, StyleSheet, Pressable,
-  ActivityIndicator, Text,
+  ActivityIndicator, Text, Linking,
 } from 'react-native'
-import Mapbox, { Camera, MarkerView, MapView } from '@rnmapbox/maps'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, shadows } from '@/theme/colors'
 import { EmployeePin } from './EmployeePin'
@@ -18,10 +17,27 @@ import {
   type PropertyPin as PropertyPinData,
   type MapFilters,
 } from '@/lib/map-data'
-import { MAP_STYLE_URL } from '@/lib/mapbox-style'
+import { MAP_STYLE_URL, MAPBOX_ACCESS_TOKEN } from '@/lib/mapbox-style'
 import { supabase } from '@/lib/supabase'
 
-Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN!)
+// Gracefully handle missing native module (Expo Go doesn't support Mapbox)
+let Mapbox: any = null
+let Camera: any = null
+let MarkerView: any = null
+let MapView: any = null
+let hasNativeMap = false
+
+try {
+  const maps = require('@rnmapbox/maps')
+  Mapbox = maps.default
+  Camera = maps.Camera
+  MarkerView = maps.MarkerView
+  MapView = maps.MapView
+  Mapbox.setAccessToken(MAPBOX_ACCESS_TOKEN)
+  hasNativeMap = true
+} catch (e) {
+  console.warn('[MapScreen] Mapbox native module not available. Use a dev build.')
+}
 
 const DEFAULT_CENTER: [number, number] = [77.5946, 12.9716]
 const DEFAULT_ZOOM = 11
@@ -98,6 +114,26 @@ export function MapScreen() {
       cameraRef.current?.zoomTo(16, 600)
     }
   }, [employees])
+
+  // Fallback for Expo Go (no native Mapbox module)
+  if (!hasNativeMap) {
+    return (
+      <View style={styles.fallback}>
+        <Ionicons name="map-outline" size={64} color={colors.primary} />
+        <Text style={styles.fallbackTitle}>Map requires Dev Build</Text>
+        <Text style={styles.fallbackText}>
+          Mapbox native maps aren't available in Expo Go.{'\n'}
+          Run "npx expo run:android" or "npx expo run:ios" to create a dev build with native map support.
+        </Text>
+        <Pressable
+          style={styles.fallbackBtn}
+          onPress={() => Linking.openURL('https://rnmapbox.github.io/docs/install?rebuild=expo#rebuild')}
+        >
+          <Text style={styles.fallbackBtnText}>View Setup Guide</Text>
+        </Pressable>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>

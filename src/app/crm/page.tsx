@@ -105,7 +105,7 @@ export default function CRMDashboard() {
     const { theme } = useTheme()
     const crmUser = useCRMUser()
     const isAdminUser = isAdmin(crmUser)
-    const isManagerUser = isManager(crmUser)
+    const isManagerUser = isManager(crmUser) && !isAdminUser
     const isAgentUser = isAgent(crmUser)
 
     const tooltipStyle = {
@@ -115,10 +115,19 @@ export default function CRMDashboard() {
     }
 
     useEffect(() => {
+        if (!crmUser) return
         async function fetchAll() {
+            // Build leads URL based on role:
+            // Agent: only their assigned leads
+            // Manager: their team's leads
+            // Admin/Super Admin: all leads
+            const leadsParams = new URLSearchParams({ limit: '8' })
+            if (isAgentUser && crmUser?.id) leadsParams.set('assigned_to', crmUser.id)
+            else if (isManagerUser && crmUser?.id) leadsParams.set('manager_id', crmUser.id)
+
             const [statsRes, leadsRes, usageRes, alertsRes] = await Promise.all([
                 fetch('/api/crm/stats').catch(() => null),
-                fetch(`/api/crm/leads?limit=8${isAgentUser && crmUser?.id ? `&assigned_to=${crmUser.id}` : ''}${!isAdminUser && isManagerUser && crmUser?.id ? `&manager_id=${crmUser.id}` : ''}`).catch(() => null),
+                fetch(`/api/crm/leads?${leadsParams}`).catch(() => null),
                 fetch('/api/crm/api-usage').catch(() => null),
                 fetch('/api/crm/smart-alerts').catch(() => null),
             ])
@@ -129,7 +138,7 @@ export default function CRMDashboard() {
             setLoading(false)
         }
         fetchAll()
-    }, [])
+    }, [crmUser, isAgentUser, isManagerUser])
 
     const formatRelative = (d: string) => {
         const ms = Date.now() - new Date(d).getTime()

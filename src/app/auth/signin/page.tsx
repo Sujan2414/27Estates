@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "@/components/auth/AuthLayout";
@@ -27,6 +27,12 @@ function LoginContent() {
     const searchParams = useSearchParams();
     const supabase = createClient();
 
+    useEffect(() => {
+        if (searchParams?.get("error") === "Verification_Failed") {
+            setError("This email confirmation link has expired or is invalid. If you requested a new one, please use the most recent email. Otherwise, try signing in.");
+        }
+    }, [searchParams]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -44,19 +50,36 @@ function LoginContent() {
                 // Always persist session cookie; "Remember Me" is default on
                 await fetch('/api/auth/session', { method: 'POST' });
 
-                // Sync profile row
+                // Sync profile row — use UPDATE for existing users to preserve role,
+                // INSERT only for brand-new profiles (edge case)
                 const meta = data.user.user_metadata || {};
-                await supabase.from('profiles').upsert({
-                    id: data.user.id,
+                const profilePayload = {
                     email: data.user.email || null,
                     full_name: meta.full_name || null,
                     first_name: meta.first_name || null,
                     last_name: meta.last_name || null,
                     phone: meta.phone || null,
                     updated_at: new Date().toISOString(),
-                }, { onConflict: 'id' }).then(({ error }) => {
-                    if (error) console.error('Profile sync error:', error);
-                });
+                };
+
+                // Try update first (preserves existing role)
+                const { data: updated } = await supabase
+                    .from('profiles')
+                    .update(profilePayload)
+                    .eq('id', data.user.id)
+                    .select('id')
+                    .single();
+
+                // If no row existed, insert with default role
+                if (!updated) {
+                    await supabase.from('profiles').insert({
+                        id: data.user.id,
+                        ...profilePayload,
+                        role: 'user',
+                    }).then(({ error }) => {
+                        if (error) console.error('Profile insert error:', error);
+                    });
+                }
 
                 const redirectTo = searchParams?.get('redirect') || '/properties';
                 router.push(redirectTo);

@@ -45,9 +45,10 @@ CREATE INDEX IF NOT EXISTS idx_career_applications_status ON career_applications
 ALTER TABLE career_openings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE career_applications ENABLE ROW LEVEL SECURITY;
 
--- Public can read active openings
+-- Everyone (anonymous + logged-in users) can read active openings
 CREATE POLICY "Anyone can view active openings"
     ON career_openings FOR SELECT
+    TO anon, authenticated
     USING (is_active = true);
 
 -- Admins can do everything on openings
@@ -61,9 +62,10 @@ CREATE POLICY "Admins can manage openings"
         )
     );
 
--- Public can insert applications (anyone can apply)
+-- Everyone (anonymous + logged-in users) can apply
 CREATE POLICY "Anyone can submit applications"
     ON career_applications FOR INSERT
+    TO anon, authenticated
     WITH CHECK (true);
 
 -- Admins can read and update applications

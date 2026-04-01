@@ -54,6 +54,7 @@ export default function LeaveAllocationsPage() {
     const [saving, setSaving] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
     const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+    const [editingEmployee, setEditingEmployee] = useState<string | null>(null)
 
     const showToast = (msg: string, ok = true) => {
         setToast({ msg, ok })
@@ -281,9 +282,9 @@ export default function LeaveAllocationsPage() {
                             <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                                 <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Employee</th>
                                 {LEAVE_TYPES.map((lt) => (
-                                    <th key={lt} style={{ padding: '0.75rem 0.5rem', textAlign: 'center', fontWeight: 600, color: '#374151', minWidth: 100 }}>
+                                    <th key={lt} style={{ padding: '0.75rem 0.5rem', textAlign: 'center', fontWeight: 600, color: '#374151', minWidth: 90 }}>
                                         {LEAVE_LABELS[lt]}
-                                        <div style={{ fontSize: '0.625rem', color: 'var(--crm-text-muted)', fontWeight: 400 }}>Alloc / Used / Bal</div>
+                                        <div style={{ fontSize: '0.625rem', color: 'var(--crm-text-muted)', fontWeight: 400 }}>Balance / Used</div>
                                     </th>
                                 ))}
                                 <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600, color: '#374151' }}>Actions</th>
@@ -307,19 +308,11 @@ export default function LeaveAllocationsPage() {
                                         const balColor = a.balance < 0 ? '#fee2e2' : a.balance <= 2 ? '#fef9c3' : '#dcfce7'
                                         return (
                                             <td key={lt} style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center' }}>
-                                                    <input
-                                                        type="number"
-                                                        min={0}
-                                                        max={365}
-                                                        value={a.allocated}
-                                                        onChange={(e) => handleChange(row.employee.id, lt, parseInt(e.target.value) || 0)}
-                                                        style={{ width: 52, textAlign: 'center', padding: '0.25rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: 600 }}
-                                                    />
-                                                    <span style={{ color: 'var(--crm-text-muted)', fontSize: '0.75rem' }}>/{a.used}</span>
-                                                    <span style={{ background: balColor, borderRadius: '0.25rem', padding: '0.125rem 0.375rem', fontSize: '0.75rem', fontWeight: 600, color: '#374151', minWidth: 28 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', justifyContent: 'center' }}>
+                                                    <span style={{ background: balColor, borderRadius: '0.375rem', padding: '0.25rem 0.625rem', fontSize: '0.875rem', fontWeight: 700, color: a.balance < 0 ? '#dc2626' : '#374151', minWidth: 32, display: 'inline-block', textAlign: 'center' }}>
                                                         {a.balance}
                                                     </span>
+                                                    <span style={{ color: 'var(--crm-text-muted)', fontSize: '0.75rem' }}>/ {a.used} used</span>
                                                 </div>
                                             </td>
                                         )
@@ -327,11 +320,15 @@ export default function LeaveAllocationsPage() {
                                     <td style={{ padding: '0.5rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                             <button
-                                                onClick={() => applyDefaults(row.employee.id)}
-                                                title="Apply default quotas"
-                                                style={{ padding: '0.375rem 0.625rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--crm-text-faint)' }}
+                                                onClick={() => {
+                                                    const row2 = grid.find(r => r.employee.id === row.employee.id)
+                                                    if (!row2) return
+                                                    // Toggle edit mode — show allocation input
+                                                    setEditingEmployee(prev => prev === row.employee.id ? null : row.employee.id)
+                                                }}
+                                                style={{ padding: '0.375rem 0.625rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', background: editingEmployee === row.employee.id ? '#f3f4f6' : 'white', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--crm-text-faint)' }}
                                             >
-                                                Defaults
+                                                ✏️ Edit
                                             </button>
                                             <button
                                                 onClick={() => saveRow(row.employee.id)}
@@ -345,6 +342,42 @@ export default function LeaveAllocationsPage() {
                                     </td>
                                 </tr>
                             ))}
+                            {/* Inline edit row — appears below the selected employee */}
+                            {editingEmployee && (() => {
+                                const row = grid.find(r => r.employee.id === editingEmployee)
+                                if (!row) return null
+                                return (
+                                    <tr style={{ background: '#f0fdf4', borderBottom: '1px solid #bbf7d0' }}>
+                                        <td style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', color: '#166534', fontWeight: 600 }}>
+                                            Set allocation for {row.employee.full_name}
+                                        </td>
+                                        {LEAVE_TYPES.map((lt) => {
+                                            const a = row.allocations[lt]
+                                            return (
+                                                <td key={lt} style={{ padding: '0.5rem', textAlign: 'center' }}>
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        max={365}
+                                                        value={a.allocated}
+                                                        onChange={(e) => handleChange(row.employee.id, lt, parseInt(e.target.value) || 0)}
+                                                        style={{ width: 56, textAlign: 'center', padding: '0.3rem', border: '1.5px solid #22c55e', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: 600, background: '#f0fdf4' }}
+                                                    />
+                                                </td>
+                                            )
+                                        })}
+                                        <td style={{ padding: '0.5rem 1rem', textAlign: 'center' }}>
+                                            <button
+                                                onClick={() => applyDefaults(row.employee.id)}
+                                                title="Apply default quotas"
+                                                style={{ padding: '0.375rem 0.625rem', border: '1px solid #bbf7d0', borderRadius: '0.375rem', background: 'white', cursor: 'pointer', fontSize: '0.7rem', color: '#166534' }}
+                                            >
+                                                Reset Defaults
+                                            </button>
+                                        </td>
+                                    </tr>
+                                )
+                            })()}
                         </tbody>
                     </table>
                 </div>

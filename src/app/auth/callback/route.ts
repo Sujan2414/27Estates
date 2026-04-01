@@ -17,6 +17,8 @@ export async function GET(request: Request) {
             if (type === 'recovery') return NextResponse.redirect(`${origin}/auth/reset-password`)
             if (type === 'signup' || type === 'email') return NextResponse.redirect(`${origin}/auth/confirmed`)
             return NextResponse.redirect(`${origin}${redirect}`)
+        } else {
+            console.error('verifyOtp error:', error)
         }
     }
 
@@ -27,9 +29,11 @@ export async function GET(request: Request) {
             if (type === 'recovery') return NextResponse.redirect(`${origin}/auth/reset-password`)
             if (type === 'signup') return NextResponse.redirect(`${origin}/auth/confirmed`)
             return NextResponse.redirect(`${origin}${redirect}`)
+        } else {
+            console.error('exchangeCodeForSession error:', error)
         }
     }
 
-    // Both failed — redirect to sign in
-    return NextResponse.redirect(`${origin}/auth/signin`)
+    // Both failed — redirect to sign in (with error param if you want)
+    return NextResponse.redirect(`${origin}/auth/signin?error=Verification_Failed`)
 }

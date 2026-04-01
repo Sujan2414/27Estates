@@ -1,3 +1,7 @@
+// Mapbox access token
+export const MAPBOX_ACCESS_TOKEN =
+  process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? ''
+
 // Mapbox Style URL — use Dark style as base
 // Replace with your own Studio style URL after creating it on mapbox.com/studio
 export const MAP_STYLE_URL =
