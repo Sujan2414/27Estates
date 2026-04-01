@@ -9,7 +9,7 @@ import {
     PhoneCall, TrendingUp, RefreshCw, Eye,
 } from 'lucide-react'
 import styles from './crm.module.css'
-import { useTheme } from './crm-context'
+import { useTheme, useCRMUser, isAdmin, isManager, isAgent } from './crm-context'
 import { leadSourceConfig, leadStatusConfig, FALLBACK_CHART_COLORS } from '@/lib/crm-constants'
 
 // Lazy load recharts to avoid SSR issues
@@ -103,6 +103,10 @@ export default function CRMDashboard() {
     const [smartAlerts, setSmartAlerts] = useState<SmartAlerts | null>(null)
     const [loading, setLoading] = useState(true)
     const { theme } = useTheme()
+    const crmUser = useCRMUser()
+    const isAdminUser = isAdmin(crmUser)
+    const isManagerUser = isManager(crmUser)
+    const isAgentUser = isAgent(crmUser)
 
     const tooltipStyle = {
         contentStyle: { backgroundColor: 'var(--crm-tooltip-bg)', border: '1px solid var(--crm-tooltip-border)', borderRadius: '8px', fontSize: '0.75rem' },
@@ -114,7 +118,7 @@ export default function CRMDashboard() {
         async function fetchAll() {
             const [statsRes, leadsRes, usageRes, alertsRes] = await Promise.all([
                 fetch('/api/crm/stats').catch(() => null),
-                fetch('/api/crm/leads?limit=8').catch(() => null),
+                fetch(`/api/crm/leads?limit=8${isAgentUser && crmUser?.id ? `&assigned_to=${crmUser.id}` : ''}${!isAdminUser && isManagerUser && crmUser?.id ? `&manager_id=${crmUser.id}` : ''}`).catch(() => null),
                 fetch('/api/crm/api-usage').catch(() => null),
                 fetch('/api/crm/smart-alerts').catch(() => null),
             ])
@@ -615,7 +619,7 @@ export default function CRMDashboard() {
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Source</th>
+                                    {isAdminUser && <th>Source</th>}
                                     <th>Status</th>
                                     <th>Priority</th>
                                     <th>When</th>
@@ -633,14 +637,16 @@ export default function CRMDashboard() {
                                                     {lead.phone || lead.email || '—'}
                                                 </div>
                                             </td>
-                                            <td>
-                                                <span className={styles.badge} style={{
-                                                    backgroundColor: src?.bg || 'var(--crm-elevated)',
-                                                    color: src?.color || 'var(--crm-text-muted)',
-                                                }}>
-                                                    {src?.label || lead.source}
-                                                </span>
-                                            </td>
+                                            {isAdminUser && (
+                                                <td>
+                                                    <span className={styles.badge} style={{
+                                                        backgroundColor: src?.bg || 'var(--crm-elevated)',
+                                                        color: src?.color || 'var(--crm-text-muted)',
+                                                    }}>
+                                                        {src?.label || lead.source}
+                                                    </span>
+                                                </td>
+                                            )}
                                             <td>
                                                 <span className={styles.badge} style={{
                                                     backgroundColor: `${leadStatusConfig[lead.status]?.color}20`,

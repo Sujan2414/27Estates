@@ -10,7 +10,7 @@ import {
     CheckCircle2, PhoneOff, Clock, RefreshCw, UserCheck, Check, Upload, FileText,
 } from 'lucide-react'
 import styles from '../crm.module.css'
-import { useCRMUser, isAdmin, isSuperAdmin } from '../crm-context'
+import { useCRMUser, isAdmin, isManager, isAgent, isSuperAdmin } from '../crm-context'
 import { leadSourceConfig, leadStatusConfig, FALLBACK_CHART_COLORS } from '@/lib/crm-constants'
 
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
@@ -95,6 +95,8 @@ export default function LeadsPage() {
     const searchParams = useSearchParams()
     const crmUser = useCRMUser()
     const isAdminUser = isAdmin(crmUser)
+    const isManagerUser = isManager(crmUser)
+    const isAgentUser = isAgent(crmUser)
     const isSA = isSuperAdmin(crmUser)
 
     const [view, setView] = useState<'list' | 'schedule' | 'analytics'>('list')
@@ -207,28 +209,29 @@ export default function LeadsPage() {
         if (sourceFilter !== 'all') p.set('source', sourceFilter)
         if (priorityFilter !== 'all') p.set('priority', priorityFilter)
         if (agentFilter !== 'all') p.set('assigned_to', agentFilter)
-        else if (!isAdminUser && crmUser?.id) p.set('assigned_to', crmUser.id)
+        else if (isAgentUser && crmUser?.id) p.set('assigned_to', crmUser.id)
+        else if (!isAdminUser && isManagerUser && crmUser?.id) p.set('manager_id', crmUser.id)
         if (search) p.set('search', search)
         const res = await fetch(`/api/crm/leads?${p}`)
         if (res.ok) { const d = await res.json(); setLeads(d.leads || []); setTotal(d.total || 0) }
         setLoading(false)
-    }, [page, statusFilter, sourceFilter, priorityFilter, agentFilter, search, isAdminUser, crmUser?.id])
+    }, [page, statusFilter, sourceFilter, priorityFilter, agentFilter, search, isAdminUser, isManagerUser, isAgentUser, crmUser?.id])
 
     const fetchSchedules = useCallback(async () => {
         setSchedulesLoading(true)
         const p = new URLSearchParams({ date: scheduleDate, all: 'true' })
-        if (!isAdminUser && crmUser?.id) p.set('agent_id', crmUser.id)
+        if (isAgentUser && crmUser?.id) p.set('agent_id', crmUser.id)
         else if (scheduleAgentFilter !== 'all') p.set('agent_id', scheduleAgentFilter)
         const res = await fetch(`/api/crm/leads/schedule?${p}`)
         if (res.ok) { const d = await res.json(); setSchedules(d.schedules || []) }
         setSchedulesLoading(false)
-    }, [scheduleDate, scheduleAgentFilter, isAdminUser, crmUser?.id])
+    }, [scheduleDate, scheduleAgentFilter, isAgentUser, crmUser?.id])
 
     const fetchEmployees = useCallback(async () => {
-        if (!isAdminUser) return
+        if (!isManagerUser) return
         const res = await fetch('/api/crm/hrm/employees')
         if (res.ok) { const d = await res.json(); setEmployees(d.employees || []) }
-    }, [isAdminUser])
+    }, [isManagerUser])
 
     useEffect(() => { fetchLeads() }, [fetchLeads])
     useEffect(() => { if (view === 'schedule') fetchSchedules() }, [view, fetchSchedules])
@@ -388,12 +391,12 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
     const unassignedLeads = leads.filter(l => !l.assigned_to && !['converted', 'lost'].includes(l.status))
 
     const filteredSchedules = schedules.filter(s => {
-        if (!isAdminUser) return s.agent_id === crmUser?.id
+        if (isAgentUser) return s.agent_id === crmUser?.id
         if (scheduleAgentFilter !== 'all') return s.agent_id === scheduleAgentFilter
         return true
     })
 
-    const todayScheduleByAgent = isAdminUser
+    const todayScheduleByAgent = isManagerUser
         ? employees.reduce((acc, e) => {
             acc[e.id] = { name: e.full_name, slots: filteredSchedules.filter(s => s.agent_id === e.id) }
             return acc
@@ -416,7 +419,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                     <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>{total} leads · {unassignedLeads.length} unassigned</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {isAdminUser && (
+                    {isManagerUser && (
                         <button onClick={handleEscalationCheck} disabled={escalating} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>
                             <AlertTriangle size={12} /> {escalating ? '...' : 'Check Escalations'}
                         </button>
@@ -475,7 +478,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                                     {priorities.map(p => <option key={p} value={p}>{p === 'all' ? 'All' : p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
                                 </select>
                             </div>
-                            {isAdminUser && (
+                            {isManagerUser && (
                                 <div>
                                     <label className={styles.formLabel}>Agent</label>
                                     <select value={agentFilter} onChange={e => { setAgentFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '160px' }}>
@@ -518,7 +521,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                                     <option key={k} value={k}>{v.label}</option>
                                 ))}
                             </select>
-                            {isAdminUser && employees.length > 0 && (
+                            {isManagerUser && employees.length > 0 && (
                                 <select
                                     value=""
                                     onChange={e => { if (e.target.value) handleBulkAssign(e.target.value) }}
@@ -655,7 +658,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                                                                     {lead.assignee.full_name.charAt(0)}
                                                                 </div>
                                                                 <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }}>{lead.assignee.full_name.split(' ')[0]}</span>
-                                                                {isAdminUser && (
+                                                                {isManagerUser && (
                                                                     <button onClick={() => { setAssignLeadId(lead.id); setAssignAgentId(lead.assigned_to || ''); setShowAssignModal(true) }}
                                                                         style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-dim)', padding: '0 2px' }}>
                                                                         <RefreshCw size={10} />
@@ -663,7 +666,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            isAdminUser ? (
+                                                            isManagerUser ? (
                                                                 <button onClick={() => { setAssignLeadId(lead.id); setAssignAgentId(''); setShowAssignModal(true) }}
                                                                     style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#f59e0b', background: '#f59e0b10', border: '1px solid #f59e0b30', borderRadius: '0.375rem', padding: '2px 8px', cursor: 'pointer' }}>
                                                                     <Users size={10} style={{ display: 'inline', marginRight: 3 }} /> Assign
@@ -711,7 +714,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                 <>
                     <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                         <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className={styles.formInput} style={{ width: 'auto' }} />
-                        {isAdminUser && (
+                        {isManagerUser && (
                             <select className={styles.formSelect} style={{ width: 'auto', minWidth: 160 }} value={scheduleAgentFilter} onChange={e => setScheduleAgentFilter(e.target.value)}>
                                 <option value="all">All Agents</option>
                                 {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
@@ -729,7 +732,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                         <div className={styles.emptyState}>Loading schedule...</div>
                     ) : filteredSchedules.length === 0 ? (
                         <div className={styles.emptyState}>No calls scheduled for {scheduleDate}</div>
-                    ) : isAdminUser && scheduleAgentFilter === 'all' ? (
+                    ) : isManagerUser && scheduleAgentFilter === 'all' ? (
                         // Admin: grouped by agent
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             {Object.entries(todayScheduleByAgent).filter(([, v]) => v.slots.length > 0).map(([agentId, { name, slots }]) => (
@@ -738,7 +741,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                                         <UserCheck size={14} /> {name}
                                         <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', fontWeight: 400 }}>· {slots.length} calls</span>
                                     </div>
-                                    <ScheduleSlotList slots={slots} isAdmin={isAdminUser} isSA={isSA} crmUserId={crmUser?.id}
+                                    <ScheduleSlotList slots={slots} isAdmin={isManagerUser} isSA={isSA} crmUserId={crmUser?.id}
                                         onAction={handleScheduleAction}
                                         onLogOutcome={s => { setActiveSchedule(s); setOutcomeForm({ outcome: 'interested', notes: '' }); setShowOutcomeModal(true) }}
                                         employees={employees}
@@ -809,8 +812,8 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                             ) : <div className={styles.emptyState}>No data</div>}
                         </div>
 
-                        {/* Agent performance (admin only) */}
-                        {isAdminUser && agentPerf.length > 0 && (
+                        {/* Agent performance (managers and admins) */}
+                        {isManagerUser && agentPerf.length > 0 && (
                             <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
                                 <div className={styles.cardHeader}><span className={styles.cardTitle}>Agent Performance</span></div>
                                 <div style={{ overflowX: 'auto' }}>
