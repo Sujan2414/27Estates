@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
                 return
             }
 
-            if (!['admin', 'super_admin', 'agent'].includes(role)) {
+            if (!['admin', 'super_admin', 'agent', 'manager'].includes(role)) {
                 await supabase.auth.signOut()
                 setError(`Access denied. Your role is: ${role}. Admin/Agent role required.`)
                 return

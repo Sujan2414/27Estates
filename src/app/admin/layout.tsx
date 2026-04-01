@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -49,36 +49,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     const isLoginPage = pathname === '/admin/login'
 
-    useEffect(() => {
+    const checkUser = useCallback(async () => {
         if (isLoginPage) { setLoading(false); return }
 
-        const checkUser = async () => {
-            const { data: { user: authUser } } = await supabase.auth.getUser()
-            if (!authUser) { router.push('/admin/login'); return }
+        try {
+            const res = await fetch('/api/admin/me')
+            if (!res.ok) { router.push('/admin/login'); return }
 
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('full_name, email, role, avatar_url')
-                .eq('id', authUser.id)
-                .limit(1)
-                .maybeSingle()
+            const { user: profile } = await res.json()
+            if (!profile) { router.push('/admin/login'); return }
 
-            if (!profile || !['admin', 'super_admin', 'agent', 'manager'].includes(profile.role)) {
-                router.push('/admin/login'); return
-            }
-
-            setUser({
-                id: authUser.id,
-                email: profile.email || authUser.email || '',
-                full_name: profile.full_name || 'User',
-                role: profile.role,
-                avatar_url: profile.avatar_url,
-            })
+            setUser(profile)
+        } catch {
+            router.push('/admin/login')
+        } finally {
             setLoading(false)
         }
+    }, [isLoginPage, router])
 
+    useEffect(() => {
         checkUser()
-    }, [router, supabase, isLoginPage])
+    }, [checkUser])
 
     const handleLogout = async () => {
         await supabase.auth.signOut()

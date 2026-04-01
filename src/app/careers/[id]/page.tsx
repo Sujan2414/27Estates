@@ -90,25 +90,25 @@ export default function CareerDetailPage({ params }: CareerDetailPageProps) {
 
             // Upload resume if provided
             if (resumeFile) {
-                const fileExt = resumeFile.name.split('.').pop();
-                const fileName = `${Date.now()}-${form.full_name.replace(/\s+/g, '_')}.${fileExt}`;
+                const uploadForm = new FormData();
+                uploadForm.append('file', resumeFile);
+                uploadForm.append('applicant_name', form.full_name);
 
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('career-resumes')
-                    .upload(fileName, resumeFile);
+                const uploadRes = await fetch('/api/careers/upload-resume', {
+                    method: 'POST',
+                    body: uploadForm,
+                });
 
-                if (uploadError) {
-                    console.error('Resume upload error:', uploadError);
-                    alert('Failed to upload resume. Please try again.');
+                const uploadData = await uploadRes.json();
+
+                if (!uploadRes.ok || !uploadData.publicUrl) {
+                    console.error('Resume upload error:', uploadData.error);
+                    alert(uploadData.error || 'Failed to upload resume. Please try again.');
                     setSubmitting(false);
                     return;
                 }
 
-                const { data: urlData } = supabase.storage
-                    .from('career-resumes')
-                    .getPublicUrl(uploadData.path);
-
-                resumeUrl = urlData.publicUrl;
+                resumeUrl = uploadData.publicUrl;
             }
 
             // Submit application

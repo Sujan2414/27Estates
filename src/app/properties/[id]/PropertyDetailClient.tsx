@@ -455,7 +455,16 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                     {agent && (
                         <div className={styles.agentCard}>
                             <div className={styles.agentAvatar}>
-                                <img src={proxyUrl(agent.image) || '/placeholder-agent.jpg'} alt={agent.name} />
+                                {agent.image ? (
+                                    <img
+                                        src={proxyUrl(agent.image)}
+                                        alt={agent.name}
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'flex'; }}
+                                    />
+                                ) : null}
+                                <div style={{ display: agent.image ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', borderRadius: '50%' }}>
+                                    <UserCircle size={36} color="#9ca3af" strokeWidth={1.2} />
+                                </div>
                             </div>
                             <div className={styles.agentInfo}>
                                 <h3>{agent.name}</h3>

@@ -61,9 +61,10 @@ const Agents = () => {
                         {/* Agent Image */}
                         <div className={styles.agentImage}>
                             <img
-                                src={proxyUrl(agent.image) || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=random&color=fff&size=200`}
+                                src={proxyUrl(agent.image) || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=183C38&color=fff&size=200`}
                                 alt={agent.name}
                                 className={styles.image}
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}&background=183C38&color=fff&size=200`; }}
                             />
                         </div>
 
