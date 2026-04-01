@@ -8,13 +8,13 @@ import { assignLead } from '@/app/api/crm/leads/assign/route'
 // Universal webhook endpoint: /api/crm/webhook/[platform]
 // e.g., /api/crm/webhook/meta_ads, /api/crm/webhook/google_ads, etc.
 
-// GET - Meta requires a verification endpoint for webhook setup
+// GET - Meta verification + platforms that send leads via GET query params (MagicBricks, Housing, etc.)
 export async function GET(request: NextRequest, { params }: { params: Promise<{ platform: string }> }) {
     const { platform } = await params
+    const { searchParams } = new URL(request.url)
 
     if (platform === 'meta_ads') {
         // Meta webhook verification challenge
-        const { searchParams } = new URL(request.url)
         const mode = searchParams.get('hub.mode')
         const token = searchParams.get('hub.verify_token')
         const challenge = searchParams.get('hub.challenge')
@@ -23,6 +23,44 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return new NextResponse(challenge, { status: 200 })
         }
         return NextResponse.json({ error: 'Verification failed' }, { status: 403 })
+    }
+
+    // Check if this GET request contains lead data (e.g. MagicBricks sends leads as query params)
+    const hasLeadData = searchParams.get('name') || searchParams.get('mobile') || searchParams.get('email')
+    if (hasLeadData) {
+        // Convert query params to a flat object and process as a lead
+        const payload: Record<string, unknown> = {}
+        searchParams.forEach((value, key) => { payload[key] = value })
+
+        const connector = getConnector(platform)
+        if (!connector) {
+            await processWebhook(platform, 'unknown', payload, null, 'failed', `No connector for platform: ${platform}`)
+            return NextResponse.json({ error: `Unknown platform: ${platform}` }, { status: 400 })
+        }
+
+        const normalizedLead = connector.parseWebhook(payload)
+        if (!normalizedLead) {
+            await processWebhook(platform, 'parse_failed', payload, null, 'failed', 'Could not parse lead data from query params')
+            return NextResponse.json({ error: 'Could not parse lead data' }, { status: 422 })
+        }
+
+        let lead;
+        try {
+            lead = await createLead(normalizedLead)
+        } catch (err: any) {
+            await processWebhook(platform, 'db_error', payload, null, 'failed', err.message || 'Database error')
+            return NextResponse.json({ error: 'Database error creating lead' }, { status: 500 })
+        }
+
+        if (!lead) {
+            await processWebhook(platform, 'duplicate', payload, null, 'duplicate', 'Duplicate lead')
+            return NextResponse.json({ status: 'ok', platform, message: 'Duplicate lead, skipped' }, { status: 200 })
+        }
+
+        await processWebhook(platform, 'lead_created', payload, lead.id, 'processed')
+        assignLead(lead.id).catch(err => console.error('Auto-assign failed for webhook lead', lead.id, err))
+
+        return NextResponse.json({ status: 'ok', platform, message: 'Lead created', lead_id: lead.id }, { status: 200 })
     }
 
     return NextResponse.json({ status: 'ok', platform })
