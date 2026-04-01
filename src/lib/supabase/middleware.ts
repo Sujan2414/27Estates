@@ -4,7 +4,15 @@ import { NextResponse, type NextRequest } from 'next/server'
 // No Supabase client, no network calls — impossible to timeout.
 // Real auth validation (getUser + role check) happens inside each layout.
 function hasSession(request: NextRequest): boolean {
-    return request.cookies.getAll().some(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'))
+    // Match both regular cookies (sb-xxx-auth-token) and
+    // chunked cookies (sb-xxx-auth-token.0, sb-xxx-auth-token.1, ...)
+    // Supabase SSR chunks large session cookies automatically
+    return request.cookies.getAll().some(c =>
+        c.name.startsWith('sb-') && (
+            c.name.endsWith('-auth-token') ||
+            /\-auth-token\.\d+$/.test(c.name)
+        )
+    )
 }
 
 export async function updateSession(request: NextRequest) {

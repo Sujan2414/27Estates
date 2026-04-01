@@ -8,7 +8,13 @@ export async function POST() {
     try {
         const cookieStore = await cookies()
         const allCookies = cookieStore.getAll()
-        const supabaseCookies = allCookies.filter(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'))
+        // Match both regular (sb-xxx-auth-token) and chunked cookies (sb-xxx-auth-token.0, .1, ...)
+        const supabaseCookies = allCookies.filter(c =>
+            c.name.startsWith('sb-') && (
+                c.name.endsWith('-auth-token') ||
+                /\-auth-token\.\d+$/.test(c.name)
+            )
+        )
 
         supabaseCookies.forEach(cookie => {
             cookieStore.set({
