@@ -100,6 +100,7 @@ export default function EditPropertyPage() {
         owner_id: '',
         video_url: '',
         keyword: '',
+        facing: '',
         // Availability
         possession_status: 'Immediately/Ready to Move',
         possession_date: '',
@@ -236,6 +237,7 @@ export default function EditPropertyPage() {
             owner_id: data.owner_id || '',
             video_url: data.video_url || '',
             keyword: data.keywords || '',
+            facing: data.facing || '',
             // Availability — normalise legacy values
             possession_status: (data.possession_status === 'Ready To Move' || data.possession_status === 'Under Construction')
                 ? (data.possession_status === 'Ready To Move' ? 'Immediately/Ready to Move' : 'Specify Time')
@@ -464,6 +466,7 @@ export default function EditPropertyPage() {
                 owner_id: formData.owner_id || null,
                 video_url: formData.video_url || null,
                 keywords: formData.keyword || null,
+                facing: formData.facing || null,
                 suitable_for: suitableFor.length > 0 ? suitableFor : null,
                 // Availability
                 possession_status: formData.possession_status || null,
@@ -858,6 +861,23 @@ export default function EditPropertyPage() {
                                 </select>
                             </div>
                         )}
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Property Facing</label>
+                            <select name="facing" value={formData.facing} onChange={handleChange} className={formStyles.select}>
+                                <option value="">Select Facing</option>
+                                <option value="North">North</option>
+                                <option value="South">South</option>
+                                <option value="East">East</option>
+                                <option value="West">West</option>
+                                <option value="North-East">North-East</option>
+                                <option value="North-West">North-West</option>
+                                <option value="South-East">South-East</option>
+                                <option value="South-West">South-West</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className={formStyles.grid2}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Availability/Possession</label>
                             <div style={{ display: 'flex', gap: '10px' }}>

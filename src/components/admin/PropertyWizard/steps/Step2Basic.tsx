@@ -16,6 +16,7 @@ const FLOOR_TYPES = ['Apartment', 'Penthouse', 'Studio', 'Duplex', 'Commercial',
 
 export default function PropertyBasicStep({ initialData, onNext, onBack }: StepProps) {
     const [formData, setFormData] = useState({
+        title: initialData.title || '',
         request_date: initialData.request_date || new Date().toISOString().split('T')[0],
         property_type_for: initialData.property_type_for || 'Sale',
         property_type: initialData.property_type || '',
@@ -24,6 +25,7 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
         bedrooms: initialData.bedrooms || '',
         bathrooms: initialData.bathrooms || '',
         furnishing: initialData.furnishing || '',
+        facing: initialData.facing || '',
         unique_feature: initialData.unique_feature || '',
         channel: initialData.channel || '',
         description: initialData.description || '',
@@ -80,6 +82,7 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
     const showSuitableFor = isResidential || isCommercial
     const showOwnership = isResidential || isPlot || isCommercial
 
+    const facingOptions = ['North', 'South', 'East', 'West', 'North-East', 'North-West', 'South-East', 'South-West']
     const propertyTypes = ['Apartment', 'House', 'Villa', 'Bungalow', 'Row Villa', 'Plot', 'Farmhouse', 'Penthouse', 'Studio', 'Duplex']
     const transactionTypes = ['New Property', 'Resale']
     const ownershipTypes = ['Freehold', 'Leasehold', 'Power of Attorney', 'Co-operative Society']
@@ -97,6 +100,12 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
     return (
         <form onSubmit={handleSubmit}>
             <h2 className={styles.stepTitle}>Give us some basic information</h2>
+
+            <div className={styles.field}>
+                <label className={styles.label}>Property Title</label>
+                <input type="text" name="title" value={formData.title} onChange={handleChange} className={styles.input} placeholder="e.g. Premium 3 BHK Apartment in Whitefield" />
+                <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>Leave blank to auto-generate from property type, listing type & city</div>
+            </div>
 
             <div className={styles.field}>
                 <label className={styles.label}>Request Date</label>
@@ -254,9 +263,18 @@ export default function PropertyBasicStep({ initialData, onNext, onBack }: StepP
                 </div>
             )}
 
-            <div className={styles.field}>
-                <label className={styles.label}>Unique Feature</label>
-                <input type="text" name="unique_feature" value={formData.unique_feature} onChange={handleChange} className={styles.input} placeholder="e.g. Sea View, Corner Plot" />
+            <div className={styles.grid2}>
+                <div className={styles.field}>
+                    <label className={styles.label}>Unique Feature</label>
+                    <input type="text" name="unique_feature" value={formData.unique_feature} onChange={handleChange} className={styles.input} placeholder="e.g. Sea View, Corner Plot" />
+                </div>
+                <div className={styles.field}>
+                    <label className={styles.label}>Property Facing</label>
+                    <select name="facing" value={formData.facing} onChange={handleChange} className={styles.select}>
+                        <option value="">Select Facing</option>
+                        {facingOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                </div>
             </div>
 
             <div className={styles.field}>

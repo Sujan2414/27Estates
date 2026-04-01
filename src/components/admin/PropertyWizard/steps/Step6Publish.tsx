@@ -201,6 +201,7 @@ export default function PropertyPublishStep({ initialData, onBack }: StepProps) 
 
                 // Property details
                 furnishing: d.furnishing || null,
+                facing: d.facing || null,
                 ownership: d.ownership || null,
                 transaction_type: d.transaction_type || null,
                 property_age: d.age_of_property || null,
