@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -49,27 +49,50 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     const isLoginPage = pathname === '/admin/login'
 
-    const checkUser = useCallback(async () => {
+    useEffect(() => {
         if (isLoginPage) { setLoading(false); return }
 
-        try {
-            const res = await fetch('/api/admin/me')
-            if (!res.ok) { router.push('/admin/login'); return }
+        const checkUser = async () => {
+            try {
+                const { data: { user: authUser } } = await supabase.auth.getUser()
+                if (!authUser) { router.push('/admin/login'); setLoading(false); return }
 
-            const { user: profile } = await res.json()
-            if (!profile) { router.push('/admin/login'); return }
+                // Use check-role API (service role, bypasses RLS) for the profile
+                const res = await fetch('/api/admin/check-role', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: authUser.id }),
+                })
+                const { role } = await res.json()
 
-            setUser(profile)
-        } catch {
-            router.push('/admin/login')
-        } finally {
-            setLoading(false)
+                if (!role || !['admin', 'super_admin', 'agent', 'manager'].includes(role)) {
+                    router.push('/admin/login'); setLoading(false); return
+                }
+
+                // Fetch full profile — client-side (same as CRM layout)
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name, email, role, avatar_url')
+                    .eq('id', authUser.id)
+                    .single()
+
+                setUser({
+                    id: authUser.id,
+                    email: profile?.email || authUser.email || '',
+                    full_name: profile?.full_name || 'User',
+                    role: role,
+                    avatar_url: profile?.avatar_url || null,
+                })
+            } catch (err) {
+                console.error('Admin auth check failed:', err)
+                router.push('/admin/login')
+            } finally {
+                setLoading(false)
+            }
         }
-    }, [isLoginPage, router])
 
-    useEffect(() => {
         checkUser()
-    }, [checkUser])
+    }, [router, supabase, isLoginPage])
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
