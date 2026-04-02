@@ -125,11 +125,15 @@ export default function CRMDashboard() {
             if (isAgentUser && crmUser?.id) leadsParams.set('assigned_to', crmUser.id)
             else if (isManagerUser && crmUser?.id) leadsParams.set('manager_id', crmUser.id)
 
+            const alertsParams = new URLSearchParams()
+            if (isAgentUser && crmUser?.id) alertsParams.set('assigned_to', crmUser.id)
+            else if (isManagerUser && crmUser?.id) alertsParams.set('manager_id', crmUser.id)
+
             const [statsRes, leadsRes, usageRes, alertsRes] = await Promise.all([
                 fetch('/api/crm/stats').catch(() => null),
                 fetch(`/api/crm/leads?${leadsParams}`).catch(() => null),
                 fetch('/api/crm/api-usage').catch(() => null),
-                fetch('/api/crm/smart-alerts').catch(() => null),
+                fetch(`/api/crm/smart-alerts?${alertsParams}`).catch(() => null),
             ])
             if (statsRes?.ok) setStats(await statsRes.json())
             if (leadsRes?.ok) { const d = await leadsRes.json(); setRecentLeads(d.leads || []) }
@@ -416,7 +420,7 @@ export default function CRMDashboard() {
                                             <div className={styles.smartAlertDot} style={{ backgroundColor: '#3b82f6' }} />
                                             <div className={styles.smartAlertRowText}>
                                                 <div className={styles.smartAlertRowName}>{l.name}</div>
-                                                <div className={styles.smartAlertRowMeta}>{l.source} · {formatRelative(l.created_at)}</div>
+                                                <div className={styles.smartAlertRowMeta}>{isAdminUser && l.source ? `${l.source} · ` : ''}{formatRelative(l.created_at)}</div>
                                             </div>
                                             <ChevronRight size={13} style={{ color: 'var(--crm-text-dim)', flexShrink: 0 }} />
                                         </Link>
@@ -448,8 +452,8 @@ export default function CRMDashboard() {
                             </div>
                         )}
 
-                        {/* Listing Spikes */}
-                        {smartAlerts.activitySpikes.length > 0 && (
+                        {/* Listing Spikes — admins/managers only */}
+                        {!isAgentUser && smartAlerts.activitySpikes.length > 0 && (
                             <div className={styles.smartAlertCard}>
                                 <div className={styles.smartAlertHeader} style={{ background: 'rgba(139,92,246,0.06)' }}>
                                     <TrendingUp size={13} style={{ color: '#8b5cf6', flexShrink: 0 }} />
@@ -471,8 +475,8 @@ export default function CRMDashboard() {
                             </div>
                         )}
 
-                        {/* Return Visitors */}
-                        {smartAlerts.returnVisitorsWithoutLead.length > 0 && (
+                        {/* Return Visitors — admins/managers only */}
+                        {!isAgentUser && smartAlerts.returnVisitorsWithoutLead.length > 0 && (
                             <div className={styles.smartAlertCard}>
                                 <div className={styles.smartAlertHeader} style={{ background: 'rgba(16,185,129,0.06)' }}>
                                     <Eye size={13} style={{ color: '#10b981', flexShrink: 0 }} />
@@ -677,7 +681,10 @@ export default function CRMDashboard() {
                         </table>
                     ) : (
                         <div className={styles.emptyState}>
-                            No leads yet. Connect your ad platforms or add leads manually.
+                            {isAgentUser
+                                ? 'No leads assigned yet. Ask your manager to assign you some leads.'
+                                : 'No leads yet. Connect your ad platforms or add leads manually.'
+                            }
                         </div>
                     )}
                 </div>

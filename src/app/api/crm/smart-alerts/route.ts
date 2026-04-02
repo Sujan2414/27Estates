@@ -8,7 +8,11 @@ const admin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function GET() {
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url)
+    const assignedTo = searchParams.get('assigned_to')   // agent filter
+    const managerId = searchParams.get('manager_id')     // manager filter
+
     const now = Date.now()
     const since24h = new Date(now - 86400000).toISOString()
     const since7d = new Date(now - 7 * 86400000).toISOString()
@@ -17,15 +21,18 @@ export async function GET() {
 
     // 1. Leads active on site today (browsing but not yet called)
     //    — find leads with emails, look up their profiles, check if they browsed today
+    let hotLeadsQuery = admin.from('leads')
+        .select('id, name, email, phone, priority, status, last_contacted_at, score')
+        .in('priority', ['hot', 'warm'])
+        .in('status', ['new', 'contacted', 'qualified'])
+        .or(`last_contacted_at.is.null,last_contacted_at.lt.${since7d}`)
+        .order('score', { ascending: false })
+        .limit(20)
+    if (assignedTo) hotLeadsQuery = hotLeadsQuery.eq('assigned_to', assignedTo)
+    else if (managerId) hotLeadsQuery = hotLeadsQuery.eq('manager_id', managerId)
+
     const [hotLeadsRes, recentViewsRes] = await Promise.all([
-        // Hot/warm leads not contacted in 7+ days
-        admin.from('leads')
-            .select('id, name, email, phone, priority, status, last_contacted_at, score')
-            .in('priority', ['hot', 'warm'])
-            .in('status', ['new', 'contacted', 'qualified'])
-            .or(`last_contacted_at.is.null,last_contacted_at.lt.${since7d}`)
-            .order('score', { ascending: false })
-            .limit(20),
+        hotLeadsQuery,
         // Page views in last 24h for listing pages
         admin.from('user_page_views')
             .select('user_id, page_path, created_at')
@@ -41,12 +48,15 @@ export async function GET() {
 
     // Get profiles for users who browsed listings today
     const browsingUserIds = [...new Set(recentViews.map(v => v.user_id as string))]
+    let allLeadsQuery = admin.from('leads').select('id, name, email, priority, status, score').not('email', 'is', null).limit(2000)
+    if (assignedTo) allLeadsQuery = allLeadsQuery.eq('assigned_to', assignedTo)
+    else if (managerId) allLeadsQuery = allLeadsQuery.eq('manager_id', managerId)
+
     const [profilesRes, allLeadsRes] = await Promise.all([
         browsingUserIds.length > 0
             ? admin.from('profiles').select('id, full_name, email').in('id', browsingUserIds)
             : Promise.resolve({ data: [] }),
-        // All leads emails for matching
-        admin.from('leads').select('id, name, email, priority, status, score').not('email', 'is', null).limit(2000),
+        allLeadsQuery,
     ])
 
     const profiles = profilesRes.data || []
@@ -191,12 +201,15 @@ export async function GET() {
     })
 
     // New leads in last 48h not yet contacted
-    const { data: freshUncontacted } = await admin.from('leads')
+    let freshQuery = admin.from('leads')
         .select('id, name, source, priority, created_at')
         .eq('status', 'new')
         .gte('created_at', since48h)
         .order('created_at', { ascending: false })
         .limit(10)
+    if (assignedTo) freshQuery = freshQuery.eq('assigned_to', assignedTo)
+    else if (managerId) freshQuery = freshQuery.eq('manager_id', managerId)
+    const { data: freshUncontacted } = await freshQuery
 
     return NextResponse.json({
         readyToCall: readyToCall.slice(0, 8),
