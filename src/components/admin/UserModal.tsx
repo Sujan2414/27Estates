@@ -268,6 +268,7 @@ export default function UserModal({ onClose, onComplete }: UserModalProps) {
                                     >
                                         <option value="user">User</option>
                                         <option value="agent">Agent</option>
+                                        <option value="manager">Manager</option>
                                         <option value="admin">Admin</option>
                                     </select>
                                     <div style={{

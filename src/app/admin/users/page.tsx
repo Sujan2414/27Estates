@@ -170,17 +170,20 @@ export default function UsersPage() {
                                                 backgroundColor:
                                                     user.role === 'admin' ? '#dbeafe' :
                                                         user.role === 'super_admin' ? '#fce7f3' :
-                                                            user.role === 'agent' ? '#d1fae5' : '#f3f4f6',
+                                                            user.role === 'manager' ? '#fef3c7' :
+                                                                user.role === 'agent' ? '#d1fae5' : '#f3f4f6',
                                                 color:
                                                     user.role === 'admin' ? '#1e40af' :
                                                         user.role === 'super_admin' ? '#be185d' :
-                                                            user.role === 'agent' ? '#065f46' : '#374151',
+                                                            user.role === 'manager' ? '#92400e' :
+                                                                user.role === 'agent' ? '#065f46' : '#374151',
                                                 fontWeight: 500,
                                                 cursor: currentUserRole === 'agent' ? 'not-allowed' : 'pointer'
                                             }}
                                         >
                                             <option value="user">User</option>
                                             <option value="agent">Agent</option>
+                                            <option value="manager">Manager</option>
                                             <option value="admin" disabled={currentUserRole !== 'super_admin'}>Admin</option>
                                             <option value="super_admin" disabled={currentUserRole !== 'super_admin'}>Super Admin</option>
                                         </select>
