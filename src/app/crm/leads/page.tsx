@@ -380,7 +380,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
     const agentPerf = employees.map(e => {
         const assigned = leads.filter(l => l.assigned_to === e.id)
         return {
-            name: e.full_name.split(' ')[0],
+            name: (e.full_name || 'Unknown').split(' ')[0],
             assigned: assigned.length,
             contacted: assigned.filter(l => !['new'].includes(l.status)).length,
             converted: assigned.filter(l => l.status === 'converted').length,
@@ -655,9 +655,9 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                                                         {lead.assignee ? (
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                                 <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--crm-accent)', color: 'var(--crm-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700, flexShrink: 0 }}>
-                                                                    {lead.assignee.full_name.charAt(0)}
+                                                                    {(lead.assignee.full_name || '?').charAt(0)}
                                                                 </div>
-                                                                <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }}>{lead.assignee.full_name.split(' ')[0]}</span>
+                                                                <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }}>{(lead.assignee.full_name || 'Unknown').split(' ')[0]}</span>
                                                                 {isManagerUser && (
                                                                     <button onClick={() => { setAssignLeadId(lead.id); setAssignAgentId(lead.assigned_to || ''); setShowAssignModal(true) }}
                                                                         style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-dim)', padding: '0 2px' }}>
@@ -1154,7 +1154,7 @@ function ScheduleSlotList({
                                         <Clock size={11} /> {new Date(slot.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                                     </span>
                                     {isAdmin && slot.agent && (
-                                        <span style={{ color: 'var(--crm-accent)' }}>Agent: {slot.agent.full_name.split(' ')[0]}</span>
+                                        <span style={{ color: 'var(--crm-accent)' }}>Agent: {(slot.agent.full_name || 'Unknown').split(' ')[0]}</span>
                                     )}
                                     {slot.outcome && <span style={{ color: '#22c55e' }}>✓ {slot.outcome}</span>}
                                     {slot.notes && <span style={{ fontStyle: 'italic', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{slot.notes}"</span>}
@@ -1208,7 +1208,7 @@ function ScheduleSlotList({
                                             <select value={reassignAgentId} onChange={e => setReassignAgentId(e.target.value)}
                                                 style={{ fontSize: '0.75rem', background: 'var(--crm-bg)', border: '1px solid var(--crm-border-subtle)', borderRadius: '0.375rem', color: 'var(--crm-text-secondary)', padding: '3px 6px' }}>
                                                 <option value="">Select agent...</option>
-                                                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name.split(' ')[0]}</option>)}
+                                                {employees.map(e => <option key={e.id} value={e.id}>{(e.full_name || 'Unknown').split(' ')[0]}</option>)}
                                             </select>
                                             <button onClick={() => { if (reassignAgentId) { onAction(slot.id, 'reassign', { new_agent_id: reassignAgentId }); setReassignId(null) } }}
                                                 style={{ fontSize: '0.75rem', padding: '3px 8px', background: 'var(--crm-accent)', color: 'var(--crm-bg)', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: 700 }}>
