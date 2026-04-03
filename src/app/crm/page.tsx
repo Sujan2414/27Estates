@@ -268,7 +268,7 @@ export default function CRMDashboard() {
                                             <div className={styles.attentionText}>
                                                 <div className={styles.attentionTitle}>{lead.name}</div>
                                                 <div className={styles.attentionMeta}>
-                                                    {leadSourceConfig[lead.source || '']?.label || lead.source} &middot; {formatRelative(lead.created_at || '')}
+                                                    {isAdminUser && <>{leadSourceConfig[lead.source || '']?.label || lead.source} &middot; </>}{formatRelative(lead.created_at || '')}
                                                 </div>
                                             </div>
                                             <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
@@ -543,43 +543,105 @@ export default function CRMDashboard() {
                     )}
                 </div>
 
-                {/* Lead Sources - Pie Chart with distinct colors */}
+                {/* Lead Sources (admin only) OR Role-specific analytics */}
                 <div className={styles.card}>
-                    <div className={styles.cardHeader}>
-                        <div>
-                            <div className={styles.cardTitle}>Lead Sources</div>
-                            <div className={styles.cardSubtitle}>Where leads come from</div>
-                        </div>
-                    </div>
-                    {loading ? <SkeletonRow /> : sourceData.length > 0 ? (
-                        <div>
-                            <div style={{ width: '100%', height: 200 }}>
-                                <ResponsiveContainer>
-                                    <PieChart>
-                                        <Pie
-                                            data={sourceData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={50}
-                                            outerRadius={80}
-                                            paddingAngle={3}
-                                            dataKey="value"
-                                        />
-                                        <Tooltip {...tooltipStyle} />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                    {isAdminUser ? (
+                        <>
+                            <div className={styles.cardHeader}>
+                                <div>
+                                    <div className={styles.cardTitle}>Lead Sources</div>
+                                    <div className={styles.cardSubtitle}>Where leads come from</div>
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
-                                {sourceData.map(s => (
-                                    <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.6875rem', color: 'var(--crm-text-muted)' }}>
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: s.color }} />
-                                        {s.name} ({s.value})
+                            {loading ? <SkeletonRow /> : sourceData.length > 0 ? (
+                                <div>
+                                    <div style={{ width: '100%', height: 200 }}>
+                                        <ResponsiveContainer>
+                                            <PieChart>
+                                                <Pie
+                                                    data={sourceData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={50}
+                                                    outerRadius={80}
+                                                    paddingAngle={3}
+                                                    dataKey="value"
+                                                />
+                                                <Tooltip {...tooltipStyle} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
+                                        {sourceData.map(s => (
+                                            <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.6875rem', color: 'var(--crm-text-muted)' }}>
+                                                <div style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: s.color }} />
+                                                {s.name} ({s.value})
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className={styles.emptyState} style={{ padding: '2rem' }}>No data yet</div>
+                            )}
+                        </>
                     ) : (
-                        <div className={styles.emptyState} style={{ padding: '2rem' }}>No data yet</div>
+                        <>
+                            <div className={styles.cardHeader}>
+                                <div>
+                                    <div className={styles.cardTitle}>{isAgentUser ? 'My Performance' : 'Team Overview'}</div>
+                                    <div className={styles.cardSubtitle}>{isAgentUser ? 'Your lead stats' : 'Your team\'s lead stats'}</div>
+                                </div>
+                            </div>
+                            {loading ? <SkeletonRow /> : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', padding: '0.5rem 0' }}>
+                                    {(() => {
+                                        const total = stats?.total || 0
+                                        const assigned = recentLeads.filter(l => l.status !== 'new').length
+                                        const newCount = stats?.byStatus?.new || 0
+                                        const contacted = stats?.byStatus?.contacted || 0
+                                        const qualified = stats?.byStatus?.qualified || 0
+                                        const converted = stats?.byStatus?.converted || 0
+                                        const hot = stats?.hot || 0
+                                        return (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>Total Leads</span>
+                                                    <span style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>{total}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>New / Uncontacted</span>
+                                                    <span style={{ fontSize: '1rem', fontWeight: 600, color: '#3b82f6' }}>{newCount}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>Contacted</span>
+                                                    <span style={{ fontSize: '1rem', fontWeight: 600, color: '#22c55e' }}>{contacted}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>Qualified</span>
+                                                    <span style={{ fontSize: '1rem', fontWeight: 600, color: '#8b5cf6' }}>{qualified}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>Converted</span>
+                                                    <span style={{ fontSize: '1rem', fontWeight: 600, color: '#22c55e' }}>{converted}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>Hot Leads</span>
+                                                    <span style={{ fontSize: '1rem', fontWeight: 600, color: '#ef4444' }}>{hot} 🔥</span>
+                                                </div>
+                                                {total > 0 && (
+                                                    <div style={{ marginTop: '0.5rem', padding: '0.625rem', background: 'var(--crm-elevated)', borderRadius: '0.5rem', textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginBottom: '0.25rem' }}>Conversion Rate</div>
+                                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: converted > 0 ? '#22c55e' : 'var(--crm-text-dim)' }}>
+                                                            {stats?.conversionRate || '0'}%
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )
+                                    })()}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

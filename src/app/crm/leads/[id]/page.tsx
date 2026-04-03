@@ -13,6 +13,7 @@ import {
 import styles from '../../crm.module.css'
 import type { Lead, LeadActivity, LeadTask } from '@/lib/crm/types'
 import { proxyUrl } from '@/lib/proxy-url'
+import { useCRMUser, isAdmin } from '../../crm-context'
 
 const sourceLabels: Record<string, string> = {
     website: 'Website', meta_ads: 'Meta Ads', google_ads: 'Google Ads', '99acres': '99acres',
@@ -65,6 +66,8 @@ export default function LeadDetailPage() {
     const params = useParams()
     const id = params?.id as string
     const router = useRouter()
+    const crmUser = useCRMUser()
+    const isAdminUser = isAdmin(crmUser)
     const [lead, setLead] = useState<Lead | null>(null)
     const [activities, setActivities] = useState<LeadActivity[]>([])
     const [tasks, setTasks] = useState<LeadTask[]>([])
@@ -262,7 +265,7 @@ export default function LeadDetailPage() {
                         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>{lead.name}</h1>
                         <ScoreBadge score={score} />
                     </div>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>{sourceLabels[lead.source]} · {formatRelative(lead.created_at)}</p>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>{isAdminUser && <>{sourceLabels[lead.source]} · </>}{formatRelative(lead.created_at)}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {lead.phone && (
@@ -330,7 +333,7 @@ export default function LeadDetailPage() {
                                 <div style={{ fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
                                     <span style={{ color: 'var(--crm-accent)', fontWeight: 700, flexShrink: 0 }}>📌</span>
                                     <span style={{ color: 'var(--crm-text-secondary)' }}>
-                                        <strong>{lead.priority?.toUpperCase()}</strong> lead · {Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 86400000)}d old · from <strong>{sourceLabels[lead.source] || lead.source}</strong>
+                                        <strong>{lead.priority?.toUpperCase()}</strong> lead · {Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 86400000)}d old{isAdminUser && <> · from <strong>{sourceLabels[lead.source] || lead.source}</strong></>}
                                     </span>
                                 </div>
 
@@ -674,16 +677,18 @@ export default function LeadDetailPage() {
                         </div>
                     )}
 
-                    {/* Source */}
-                    <div className={styles.card}>
-                        <span className={styles.cardTitle} style={{ display: 'block', marginBottom: '0.75rem' }}>Source</span>
-                        <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                            <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Platform:</strong> {sourceLabels[lead.source]}</div>
-                            {lead.source_campaign && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Campaign:</strong> {lead.source_campaign}</div>}
-                            {lead.source_form_id && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Form ID:</strong> {lead.source_form_id}</div>}
-                            {lead.last_contacted_at && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Last Contacted:</strong> {formatDate(lead.last_contacted_at)}</div>}
+                    {/* Source — admin only */}
+                    {isAdminUser && (
+                        <div className={styles.card}>
+                            <span className={styles.cardTitle} style={{ display: 'block', marginBottom: '0.75rem' }}>Source</span>
+                            <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Platform:</strong> {sourceLabels[lead.source]}</div>
+                                {lead.source_campaign && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Campaign:</strong> {lead.source_campaign}</div>}
+                                {lead.source_form_id && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Form ID:</strong> {lead.source_form_id}</div>}
+                                {lead.last_contacted_at && <div><strong style={{ color: 'var(--crm-text-tertiary)' }}>Last Contacted:</strong> {formatDate(lead.last_contacted_at)}</div>}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Website Activity (Digital Footprint) */}
                     {lead.email && (

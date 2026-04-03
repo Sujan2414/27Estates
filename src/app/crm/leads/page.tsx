@@ -466,12 +466,14 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
 
                     {showFilters && (
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', padding: '0.75rem', backgroundColor: 'var(--crm-surface)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)', flexWrap: 'wrap' }}>
-                            <div>
-                                <label className={styles.formLabel}>Source</label>
-                                <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '140px' }}>
-                                    {sources.map(s => <option key={s} value={s}>{s === 'all' ? 'All Sources' : leadSourceConfig[s]?.label || s}</option>)}
-                                </select>
-                            </div>
+                            {isAdminUser && (
+                                <div>
+                                    <label className={styles.formLabel}>Source</label>
+                                    <select value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '140px' }}>
+                                        {sources.map(s => <option key={s} value={s}>{s === 'all' ? 'All Sources' : leadSourceConfig[s]?.label || s}</option>)}
+                                    </select>
+                                </div>
+                            )}
                             <div>
                                 <label className={styles.formLabel}>Priority</label>
                                 <select value={priorityFilter} onChange={e => { setPriorityFilter(e.target.value); setPage(1) }} className={styles.formSelect} style={{ minWidth: '120px' }}>
@@ -575,7 +577,7 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                                             </th>
                                             <th>Name</th>
                                             <th>Contact</th>
-                                            <th>Source</th>
+                                            {isAdminUser && <th>Source</th>}
                                             <th>Status</th>
                                             <th>Score</th>
                                             <th>Assigned To</th>
@@ -638,12 +640,14 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                                                         {lead.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}><Phone size={10} /> {lead.phone}</div>}
                                                         {lead.email && <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)' }}>{lead.email}</div>}
                                                     </td>
-                                                    <td>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: leadSourceConfig[lead.source]?.color || 'var(--crm-text-faint)' }} />
-                                                            {leadSourceConfig[lead.source]?.label || lead.source}
-                                                        </div>
-                                                    </td>
+                                                    {isAdminUser && (
+                                                        <td>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: leadSourceConfig[lead.source]?.color || 'var(--crm-text-faint)' }} />
+                                                                {leadSourceConfig[lead.source]?.label || lead.source}
+                                                            </div>
+                                                        </td>
+                                                    )}
                                                     <td>
                                                         <select value={lead.status} onClick={e => e.stopPropagation()} onChange={e => handleStatusChange(lead.id, e.target.value)}
                                                             style={{ padding: '0.2rem 0.4rem', borderRadius: '0.375rem', fontSize: '0.6875rem', fontWeight: 600, border: '1px solid var(--crm-border-subtle)', cursor: 'pointer', backgroundColor: `${leadStatusConfig[lead.status]?.color}20`, color: leadStatusConfig[lead.status]?.color }}>
@@ -791,26 +795,28 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
                             </ResponsiveContainer>
                         </div>
 
-                        {/* Source breakdown */}
-                        <div className={styles.card}>
-                            <div className={styles.cardHeader}><span className={styles.cardTitle}>Lead Sources</span></div>
-                            {sourceCounts.length > 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                    {sourceCounts.slice(0, 8).map(s => {
-                                        const pct = total > 0 ? Math.round((s.count / total) * 100) : 0
-                                        return (
-                                            <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', width: '90px', flexShrink: 0 }}>{s.name}</span>
-                                                <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--crm-elevated)', borderRadius: '3px' }}>
-                                                    <div style={{ height: '100%', width: `${pct}%`, backgroundColor: s.color, borderRadius: '3px' }} />
+                        {/* Source breakdown — admin only */}
+                        {isAdminUser && (
+                            <div className={styles.card}>
+                                <div className={styles.cardHeader}><span className={styles.cardTitle}>Lead Sources</span></div>
+                                {sourceCounts.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {sourceCounts.slice(0, 8).map(s => {
+                                            const pct = total > 0 ? Math.round((s.count / total) * 100) : 0
+                                            return (
+                                                <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', width: '90px', flexShrink: 0 }}>{s.name}</span>
+                                                    <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--crm-elevated)', borderRadius: '3px' }}>
+                                                        <div style={{ height: '100%', width: `${pct}%`, backgroundColor: s.color, borderRadius: '3px' }} />
+                                                    </div>
+                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-accent)', width: '36px', textAlign: 'right' }}>{s.count}</span>
                                                 </div>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-accent)', width: '36px', textAlign: 'right' }}>{s.count}</span>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            ) : <div className={styles.emptyState}>No data</div>}
-                        </div>
+                                            )
+                                        })}
+                                    </div>
+                                ) : <div className={styles.emptyState}>No data</div>}
+                            </div>
+                        )}
 
                         {/* Agent performance (managers and admins) */}
                         {isManagerUser && agentPerf.length > 0 && (
