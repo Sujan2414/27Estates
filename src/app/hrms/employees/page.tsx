@@ -31,7 +31,8 @@ export default function AllEmployeesPage() {
     // Fetch current user's role
     useEffect(() => {
         fetch('/api/admin/me').then(r => r.json()).then(d => {
-            if (d.profile?.role) setCurrentUserRole(d.profile.role)
+            const role = d.user?.role || d.profile?.role
+            if (role) setCurrentUserRole(role)
         }).catch(() => {})
     }, [])
 
