@@ -248,11 +248,23 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
     }
 
     const parseCSV = (text: string): Record<string, string>[] => {
+        // Split a CSV line respecting quoted fields (handles commas inside quotes)
+        const splitCSVLine = (line: string): string[] => {
+            const result: string[] = []; let current = ''; let inQuotes = false
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i]
+                if (ch === '"') { inQuotes = !inQuotes }
+                else if (ch === ',' && !inQuotes) { result.push(current.trim()); current = '' }
+                else { current += ch }
+            }
+            result.push(current.trim())
+            return result
+        }
         const lines = text.trim().split('\n')
         if (lines.length < 2) return []
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+        const headers = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase())
         return lines.slice(1).filter(l => l.trim()).map(line => {
-            const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+            const vals = splitCSVLine(line)
             return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']))
         })
     }
@@ -273,11 +285,16 @@ John Doe,john@example.com,9876543210,manual,warm,Whitefield,2BHK Flat,5000000,80
         let success = 0; let failed = 0
         for (const row of bulkRows) {
             if (!row.name) { failed++; continue }
+            // If priority contains a property description (not hot/warm/cold), treat it as property_type
+            const validPriorities = ['hot', 'warm', 'cold']
+            const rawPriority = (row.priority || '').toLowerCase().trim()
+            const isValidPriority = validPriorities.includes(rawPriority)
             const payload = {
                 name: row.name, email: row.email || undefined, phone: row.phone || undefined,
-                source: row.source || 'manual', priority: row.priority || 'warm',
+                source: row.source || 'manual',
+                priority: isValidPriority ? rawPriority : undefined,
                 preferred_location: row.preferred_location || undefined,
-                property_type: row.property_type || undefined,
+                property_type: row.property_type || (!isValidPriority && row.priority ? row.priority : undefined),
                 budget_min: row.budget_min ? Number(row.budget_min) : undefined,
                 budget_max: row.budget_max ? Number(row.budget_max) : undefined,
                 property_interest: row.property_interest || undefined,
