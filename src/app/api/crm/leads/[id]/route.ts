@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const [leadResult, activitiesResult, tasksResult] = await Promise.all([
         supabase
             .from('leads')
-            .select(`*, agents (id, name, email, phone), properties (title, property_id), projects (project_name)`)
+            .select(`*, assignee:assigned_to (id, full_name), agents (id, name, email, phone), properties (title, property_id), projects (project_name)`)
             .eq('id', id)
             .single(),
         supabase.from('lead_activities').select('*').eq('lead_id', id).order('created_at', { ascending: false }).limit(50),
