@@ -491,7 +491,7 @@ export default function RegularizationsPage() {
                                                     {isAdminUser && reg.employee && (
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                             <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--crm-accent)', color: 'var(--crm-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>
-                                                                {reg.employee.full_name.charAt(0)}
+                                                                {reg.employee.full_name?.charAt(0) || '?'}
                                                             </div>
                                                             <div>
                                                                 <div style={{ fontWeight: 600, color: 'var(--crm-text-secondary)', fontSize: '0.875rem' }}>{reg.employee.full_name}</div>
