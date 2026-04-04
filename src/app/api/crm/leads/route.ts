@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     if (status && status !== 'all') query = query.eq('status', status)
     if (source && source !== 'all') query = query.eq('source', source)
     if (priority && priority !== 'all') query = query.eq('priority', priority)
-    if (teamMemberIds) query = query.in('assigned_to', teamMemberIds)
+    if (teamMemberIds) query = query.or(`assigned_to.in.(${teamMemberIds.join(',')}),assigned_to.is.null`)
     else if (assignedTo === 'unassigned') query = query.is('assigned_to', null)
     else if (assignedTo) query = query.eq('assigned_to', assignedTo)
     if (search) {
@@ -94,7 +94,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Auto-assign via round-robin (fire and forget — don't block response)
-        assignLead(lead.id).catch(err => console.error('Auto-assign failed for lead', lead.id, err))
+        const { isAutoAssignEnabled } = await import('./assign/route')
+        isAutoAssignEnabled().then(enabled => {
+            if (enabled) assignLead(lead.id).catch(err => console.error('Auto-assign failed for lead', lead.id, err))
+        })
 
         return NextResponse.json({ lead }, { status: 201 })
     } catch {

@@ -52,15 +52,22 @@ export async function POST(request: NextRequest) {
             work_start_time, work_end_time, full_day_hours, half_day_hours,
             checkin_reminder_time, checkout_reminder_time, reminders_enabled,
             max_regularizations_per_month, max_regularizations_per_year, updated_by,
+            auto_assign_enabled,
         } = body
 
-        const payload = {
-            work_start_time, work_end_time, full_day_hours, half_day_hours,
-            checkin_reminder_time, checkout_reminder_time, reminders_enabled,
-            max_regularizations_per_month: max_regularizations_per_month ?? 2,
-            max_regularizations_per_year: max_regularizations_per_year ?? 10,
-            updated_by: updated_by || null,
-        }
+        // Build payload with only provided fields to support partial updates
+        const payload: Record<string, unknown> = {}
+        if (work_start_time !== undefined) payload.work_start_time = work_start_time
+        if (work_end_time !== undefined) payload.work_end_time = work_end_time
+        if (full_day_hours !== undefined) payload.full_day_hours = full_day_hours
+        if (half_day_hours !== undefined) payload.half_day_hours = half_day_hours
+        if (checkin_reminder_time !== undefined) payload.checkin_reminder_time = checkin_reminder_time
+        if (checkout_reminder_time !== undefined) payload.checkout_reminder_time = checkout_reminder_time
+        if (reminders_enabled !== undefined) payload.reminders_enabled = reminders_enabled
+        if (max_regularizations_per_month !== undefined) payload.max_regularizations_per_month = max_regularizations_per_month
+        if (max_regularizations_per_year !== undefined) payload.max_regularizations_per_year = max_regularizations_per_year
+        if (updated_by !== undefined) payload.updated_by = updated_by
+        if (typeof auto_assign_enabled === 'boolean') payload.auto_assign_enabled = auto_assign_enabled
 
         const { data: existing } = await supabase.from('hrm_work_settings').select('id').limit(1).single()
 

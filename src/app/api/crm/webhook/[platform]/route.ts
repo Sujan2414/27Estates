@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getConnector } from '@/lib/crm/connectors'
 import { createLead, processWebhook } from '@/lib/crm/leads'
-import { assignLead } from '@/app/api/crm/leads/assign/route'
+import { assignLead, isAutoAssignEnabled } from '@/app/api/crm/leads/assign/route'
 
 // Universal webhook endpoint: /api/crm/webhook/[platform]
 // e.g., /api/crm/webhook/meta_ads, /api/crm/webhook/google_ads, etc.
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         await processWebhook(platform, 'lead_created', payload, lead.id, 'processed')
-        assignLead(lead.id).catch(err => console.error('Auto-assign failed for webhook lead', lead.id, err))
+        isAutoAssignEnabled().then(on => { if (on) assignLead(lead.id).catch(err => console.error('Auto-assign failed for webhook lead', lead.id, err)) })
 
         return NextResponse.json({ status: 'ok', platform, message: 'Lead created', lead_id: lead.id }, { status: 200 })
     }
