@@ -25,6 +25,31 @@ export default function AllEmployeesPage() {
     const [loading, setLoading]     = useState(true)
     const [search, setSearch]       = useState('')
     const [roleFilter, setRole]     = useState('all')
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [currentUserRole, setCurrentUserRole] = useState<string>('')
+
+    // Fetch current user's role
+    useEffect(() => {
+        fetch('/api/admin/me').then(r => r.json()).then(d => {
+            if (d.profile?.role) setCurrentUserRole(d.profile.role)
+        }).catch(() => {})
+    }, [])
+
+    const canEdit = currentUserRole === 'super_admin' || currentUserRole === 'admin'
+
+    // Get managers/admins that someone can report to
+    const getManagerOptions = (empId: string) =>
+        employees.filter(e => e.id !== empId && ['super_admin', 'admin', 'manager'].includes(e.role))
+
+    const updateReportsTo = async (empId: string, managerId: string | null) => {
+        setEditingId(null)
+        const res = await fetch('/api/crm/hrm/employees', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: empId, reporting_manager_id: managerId }),
+        })
+        if (res.ok) load()
+    }
 
     const load = useCallback(async () => {
         setLoading(true)
@@ -140,7 +165,29 @@ export default function AllEmployeesPage() {
                                                 </span>
                                             </td>
                                             <td className={styles.td} style={{ fontSize: '0.82rem', color: 'var(--h-text-3)' }}>
-                                                {emp.manager ? emp.manager.full_name : <span style={{ color: 'var(--h-text-4)' }}>—</span>}
+                                                {editingId === emp.id ? (
+                                                    <select
+                                                        autoFocus
+                                                        defaultValue={emp.reporting_manager_id || ''}
+                                                        onChange={e => updateReportsTo(emp.id, e.target.value || null)}
+                                                        onBlur={() => setEditingId(null)}
+                                                        className={styles.select}
+                                                        style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', minWidth: '140px' }}
+                                                    >
+                                                        <option value="">None</option>
+                                                        {getManagerOptions(emp.id).map(m => (
+                                                            <option key={m.id} value={m.id}>{m.full_name} ({ROLE_LABELS[m.role] || m.role})</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <span
+                                                        onClick={() => canEdit && setEditingId(emp.id)}
+                                                        style={{ cursor: canEdit ? 'pointer' : 'default', borderBottom: canEdit ? '1px dashed var(--h-text-4)' : 'none', paddingBottom: '1px' }}
+                                                        title={canEdit ? 'Click to change' : undefined}
+                                                    >
+                                                        {emp.manager ? emp.manager.full_name : <span style={{ color: 'var(--h-text-4)' }}>—</span>}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className={styles.td} style={{ fontSize: '0.78rem', color: 'var(--h-text-3)', whiteSpace: 'nowrap' }}>
                                                 {new Date(emp.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
