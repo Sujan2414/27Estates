@@ -310,7 +310,7 @@ export default function AttendancePage() {
         const empRecs = records.filter(r => r.employee_id === e.id)
         const presentDays = empRecs.filter(r => ['present', 'late', 'work_from_home'].includes(r.status)).length
         const workingDays = monthDates.filter(d => { const day = new Date(d).getDay(); return day !== 0 && day !== 6 }).length
-        return { name: e.full_name.split(' ')[0], present: presentDays, absent: empRecs.filter(r => r.status === 'absent').length, pct: workingDays > 0 ? Math.round((presentDays / workingDays) * 100) : 0, total: empRecs.length }
+        return { name: (e.full_name || '?').split(' ')[0], present: presentDays, absent: empRecs.filter(r => r.status === 'absent').length, pct: workingDays > 0 ? Math.round((presentDays / workingDays) * 100) : 0, total: empRecs.length }
     }).filter(e => e.total > 0)
 
     const todayStr = new Date().toISOString().split('T')[0]
@@ -618,7 +618,7 @@ export default function AttendancePage() {
                                         return (
                                             <tr key={emp.id} style={{ borderTop: '1px solid var(--crm-border)' }}>
                                                 <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500, color: 'var(--crm-text-secondary)', position: 'sticky', left: 0, backgroundColor: 'var(--crm-surface)', whiteSpace: 'nowrap' }}>
-                                                    {emp.full_name.split(' ')[0]}
+                                                    {(emp.full_name || '?').split(' ')[0]}
                                                 </td>
                                                 {monthDates.map(d => {
                                                     const status = empAtt[d]

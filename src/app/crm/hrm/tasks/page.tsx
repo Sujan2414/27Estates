@@ -168,7 +168,7 @@ export default function TasksPage() {
     const byStatus = COLUMNS.map(c => ({ name: c.label, count: tasks.filter(t => t.status === c.key).length, color: c.color }))
     const byPriority = PRIORITIES.map(p => ({ name: p.label, count: tasks.filter(t => t.priority === p.key).length, color: p.color }))
     const byAssignee = employees.map(e => ({
-        name: e.full_name.split(' ')[0],
+        name: (e.full_name || '?').split(' ')[0],
         open: tasks.filter(t => t.assignee?.id === e.id && t.status !== 'done').length,
         done: tasks.filter(t => t.assignee?.id === e.id && t.status === 'done').length,
     })).filter(e => e.open + e.done > 0)
@@ -309,9 +309,9 @@ export default function TasksPage() {
                                                     {task.assignee ? (
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                             <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'var(--crm-accent)', color: 'var(--crm-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 700 }}>
-                                                                {task.assignee.full_name.charAt(0)}
+                                                                {task.assignee.full_name?.charAt(0) || '?'}
                                                             </div>
-                                                            <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-muted)' }}>{task.assignee.full_name.split(' ')[0]}</span>
+                                                            <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-muted)' }}>{(task.assignee.full_name || '?').split(' ')[0]}</span>
                                                         </div>
                                                     ) : <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)' }}>Unassigned</span>}
 

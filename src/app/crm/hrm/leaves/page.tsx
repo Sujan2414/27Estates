@@ -165,7 +165,7 @@ export default function LeavesPage() {
     })).filter(lt => lt.count > 0)
 
     const byEmployee = employees.map(e => ({
-        name: e.full_name.split(' ')[0],
+        name: (e.full_name || '?').split(' ')[0],
         approved: leaves.filter(l => l.employee_id === e.id && l.status === 'approved').length,
         pending: leaves.filter(l => l.employee_id === e.id && l.status === 'pending').length,
     })).filter(e => e.approved + e.pending > 0)

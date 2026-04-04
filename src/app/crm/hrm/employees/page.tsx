@@ -65,7 +65,7 @@ export default function EmployeesPage() {
     const performanceData = employees
         .filter(e => e.leads_assigned > 0)
         .map(e => ({
-            name: e.full_name.split(' ')[0],
+            name: (e.full_name || '?').split(' ')[0],
             assigned: e.leads_assigned,
             converted: e.leads_converted,
             rate: Math.round((e.leads_converted / e.leads_assigned) * 100),
