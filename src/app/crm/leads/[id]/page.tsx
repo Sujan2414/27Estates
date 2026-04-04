@@ -150,7 +150,7 @@ export default function LeadDetailPage() {
     useEffect(() => {
         fetch('/api/crm/hrm/employees')
             .then(r => r.json())
-            .then(d => setAgents((d.employees || []).filter((e: any) => ['agent', 'manager'].includes(e.role))))
+            .then(d => setAgents((d.employees || []).filter((e: any) => ['agent', 'manager', 'admin', 'super_admin'].includes(e.role))))
             .catch(() => {})
     }, [])
 
@@ -534,7 +534,7 @@ export default function LeadDetailPage() {
                                             onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                                         >
                                             {a.full_name}
-                                            {a.role === 'manager' && <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', marginLeft: '0.5rem' }}>(Manager)</span>}
+                                            {a.role !== 'agent' && <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', marginLeft: '0.5rem' }}>({a.role === 'manager' ? 'Manager' : a.role === 'admin' ? 'Admin' : 'Super Admin'})</span>}
                                         </div>
                                     ))}
                                 </div>
