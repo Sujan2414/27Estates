@@ -159,7 +159,14 @@ export async function assignLead(leadId: string, agentId?: string): Promise<{
     let agent: { id: string; full_name: string; role: string } | null = null
 
     if (agentId) {
+        // For manual assignment, allow agents AND managers (not just round-robin pool)
         agent = agents.find(a => a.id === agentId) || null
+        if (!agent) {
+            const { data: managerProfile } = await supabase
+                .from('profiles').select('id, full_name, role')
+                .eq('id', agentId).in('role', ['manager', 'admin', 'super_admin']).single()
+            agent = managerProfile || null
+        }
         if (!agent) return { agent: null, scheduledAt: null, error: 'Agent not available' }
     } else {
         agent = await pickNextAgent(agents)
