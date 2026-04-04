@@ -90,6 +90,9 @@ export default function LeadDetailPage() {
     const [saving, setSaving] = useState(false)
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
     const [currentUserName, setCurrentUserName] = useState<string | null>(null)
+    const [agents, setAgents] = useState<{ id: string; full_name: string; role: string }[]>([])
+    const [assignDropdownOpen, setAssignDropdownOpen] = useState(false)
+    const [assigning, setAssigning] = useState(false)
 
     // Website footprint
     const [footprint, setFootprint] = useState<any>(null)
@@ -143,6 +146,27 @@ export default function LeadDetailPage() {
             }
         })
     }, [])
+
+    useEffect(() => {
+        fetch('/api/crm/hrm/employees')
+            .then(r => r.json())
+            .then(d => setAgents((d.employees || []).filter((e: any) => ['agent', 'manager'].includes(e.role))))
+            .catch(() => {})
+    }, [])
+
+    const handleAssign = async (agentId: string | null) => {
+        setAssigning(true); setAssignDropdownOpen(false)
+        if (agentId) {
+            await fetch('/api/crm/leads/assign', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lead_id: id, agent_id: agentId }),
+            })
+        } else {
+            await patch({ assigned_to: null })
+        }
+        await fetchLead()
+        setAssigning(false)
+    }
 
     useEffect(() => {
         if (!lead?.email) return
@@ -458,6 +482,64 @@ export default function LeadDetailPage() {
                                 {lead.notes && <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', backgroundColor: 'var(--crm-elevated)', padding: '0.625rem', borderRadius: '0.5rem', marginTop: '0.25rem' }}>{lead.notes}</div>}
                             </div>
                         )}
+                    </div>
+
+                    {/* Assigned To */}
+                    <div className={styles.card}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <span className={styles.cardTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Building2 size={14} /> Assigned To
+                            </span>
+                        </div>
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => setAssignDropdownOpen(!assignDropdownOpen)}
+                                disabled={assigning}
+                                style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                    padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                                    border: '1px solid var(--crm-border)', backgroundColor: 'var(--crm-elevated)',
+                                    cursor: 'pointer', fontSize: '0.8125rem', color: 'var(--crm-text-secondary)',
+                                }}
+                            >
+                                {assigning ? 'Assigning...' : (lead as any)?.assignee?.full_name || (
+                                    <span style={{ color: 'var(--crm-text-dim)', fontStyle: 'italic' }}>Unassigned — click to assign</span>
+                                )}
+                                <span style={{ marginLeft: 'auto', fontSize: '0.6875rem', color: 'var(--crm-text-dim)' }}>▼</span>
+                            </button>
+                            {assignDropdownOpen && (
+                                <div style={{
+                                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                                    marginTop: '4px', backgroundColor: 'var(--crm-surface)',
+                                    border: '1px solid var(--crm-border)', borderRadius: '0.5rem',
+                                    boxShadow: '0 8px 24px var(--crm-shadow)', maxHeight: '200px', overflowY: 'auto',
+                                }}>
+                                    <div
+                                        onClick={() => handleAssign(null)}
+                                        style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.8125rem', color: 'var(--crm-text-dim)', borderBottom: '1px solid var(--crm-border)' }}
+                                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--crm-elevated)')}
+                                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                    >
+                                        Unassign
+                                    </div>
+                                    {agents.map(a => (
+                                        <div key={a.id}
+                                            onClick={() => handleAssign(a.id)}
+                                            style={{
+                                                padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.8125rem',
+                                                color: 'var(--crm-text-secondary)',
+                                                fontWeight: a.id === (lead as any)?.assignee?.id ? 700 : 400,
+                                            }}
+                                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--crm-elevated)')}
+                                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                        >
+                                            {a.full_name}
+                                            {a.role === 'manager' && <span style={{ fontSize: '0.6875rem', color: 'var(--crm-text-dim)', marginLeft: '0.5rem' }}>(Manager)</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Property Preferences */}
