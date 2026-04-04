@@ -236,7 +236,7 @@ export async function createLead(data: NormalizedLead): Promise<Lead | null> {
     await createNotification({
         type: 'new_lead',
         title: `New lead: ${data.name}`,
-        body: `From ${data.source}${data.source_campaign ? ` · ${data.source_campaign}` : ''}`,
+        body: data.phone ? `Phone: ${data.phone}` : data.email ? `Email: ${data.email}` : 'New enquiry received',
         link: `/crm/leads/${lead.id}`,
         lead_id: lead.id,
     })

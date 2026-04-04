@@ -126,7 +126,7 @@ export default function AllEmployeesPage() {
                                             <td className={styles.td}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                     <div className={styles.avatar} style={{ width: 34, height: 34 }}>
-                                                        {emp.full_name.charAt(0).toUpperCase()}
+                                                        {emp.full_name?.charAt(0)?.toUpperCase() || '?'}
                                                     </div>
                                                     <div>
                                                         <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--h-text-1)' }}>{emp.full_name}</div>

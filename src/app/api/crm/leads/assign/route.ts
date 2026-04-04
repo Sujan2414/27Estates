@@ -141,6 +141,12 @@ async function pickNextAgent(agents: { id: string; full_name: string; role: stri
     return agents[nextIdx]
 }
 
+// Check if auto-assign is enabled
+export async function isAutoAssignEnabled(): Promise<boolean> {
+    const { data } = await supabase.from('hrm_work_settings').select('auto_assign_enabled').limit(1).single()
+    return data?.auto_assign_enabled !== false  // default true if column missing
+}
+
 // Core assignment function
 export async function assignLead(leadId: string, agentId?: string): Promise<{
     agent: { id: string; full_name: string } | null

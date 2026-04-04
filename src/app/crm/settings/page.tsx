@@ -1,12 +1,35 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Key, Globe, Bot, Mail, Shield, Save } from 'lucide-react'
 import styles from '../crm.module.css'
 
 export default function SettingsPage() {
     const [activeSection, setActiveSection] = useState('general')
+    const [autoAssign, setAutoAssign] = useState(true)
+    const [autoAssignSaving, setAutoAssignSaving] = useState(false)
+
+    useEffect(() => {
+        fetch('/api/crm/hrm/work-settings')
+            .then(r => r.json())
+            .then(d => { if (d.settings) setAutoAssign(d.settings.auto_assign_enabled !== false) })
+            .catch(() => {})
+    }, [])
+
+    const toggleAutoAssign = async () => {
+        const newVal = !autoAssign
+        setAutoAssign(newVal)
+        setAutoAssignSaving(true)
+        try {
+            await fetch('/api/crm/hrm/work-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auto_assign_enabled: newVal }),
+            })
+        } catch { setAutoAssign(!newVal) }
+        setAutoAssignSaving(false)
+    }
 
     const sections = [
         { key: 'general', label: 'General', icon: Globe },
@@ -57,6 +80,42 @@ export default function SettingsPage() {
                             <div className={styles.formGroup}>
                                 <label className={styles.formLabel}>Website URL</label>
                                 <input type="url" defaultValue="https://27estates.com" className={styles.formInput} />
+                            </div>
+
+                            {/* Auto-Assign Toggle */}
+                            <div style={{
+                                marginTop: '1.5rem', padding: '1rem 1.25rem',
+                                backgroundColor: 'var(--crm-bg)', border: '1px solid var(--crm-border)',
+                                borderRadius: '0.75rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            }}>
+                                <div>
+                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--crm-text-secondary)', marginBottom: '0.25rem' }}>
+                                        Auto-Assign Leads
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', lineHeight: 1.5 }}>
+                                        When enabled, new leads are automatically assigned to available agents via round-robin.
+                                        When disabled, leads remain unassigned until manually assigned.
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={toggleAutoAssign}
+                                    disabled={autoAssignSaving}
+                                    style={{
+                                        position: 'relative', width: '48px', height: '26px', flexShrink: 0, marginLeft: '1rem',
+                                        borderRadius: '13px', border: 'none', cursor: autoAssignSaving ? 'wait' : 'pointer',
+                                        backgroundColor: autoAssign ? 'var(--crm-accent, #22c55e)' : '#d1d5db',
+                                        transition: 'background-color 0.2s',
+                                    }}
+                                >
+                                    <div style={{
+                                        position: 'absolute', top: '3px',
+                                        left: autoAssign ? '25px' : '3px',
+                                        width: '20px', height: '20px', borderRadius: '50%',
+                                        backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                        transition: 'left 0.2s',
+                                    }} />
+                                </button>
                             </div>
                         </div>
                     )}
