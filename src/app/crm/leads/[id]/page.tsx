@@ -283,7 +283,7 @@ export default function LeadDetailPage() {
         <div className={styles.pageContent}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <button onClick={() => router.push('/crm/leads')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-muted)' }}><ArrowLeft size={20} /></button>
+                <button onClick={() => router.back()} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--crm-text-muted)' }}><ArrowLeft size={20} /></button>
                 <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>{lead.name}</h1>

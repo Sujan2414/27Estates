@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, usePathname } from 'next/navigation'
 import {
     Search, UserPlus, Phone, ChevronLeft, ChevronRight, X, Trash2,
     Filter, Download, Star, Calendar, BarChart2, List, Users, AlertTriangle,
@@ -93,26 +93,42 @@ function formatDateTime(iso: string) {
 
 export default function LeadsPage() {
     const searchParams = useSearchParams()
+    const pathname = usePathname()
     const crmUser = useCRMUser()
     const isAdminUser = isAdmin(crmUser)
     const isManagerUser = isManager(crmUser)
     const isAgentUser = isAgent(crmUser)
     const isSA = isSuperAdmin(crmUser)
 
-    const [view, setView] = useState<'list' | 'schedule' | 'analytics'>('list')
+    const [view, setView] = useState<'list' | 'schedule' | 'analytics'>((searchParams?.get('view') as 'list' | 'schedule' | 'analytics') || 'list')
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
     const [total, setTotal] = useState(0)
-    const [page, setPage] = useState(1)
-    const [search, setSearch] = useState('')
-    const [searchInput, setSearchInput] = useState('')
+    const [page, setPage] = useState(Number(searchParams?.get('page')) || 1)
+    const [search, setSearch] = useState(searchParams?.get('search') || '')
+    const [searchInput, setSearchInput] = useState(searchParams?.get('search') || '')
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const [statusFilter, setStatusFilter] = useState('all')
-    const [sourceFilter, setSourceFilter] = useState('all')
-    const [priorityFilter, setPriorityFilter] = useState('all')
-    const [agentFilter, setAgentFilter] = useState('all')
-    const [showFilters, setShowFilters] = useState(false)
+    const [statusFilter, setStatusFilter] = useState(searchParams?.get('status') || 'all')
+    const [sourceFilter, setSourceFilter] = useState(searchParams?.get('source') || 'all')
+    const [priorityFilter, setPriorityFilter] = useState(searchParams?.get('priority') || 'all')
+    const [agentFilter, setAgentFilter] = useState(searchParams?.get('agent') || 'all')
+    const [showFilters, setShowFilters] = useState(!!(searchParams?.get('status') || searchParams?.get('source') || searchParams?.get('priority') || searchParams?.get('agent')))
     const [showAddModal, setShowAddModal] = useState(searchParams?.get('new') === 'true')
+
+    // Sync filters/page to URL so back button preserves state
+    useEffect(() => {
+        const params = new URLSearchParams()
+        if (page > 1) params.set('page', String(page))
+        if (statusFilter !== 'all') params.set('status', statusFilter)
+        if (sourceFilter !== 'all') params.set('source', sourceFilter)
+        if (priorityFilter !== 'all') params.set('priority', priorityFilter)
+        if (agentFilter !== 'all') params.set('agent', agentFilter)
+        if (search) params.set('search', search)
+        if (view !== 'list') params.set('view', view)
+        const qs = params.toString()
+        const newUrl = qs ? `${pathname}?${qs}` : pathname
+        window.history.replaceState(null, '', newUrl)
+    }, [page, statusFilter, sourceFilter, priorityFilter, agentFilter, search, view, pathname])
     const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', source: 'manual', notes: '', priority: 'warm', preferred_location: '', property_type: '', budget_min: '', budget_max: '' })
     const [saving, setSaving] = useState(false)
     const [exporting, setExporting] = useState(false)
