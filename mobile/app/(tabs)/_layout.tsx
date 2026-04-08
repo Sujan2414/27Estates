@@ -27,7 +27,8 @@ const HIDDEN_TABS = ['hrms', 'crm']
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const [moreVisible, setMoreVisible] = useState(false)
   const insets = useSafeAreaInsets()
-  const bottomPad = Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 8)
+  // Keep bottom padding minimal — just enough for safe area, not excessive
+  const bottomPad = Platform.OS === 'ios' ? Math.max(insets.bottom - 10, 6) : 6
 
   // Filter to only visible tabs
   const visibleRoutes = state.routes.filter((r: any) =>
@@ -96,11 +97,11 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         </View>
       </View>
 
-      {/* Floating Center More Button — sits above the tab bar */}
+      {/* Floating Center More Button — sits above the tab bar with gap */}
       <Pressable
         style={({ pressed }) => [
           styles.centerBtnOuter,
-          { bottom: bottomPad + 28 },
+          { bottom: bottomPad + 18 },
           pressed && { transform: [{ scale: 0.9 }] },
         ]}
         onPress={() => setMoreVisible(true)}
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingTop: 10,
+    paddingTop: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
