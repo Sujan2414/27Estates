@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import {
     ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, Clock,
@@ -35,11 +36,13 @@ const activityIcons: Record<string, React.ReactNode> = {
     system: <Clock size={16} />,
 }
 
-const statusSteps = ['new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted']
+const statusSteps = ['new', 'contacted', 'qualified', 'site_visit', 'negotiation', 'converted']
 
 export default function LeadDetailPage() {
     const { id } = useParams()
     const router = useRouter()
+    const supabase = useMemo(() => createClient(), [])
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
     const [lead, setLead] = useState<Lead | null>(null)
     const [activities, setActivities] = useState<LeadActivity[]>([])
     const [tasks, setTasks] = useState<LeadTask[]>([])
@@ -50,6 +53,10 @@ export default function LeadDetailPage() {
     const [newActivity, setNewActivity] = useState({ type: 'note', title: '', description: '' })
     const [newTask, setNewTask] = useState({ title: '', due_date: '', description: '' })
     const [editing, setEditing] = useState(false)
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data: { user } }) => { if (user) setCurrentUserId(user.id) })
+    }, [supabase])
     const [editData, setEditData] = useState<Partial<Lead>>({})
 
     const fetchLead = async () => {
@@ -69,7 +76,7 @@ export default function LeadDetailPage() {
         await fetch(`/api/crm/leads/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus }),
+            body: JSON.stringify({ status: newStatus, changed_by: currentUserId || 'admin' }),
         })
         fetchLead()
     }
@@ -98,7 +105,7 @@ export default function LeadDetailPage() {
         await fetch('/api/crm/activities', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lead_id: id, ...newActivity }),
+            body: JSON.stringify({ lead_id: id, ...newActivity, created_by: currentUserId || undefined }),
         })
         setShowAddActivity(false)
         setNewActivity({ type: 'note', title: '', description: '' })
@@ -390,7 +397,7 @@ export default function LeadDetailPage() {
                                                     <div style={{ fontSize: '0.8125rem', color: '#6b7280', marginTop: '0.25rem' }}>{activity.description}</div>
                                                 )}
                                                 <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-                                                    {formatRelative(activity.created_at)} &middot; {activity.created_by}
+                                                    {formatRelative(activity.created_at)} &middot; {(activity as any).creator_name || activity.created_by}
                                                 </div>
                                             </div>
                                         </div>

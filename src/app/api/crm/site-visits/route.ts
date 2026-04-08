@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
             lead_id: body.lead_id,
             property_id: body.property_id || null,
             project_id: body.project_id || null,
-            agent_id: body.agent_id || null,
+            agent_id: body.assigned_to || body.agent_id || null,
             visit_date: body.visit_date,
             visit_time: body.visit_time || null,
             status: 'scheduled',
@@ -96,4 +96,21 @@ export async function PATCH(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ visit: data })
+}
+
+// DELETE /api/crm/site-visits?id=xxx
+export async function DELETE(request: NextRequest) {
+    const sb = getSupabase()
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 })
+
+    const { error } = await sb
+        .from('site_visits')
+        .delete()
+        .eq('id', id)
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
 }

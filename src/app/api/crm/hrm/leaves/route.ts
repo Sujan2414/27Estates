@@ -22,13 +22,15 @@ function roleWeight(role: string): number {
     return w[role] ?? 0
 }
 
-// GET /api/crm/hrm/leaves?status=pending&employee_id=...&approver_id=...&team_only=true
+// GET /api/crm/hrm/leaves?status=pending&employee_id=...&approver_id=...&team_only=true&fy_start=...&fy_end=...&all=true
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status     = searchParams.get('status') || ''
     const employeeId = searchParams.get('employee_id') || ''
     const approverId = searchParams.get('approver_id') || ''   // manager seeing their team's pending
     const teamOnly   = searchParams.get('team_only') === 'true'
+    const fyStart    = searchParams.get('fy_start') || ''
+    const fyEnd      = searchParams.get('fy_end') || ''
 
     try {
         let query = supabase
@@ -38,6 +40,8 @@ export async function GET(request: NextRequest) {
 
         if (status)     query = query.eq('status', status)
         if (employeeId) query = query.eq('employee_id', employeeId)
+        if (fyStart)    query = query.gte('start_date', fyStart)
+        if (fyEnd)      query = query.lte('end_date', fyEnd)
 
         const { data, error } = await query
         if (error) {

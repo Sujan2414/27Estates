@@ -19,7 +19,7 @@ interface MoreMenuItem {
 }
 
 const MENU_ITEMS: MoreMenuItem[] = [
-  { icon: 'time-outline', label: 'Attendance', color: colors.primary, bg: colors.primaryLight, route: '/(tabs)/hrms' },
+  { icon: 'time-outline', label: 'Attendance', color: colors.primary, bg: colors.primaryLight, route: '/(tabs)/hrms/attendance' },
   { icon: 'receipt-outline', label: 'Expenses', color: colors.warning, bg: colors.warningLight, route: '/(tabs)/hrms/expenses' },
   { icon: 'calendar-outline', label: 'Leave', color: colors.info, bg: colors.infoLight, route: '/(tabs)/hrms/leaves' },
   { icon: 'card-outline', label: 'Payroll', color: colors.success, bg: colors.successLight, route: '/(tabs)/hrms/payroll' },
@@ -30,7 +30,7 @@ const MENU_ITEMS: MoreMenuItem[] = [
   { icon: 'person-outline', label: 'Personal Data', color: colors.primary, bg: colors.primaryLight, route: '/(tabs)/hrms/personal-data' },
   { icon: 'flash-outline', label: 'My Tasks', color: '#EA580C', bg: '#FFF7ED', route: '/(tabs)/hrms/tasks' },
   { icon: 'lock-closed-outline', label: 'Password', color: '#6B7280', bg: '#F9FAFB', route: '/(tabs)/hrms/change-password' },
-  { icon: 'analytics-outline', label: 'Reports', color: '#7C3AED', bg: '#F5F3FF', route: '/(tabs)/hrms' },
+  { icon: 'analytics-outline', label: 'Reports', color: '#7C3AED', bg: '#F5F3FF', route: '/(tabs)/hrms/reports' },
 ]
 
 interface MoreMenuProps {

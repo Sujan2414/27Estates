@@ -139,6 +139,12 @@ export async function PATCH(request: NextRequest) {
                 .single()
 
             if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+            // On clock-in, auto-assign any unassigned leads to this agent (fire and forget)
+            assignUnassignedLeadsOnClockIn(employee_id).catch(err =>
+                console.error('Auto-assign on clock-in failed:', err)
+            )
+
             return NextResponse.json({ record: data, action: 'checked_in', time: now.toISOString() })
         }
 
@@ -216,5 +222,45 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ record: data, action: 'checked_out', hours_worked: hoursWorked, status: autoStatus, time: now.toISOString() })
     } catch {
         return NextResponse.json({ error: 'Failed to process check-in/out' }, { status: 500 })
+    }
+}
+
+// When an agent clocks in, check for unassigned leads and auto-assign them
+async function assignUnassignedLeadsOnClockIn(agentId: string) {
+    // Only proceed if agent role
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', agentId)
+        .single()
+    if (!profile || profile.role !== 'agent') return
+
+    // Check if auto-assign is enabled
+    const { data: settings } = await supabase
+        .from('hrm_work_settings')
+        .select('auto_assign_enabled')
+        .limit(1)
+        .single()
+    if (settings?.auto_assign_enabled === false) return
+
+    // Find unassigned leads (not converted/lost)
+    const { data: unassigned } = await supabase
+        .from('leads')
+        .select('id')
+        .is('assigned_to', null)
+        .not('status', 'in', '(converted,lost)')
+        .order('created_at')
+
+    if (!unassigned || unassigned.length === 0) return
+
+    // Import assignLead dynamically to avoid circular deps
+    const { assignLead } = await import('@/app/api/crm/leads/assign/route')
+
+    for (const lead of unassigned) {
+        try {
+            await assignLead(lead.id)
+        } catch (err) {
+            console.error(`Failed to auto-assign lead ${lead.id} on clock-in:`, err)
+        }
     }
 }

@@ -27,7 +27,7 @@ interface Lead {
 // Weighted conversion probability per stage
 const STAGE_PROB: Record<string, number> = {
     new: 0.05, contacted: 0.15, qualified: 0.35,
-    negotiation: 0.60, site_visit: 0.75, converted: 1.0, lost: 0,
+    site_visit: 0.60, negotiation: 0.75, converted: 1.0, lost: 0,
 }
 
 const COMMISSION_RATE = 0.02  // 2%
@@ -42,8 +42,8 @@ const STAGES = [
     { key: 'new', label: 'New', color: '#3b82f6' },
     { key: 'contacted', label: 'Contacted', color: '#f59e0b' },
     { key: 'qualified', label: 'Qualified', color: '#8b5cf6' },
-    { key: 'negotiation', label: 'Negotiation', color: '#f97316' },
     { key: 'site_visit', label: 'Site Visit', color: '#06b6d4' },
+    { key: 'negotiation', label: 'Negotiation', color: '#f97316' },
     { key: 'converted', label: 'Converted', color: '#22c55e' },
     { key: 'lost', label: 'Lost', color: '#ef4444' },
 ]
@@ -67,8 +67,12 @@ const tooltipStyle = {
     itemStyle: { color: 'var(--crm-text-secondary)' }, labelStyle: { color: 'var(--crm-text-muted)' },
 }
 
+interface Employee { id: string; full_name: string; role: string }
+
 export default function PipelinePage() {
     const crmUser = useCRMUser()
+    const isAdminUser = isAdmin(crmUser)
+    const isManagerUser = isManager(crmUser)
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
     const [view, setView] = useState<'kanban' | 'analytics' | 'revenue'>('kanban')
@@ -76,15 +80,28 @@ export default function PipelinePage() {
     const [dragOverCol, setDragOverCol] = useState<string | null>(null)
     const [updating, setUpdating] = useState<string | null>(null)
     const [pipelineSearch, setPipelineSearch] = useState('')
+    const [employees, setEmployees] = useState<Employee[]>([])
+    const [agentFilter, setAgentFilter] = useState('all')
+
+    const fetchEmployees = useCallback(async () => {
+        if (!isManagerUser) return
+        const res = await fetch('/api/crm/hrm/employees')
+        if (res?.ok) { const d = await res.json(); setEmployees(d.employees || []) }
+    }, [isManagerUser])
+
+    useEffect(() => { fetchEmployees() }, [fetchEmployees])
 
     const fetchLeads = useCallback(async () => {
         if (!crmUser) return
         setLoading(true)
         // Role-based filtering: admin/super_admin see all; manager sees team; agent sees own
         const params = new URLSearchParams({ limit: '500' })
-        if (!isAdmin(crmUser) && !isManager(crmUser)) {
+        if (agentFilter !== 'all') {
+            // Specific agent selected
+            params.set('assigned_to', agentFilter)
+        } else if (!isAdminUser && !isManagerUser) {
             params.set('assigned_to', crmUser.id)
-        } else if (isManager(crmUser) && !isAdmin(crmUser)) {
+        } else if (isManagerUser && !isAdminUser) {
             params.set('manager_id', crmUser.id)
         }
         const res = await fetch(`/api/crm/leads?${params}`).catch(() => null)
@@ -93,7 +110,7 @@ export default function PipelinePage() {
             setLeads(d.leads || [])
         }
         setLoading(false)
-    }, [])
+    }, [crmUser, agentFilter, isAdminUser, isManagerUser])
 
     useEffect(() => { if (crmUser) fetchLeads() }, [fetchLeads, crmUser])
 
@@ -159,7 +176,7 @@ export default function PipelinePage() {
     const totalLeads = filteredLeads.length
     const convertedCount = columns['converted']?.length || 0
     const lostCount = columns['lost']?.length || 0
-    const activeCount = ['new', 'contacted', 'qualified', 'negotiation', 'site_visit'].reduce((s, k) => s + (columns[k]?.length || 0), 0)
+    const activeCount = ['new', 'contacted', 'qualified', 'site_visit', 'negotiation'].reduce((s, k) => s + (columns[k]?.length || 0), 0)
     const winRate = totalLeads > 0 ? Math.round((convertedCount / totalLeads) * 100) : 0
 
     const funnelData = STAGES.map(s => ({ name: s.label, count: columns[s.key]?.length || 0, color: s.color }))
@@ -203,6 +220,17 @@ export default function PipelinePage() {
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {isManagerUser && employees.length > 0 && (
+                        <select
+                            value={agentFilter}
+                            onChange={e => setAgentFilter(e.target.value)}
+                            className={styles.formSelect}
+                            style={{ width: 'auto', minWidth: 160, fontSize: '0.75rem' }}
+                        >
+                            <option value="all">All Agents</option>
+                            {employees.map(e => <option key={e.id} value={e.id}>{(e.full_name || 'Unknown').split(' ')[0]} ({e.role})</option>)}
+                        </select>
+                    )}
                     {view === 'kanban' && (
                         <div style={{ position: 'relative' }}>
                             <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--crm-text-dim)' }} />
@@ -305,14 +333,16 @@ export default function PipelinePage() {
                                                 }}>
                                                     {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '🟡' : '🔵'} {lead.priority}
                                                 </span>
-                                                <span style={{
-                                                    fontSize: '0.625rem', fontWeight: 600,
-                                                    backgroundColor: `${sourceConfig[lead.source]?.color || '#6b7280'}20`,
-                                                    color: sourceConfig[lead.source]?.color || '#9ca3af',
-                                                    padding: '1px 6px', borderRadius: '999px',
-                                                }}>
-                                                    {sourceConfig[lead.source]?.label || lead.source}
-                                                </span>
+                                                {isAdminUser && (
+                                                    <span style={{
+                                                        fontSize: '0.625rem', fontWeight: 600,
+                                                        backgroundColor: `${sourceConfig[lead.source]?.color || '#6b7280'}20`,
+                                                        color: sourceConfig[lead.source]?.color || '#9ca3af',
+                                                        padding: '1px 6px', borderRadius: '999px',
+                                                    }}>
+                                                        {sourceConfig[lead.source]?.label || lead.source}
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {/* Name */}
@@ -430,37 +460,39 @@ export default function PipelinePage() {
                         </div>
                     </div>
 
-                    {/* Source breakdown pie */}
-                    <div className={styles.card} style={{ marginTop: '1rem' }}>
-                        <div className={styles.cardHeader}>
-                            <span className={styles.cardTitle}>Lead Sources</span>
-                            <span className={styles.cardSubtitle}>Where pipeline leads come from</span>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'center' }}>
-                            <ResponsiveContainer width="100%" height={220}>
-                                <PieChart>
-                                    <Pie data={sourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
-                                        {sourceData.map((entry, i) => (
-                                            <Cell key={i} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip {...tooltipStyle} />
-                                    <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {sourceData.map(s => (
-                                    <div key={s.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: s.color, flexShrink: 0 }} />
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }}>{s.name}</span>
+                    {/* Source breakdown pie — admin only */}
+                    {isAdminUser && (
+                        <div className={styles.card} style={{ marginTop: '1rem' }}>
+                            <div className={styles.cardHeader}>
+                                <span className={styles.cardTitle}>Lead Sources</span>
+                                <span className={styles.cardSubtitle}>Where pipeline leads come from</span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'center' }}>
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <PieChart>
+                                        <Pie data={sourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
+                                            {sourceData.map((entry, i) => (
+                                                <Cell key={i} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip {...tooltipStyle} />
+                                        <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {sourceData.map(s => (
+                                        <div key={s.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: s.color, flexShrink: 0 }} />
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)' }}>{s.name}</span>
+                                            </div>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{s.value}</span>
                                         </div>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-secondary)' }}>{s.value}</span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             ) : (
                 /* ── REVENUE INTELLIGENCE ─────────────────────────── */

@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react'
 import {
   View, Text, Pressable, ScrollView, SafeAreaView,
-  StyleSheet, RefreshControl, ActivityIndicator,
+  StyleSheet, RefreshControl,
 } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { supabase } from '@/lib/supabase'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { colors, shadows, radius, type as t } from '@/theme/colors'
+import { colors, shadows, radius } from '@/theme/colors'
 import { format } from 'date-fns'
 
 interface UserProfile {
@@ -27,18 +27,44 @@ interface Task {
   assigned_to?: string
 }
 
-interface Meeting {
+interface SiteVisit {
   id: string
-  title: string
-  start_time: string
-  end_time?: string
-  attendees?: string[]
+  lead_name?: string
+  project_name?: string
+  visit_date: string
+  visit_time?: string
+  status?: string
+  location?: string
 }
+
+const QUICK_ACTIONS = [
+  {
+    label: 'Clock In',
+    icon: 'time-outline' as const,
+    bg: '#0BAB7A',
+    bgLight: '#ECFDF5',
+    route: '/(tabs)/hrms' as const,
+  },
+  {
+    label: 'Site Visits',
+    icon: 'calendar-outline' as const,
+    bg: '#2563EB',
+    bgLight: '#EFF6FF',
+    route: '/(tabs)/crm' as const,
+  },
+  {
+    label: 'My Tasks',
+    icon: 'checkmark-circle-outline' as const,
+    bg: '#D97706',
+    bgLight: '#FFFBEB',
+    route: '/(tabs)/cms' as const,
+  },
+]
 
 export default function HomeScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
-  const [meetings, setMeetings] = useState<Meeting[]>([])
+  const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -49,7 +75,7 @@ export default function HomeScreen() {
 
       const todayStr = format(new Date(), 'yyyy-MM-dd')
 
-      const [profileRes, tasksRes, meetingsRes] = await Promise.all([
+      const [profileRes, tasksRes, visitsRes] = await Promise.all([
         supabase.from('employees').select('full_name, role, avatar_url')
           .eq('user_id', user.id).maybeSingle(),
         supabase.from('tasks').select('*')
@@ -57,16 +83,15 @@ export default function HomeScreen() {
           .gte('due_date', todayStr)
           .order('due_date', { ascending: true })
           .limit(5),
-        supabase.from('meetings').select('*')
-          .gte('start_time', `${todayStr}T00:00:00`)
-          .lte('start_time', `${todayStr}T23:59:59`)
-          .order('start_time', { ascending: true })
+        supabase.from('site_visits').select('*')
+          .eq('visit_date', todayStr)
+          .order('visit_time', { ascending: true })
           .limit(5),
       ])
 
       if (profileRes.data) setProfile(profileRes.data)
       if (tasksRes.data) setTasks(tasksRes.data)
-      if (meetingsRes.data) setMeetings(meetingsRes.data)
+      if (visitsRes.data) setSiteVisits(visitsRes.data)
     } catch (e) {
       console.warn('Home loadData error:', e)
     }
@@ -84,6 +109,13 @@ export default function HomeScreen() {
   const initials = profile?.full_name
     ? profile.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     : 'U'
+
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good Morning'
+    if (hour < 17) return 'Good Afternoon'
+    return 'Good Evening'
+  }
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -105,18 +137,14 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={s.safe}>
         <View style={s.container}>
-          <View style={s.headerRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Skeleton width={44} height={44} borderRadius={22} />
-              <View style={{ gap: 6 }}>
-                <Skeleton width={120} height={16} />
-                <Skeleton width={60} height={12} />
-              </View>
-            </View>
+          <Skeleton height={100} borderRadius={16} />
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+            <Skeleton width={110} height={100} borderRadius={16} />
+            <Skeleton width={110} height={100} borderRadius={16} />
+            <Skeleton width={110} height={100} borderRadius={16} />
           </View>
-          <Skeleton height={96} borderRadius={16} style={{ marginTop: 20 }} />
-          <Skeleton height={200} borderRadius={16} style={{ marginTop: 20 }} />
-          <Skeleton height={200} borderRadius={16} style={{ marginTop: 20 }} />
+          <Skeleton height={180} borderRadius={16} style={{ marginTop: 20 }} />
+          <Skeleton height={180} borderRadius={16} style={{ marginTop: 20 }} />
         </View>
       </SafeAreaView>
     )
@@ -132,107 +160,138 @@ export default function HomeScreen() {
         }
       >
         <View style={s.container}>
-          {/* Nav Header */}
-          <View style={s.headerRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={s.avatar}>
-                <Text style={s.avatarText}>{initials}</Text>
-              </View>
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text style={s.userName}>{profile?.full_name || 'User'}</Text>
-                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
-                </View>
-                <Text style={s.userRole}>{profile?.role || 'Employee'}</Text>
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Pressable style={s.iconBtn} onPress={() => router.push('/(tabs)/hrms/messages')}>
-                <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.textPrimary} />
-              </Pressable>
-              <Pressable style={s.iconBtn} onPress={() => router.push('/(tabs)/hrms/notifications')}>
-                <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Work Summary Banner */}
+          {/* Greeting Header */}
           <LinearGradient
             colors={[colors.gradientFrom, colors.gradientVia, colors.primary]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={s.banner}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.greetingHeader}
           >
-            <View style={{ flex: 1, zIndex: 1 }}>
-              <Text style={s.bannerTitle}>My Work Summary</Text>
-              <Text style={s.bannerSub}>Today task & presence activity</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={s.avatar}>
+                  <Text style={s.avatarText}>{initials}</Text>
+                </View>
+                <View>
+                  <Text style={s.greetingLabel}>{getGreeting()}</Text>
+                  <Text style={s.greetingName}>{profile?.full_name || 'User'}</Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable style={s.headerIconBtn} onPress={() => router.push('/(tabs)/hrms/messages')}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={20} color="#fff" />
+                </Pressable>
+                <Pressable style={s.headerIconBtn} onPress={() => router.push('/(tabs)/hrms/notifications')}>
+                  <Ionicons name="notifications-outline" size={20} color="#fff" />
+                </Pressable>
+              </View>
+            </View>
+            <View style={s.roleChip}>
+              <Text style={s.roleChipText}>{profile?.role || 'Employee'}</Text>
             </View>
             {/* Decorative elements */}
             <View style={s.decoCircle1} />
             <View style={s.decoCircle2} />
-            <Ionicons name="star" size={14} color="rgba(255,255,255,0.2)" style={{ position: 'absolute', top: 16, right: 48 }} />
-            <Ionicons name="star" size={10} color="rgba(255,255,255,0.15)" style={{ position: 'absolute', bottom: 20, right: 24 }} />
           </LinearGradient>
 
-          {/* Today Meeting Section */}
+          {/* Quick Actions */}
+          <View style={s.sectionHeaderRow}>
+            <Text style={s.sectionTitle}>Quick Actions</Text>
+          </View>
+          <View style={s.quickActionsRow}>
+            {QUICK_ACTIONS.map((action) => (
+              <Pressable
+                key={action.label}
+                style={[s.quickActionCard, shadows.card]}
+                onPress={() => router.push(action.route)}
+              >
+                <View style={[s.quickActionIconWrap, { backgroundColor: action.bgLight }]}>
+                  <Ionicons name={action.icon} size={24} color={action.bg} />
+                </View>
+                <Text style={s.quickActionLabel}>{action.label}</Text>
+                <View style={[s.quickActionArrow, { backgroundColor: action.bg }]}>
+                  <Ionicons name="arrow-forward" size={12} color="#fff" />
+                </View>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Today's Schedule - Site Visits */}
           <View style={[s.sectionCard, shadows.card]}>
-            <View style={s.sectionHeader}>
+            <View style={s.sectionCardHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={s.sectionTitle}>Today Meeting</Text>
+                <Ionicons name="calendar" size={16} color={colors.primary} />
+                <Text style={s.sectionCardTitle}>Today's Schedule</Text>
                 <View style={s.countBadge}>
-                  <Text style={s.countBadgeText}>{meetings.length}</Text>
+                  <Text style={s.countBadgeText}>{siteVisits.length}</Text>
                 </View>
               </View>
-              <Text style={s.sectionSub}>Your schedule for the day</Text>
+              <Text style={s.sectionCardSub}>Upcoming site visits for today</Text>
             </View>
 
-            {meetings.length === 0 ? (
-              <EmptyState icon="videocam-outline" title="No Meetings Today" description="You have no scheduled meetings for today." />
+            {siteVisits.length === 0 ? (
+              <EmptyState
+                icon="calendar-outline"
+                title="No Site Visits Today"
+                description="You have no scheduled site visits for today."
+              />
             ) : (
-              meetings.map(meeting => (
-                <View key={meeting.id} style={s.meetingCard}>
-                  <View style={s.meetingRow1}>
-                    <View style={s.meetingIcon}>
-                      <Ionicons name="videocam" size={16} color={colors.primary} />
+              siteVisits.map(visit => (
+                <View key={visit.id} style={s.visitCard}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <View style={s.visitIcon}>
+                      <Ionicons name="location" size={14} color={colors.info} />
                     </View>
-                    <Text style={s.meetingName} numberOfLines={1}>{meeting.title}</Text>
-                    <View style={s.timePill}>
-                      <Text style={s.timePillText}>
-                        {format(new Date(meeting.start_time), 'hh:mm a')}
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.visitName} numberOfLines={1}>
+                        {visit.lead_name || visit.project_name || 'Site Visit'}
+                      </Text>
+                      {visit.location && (
+                        <Text style={s.visitLocation} numberOfLines={1}>{visit.location}</Text>
+                      )}
+                    </View>
+                    {visit.visit_time && (
+                      <View style={s.timePill}>
+                        <Ionicons name="time-outline" size={10} color={colors.textSecondary} />
+                        <Text style={s.timePillText}>{visit.visit_time}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {visit.status && (
+                    <View style={[s.visitStatusPill, {
+                      backgroundColor: visit.status === 'completed' ? colors.successLight : colors.warningLight,
+                    }]}>
+                      <Text style={[s.visitStatusText, {
+                        color: visit.status === 'completed' ? colors.success : colors.warning,
+                      }]}>
+                        {visit.status}
                       </Text>
                     </View>
-                  </View>
-                  <View style={s.meetingRow2}>
-                    <View style={s.avatarStack}>
-                      {[colors.primary, colors.info, colors.warning].map((c, i) => (
-                        <View key={i} style={[s.stackAvatar, { backgroundColor: c, marginLeft: i > 0 ? -8 : 0, zIndex: 3 - i }]}>
-                          <Ionicons name="person" size={12} color="#fff" />
-                        </View>
-                      ))}
-                    </View>
-                    <Pressable style={s.joinBtn}>
-                      <Text style={s.joinBtnText}>Join Meet</Text>
-                    </Pressable>
-                  </View>
+                  )}
                 </View>
               ))
             )}
           </View>
 
-          {/* Today Task Section */}
+          {/* Recent Tasks */}
           <View style={[s.sectionCard, shadows.card]}>
-            <View style={s.sectionHeader}>
+            <View style={s.sectionCardHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={s.sectionTitle}>Today Task</Text>
+                <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                <Text style={s.sectionCardTitle}>Recent Tasks</Text>
                 <View style={s.countBadge}>
                   <Text style={s.countBadgeText}>{tasks.length}</Text>
                 </View>
               </View>
-              <Text style={s.sectionSub}>Your assigned tasks</Text>
+              <Text style={s.sectionCardSub}>Your assigned tasks</Text>
             </View>
 
             {tasks.length === 0 ? (
-              <EmptyState icon="flash-outline" title="No Tasks Assigned" description="You have no tasks assigned for today. Enjoy your free time!" />
+              <EmptyState
+                icon="flash-outline"
+                title="No Tasks Assigned"
+                description="You have no tasks assigned for today. Enjoy your free time!"
+              />
             ) : (
               tasks.map(task => {
                 const statusC = getStatusColor(task.status)
@@ -265,25 +324,13 @@ export default function HomeScreen() {
                       />
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                      <View style={s.avatarStack}>
-                        {[colors.primary, colors.info].map((c, i) => (
-                          <View key={i} style={[s.stackAvatar, { backgroundColor: c, marginLeft: i > 0 ? -8 : 0, zIndex: 2 - i }]}>
-                            <Ionicons name="person" size={12} color="#fff" />
-                          </View>
-                        ))}
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        {task.due_date && (
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                            <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
-                            <Text style={s.metaText}>{format(new Date(task.due_date), 'dd MMM')}</Text>
-                          </View>
-                        )}
+                      <Text style={s.progressText}>{progress}% complete</Text>
+                      {task.due_date && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                          <Ionicons name="chatbubble-outline" size={12} color={colors.textMuted} />
-                          <Text style={s.metaText}>0</Text>
+                          <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
+                          <Text style={s.metaText}>{format(new Date(task.due_date), 'dd MMM')}</Text>
                         </View>
-                      </View>
+                      )}
                     </View>
                   </View>
                 )
@@ -312,88 +359,121 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   container: { padding: 16 },
 
-  // Header
-  headerRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: 4,
+  // Greeting Header
+  greetingHeader: {
+    borderRadius: radius.lg,
+    padding: 20,
+    overflow: 'hidden',
   },
   avatar: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
   },
-  avatarText: { fontSize: 15, fontWeight: '600', color: '#fff' },
-  userName: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-  userRole: { fontSize: 11, fontWeight: '500', color: colors.primary, marginTop: 1 },
-  iconBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: colors.surfaceAlt, justifyContent: 'center', alignItems: 'center',
+  avatarText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  greetingLabel: { fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.75)' },
+  greetingName: { fontSize: 18, fontWeight: '700', color: '#fff', marginTop: 2 },
+  roleChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginTop: 14,
+    zIndex: 1,
   },
-
-  // Banner
-  banner: {
-    height: 96, borderRadius: 16, marginTop: 16, paddingHorizontal: 20,
-    justifyContent: 'center', overflow: 'hidden',
+  roleChipText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.9)' },
+  headerIconBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  bannerTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  bannerSub: { fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.8)', marginTop: 4 },
   decoCircle1: {
     position: 'absolute', right: -20, top: -20,
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    width: 100, height: 100, borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   decoCircle2: {
-    position: 'absolute', right: 20, bottom: -30,
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    position: 'absolute', right: 30, bottom: -30,
+    width: 70, height: 70, borderRadius: 35,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+
+  // Quick Actions
+  sectionHeaderRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 20, marginBottom: 12,
+  },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  quickActionsRow: {
+    flexDirection: 'row', gap: 10,
+  },
+  quickActionCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  quickActionIconWrap: {
+    width: 48, height: 48, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 10,
+  },
+  quickActionLabel: {
+    fontSize: 12, fontWeight: '600', color: colors.textPrimary,
+    textAlign: 'center', marginBottom: 8,
+  },
+  quickActionArrow: {
+    width: 24, height: 24, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
   },
 
   // Section card
   sectionCard: {
-    backgroundColor: colors.surface, borderRadius: 16, padding: 16,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: 16,
     marginTop: 16, borderWidth: 1, borderColor: colors.border,
   },
-  sectionHeader: { marginBottom: 12 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  sectionSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  sectionCardHeader: { marginBottom: 12 },
+  sectionCardTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  sectionCardSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4, marginLeft: 24 },
   countBadge: {
     width: 22, height: 22, borderRadius: 6,
     backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center',
   },
   countBadgeText: { fontSize: 11, fontWeight: '700', color: colors.primary },
 
-  // Meeting card
-  meetingCard: {
-    backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 12,
+  // Site Visit card
+  visitCard: {
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: 12,
     borderWidth: 1, borderColor: colors.border, marginBottom: 8,
   },
-  meetingRow1: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  meetingIcon: {
+  visitIcon: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.infoLight, justifyContent: 'center', alignItems: 'center',
   },
-  meetingName: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.textPrimary },
+  visitName: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
+  visitLocation: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   timePill: {
-    backgroundColor: '#fff', borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#fff', borderRadius: radius.pill,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
   timePillText: { fontSize: 10, fontWeight: '600', color: colors.textSecondary },
-  meetingRow2: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  visitStatusPill: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    paddingHorizontal: 8, paddingVertical: 3,
+    marginTop: 4,
   },
-  avatarStack: { flexDirection: 'row', alignItems: 'center' },
-  stackAvatar: {
-    width: 26, height: 26, borderRadius: 13,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: '#fff',
-  },
-  joinBtn: {
-    backgroundColor: colors.primary, borderRadius: 100,
-    paddingHorizontal: 14, paddingVertical: 6,
-  },
-  joinBtnText: { fontSize: 10, fontWeight: '600', color: '#fff' },
+  visitStatusText: { fontSize: 10, fontWeight: '600', textTransform: 'capitalize' },
 
   // Task card
   taskCard: {
-    backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 12,
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: 12,
     borderWidth: 1, borderColor: colors.border, marginBottom: 8,
   },
   taskIcon: {
@@ -402,13 +482,14 @@ const s = StyleSheet.create({
   },
   taskName: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.textPrimary },
   pill: {
-    borderRadius: 100, paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3,
   },
   pillText: { fontSize: 10, fontWeight: '600' },
   progressTrack: {
     height: 5, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden',
   },
   progressFill: { height: 5, borderRadius: 3 },
+  progressText: { fontSize: 11, color: colors.textMuted },
   metaText: { fontSize: 11, color: colors.textMuted },
 
   // Empty state

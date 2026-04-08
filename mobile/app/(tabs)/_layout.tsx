@@ -96,11 +96,11 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         </View>
       </View>
 
-      {/* Floating Center More Button */}
+      {/* Floating Center More Button — sits above the tab bar */}
       <Pressable
         style={({ pressed }) => [
           styles.centerBtnOuter,
-          { bottom: bottomPad + 14 },
+          { bottom: bottomPad + 28 },
           pressed && { transform: [{ scale: 0.9 }] },
         ]}
         onPress={() => setMoreVisible(true)}
@@ -111,7 +111,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           end={{ x: 1, y: 1 }}
           style={styles.centerBtn}
         >
-          <Ionicons name="grid" size={24} color="#fff" />
+          <Ionicons name="grid" size={26} color="#fff" />
         </LinearGradient>
       </Pressable>
 
@@ -148,7 +148,7 @@ export default function TabsLayout() {
   )
 }
 
-const CENTER_SIZE = 58
+const CENTER_SIZE = 64
 
 const styles = StyleSheet.create({
   tabBar: {
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
-    minWidth: 60,
+    minWidth: 56,
   },
   tabInner: {
     alignItems: 'center',
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tabActive,
   },
   centerSpacer: {
-    width: CENTER_SIZE + 16,
+    width: CENTER_SIZE + 8,
   },
   centerBtnOuter: {
     position: 'absolute',
@@ -212,8 +212,6 @@ const styles = StyleSheet.create({
     borderRadius: CENTER_SIZE / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: colors.tabBg,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,

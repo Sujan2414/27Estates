@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import {
     UserPlus, Flame, Mail, Target,
     Zap, Plug, AlertTriangle, UserX, Clock, CalendarCheck, ChevronRight,
-    PhoneCall, TrendingUp, RefreshCw, Eye,
+    PhoneCall, TrendingUp, RefreshCw, Eye, CheckSquare, Circle, CheckCircle2,
 } from 'lucide-react'
 import styles from './crm.module.css'
 import { useTheme, useCRMUser, isAdmin, isManager, isAgent } from './crm-context'
@@ -101,6 +101,7 @@ export default function CRMDashboard() {
     const [apiUsage, setApiUsage] = useState<APIUsage | null>(null)
     const [recentLeads, setRecentLeads] = useState<RecentLead[]>([])
     const [smartAlerts, setSmartAlerts] = useState<SmartAlerts | null>(null)
+    const [upcomingTasks, setUpcomingTasks] = useState<{ id: string; title: string; due_date: string; lead_id: string; is_completed: boolean; leads?: { name: string } | null; creator?: { full_name: string } | null }[]>([])
     const [loading, setLoading] = useState(true)
     const { theme } = useTheme()
     const crmUser = useCRMUser()
@@ -129,16 +130,26 @@ export default function CRMDashboard() {
             if (isAgentUser && crmUser?.id) alertsParams.set('assigned_to', crmUser.id)
             else if (isManagerUser && crmUser?.id) alertsParams.set('manager_id', crmUser.id)
 
-            const [statsRes, leadsRes, usageRes, alertsRes] = await Promise.all([
+            const [statsRes, leadsRes, usageRes, alertsRes, tasksRes] = await Promise.all([
                 fetch('/api/crm/stats').catch(() => null),
                 fetch(`/api/crm/leads?${leadsParams}`).catch(() => null),
                 fetch('/api/crm/api-usage').catch(() => null),
                 fetch(`/api/crm/smart-alerts?${alertsParams}`).catch(() => null),
+                fetch(`/api/crm/tasks?completed=false`).catch(() => null),
             ])
             if (statsRes?.ok) setStats(await statsRes.json())
             if (leadsRes?.ok) { const d = await leadsRes.json(); setRecentLeads(d.leads || []) }
             if (usageRes?.ok) setApiUsage(await usageRes.json())
             if (alertsRes?.ok) setSmartAlerts(await alertsRes.json())
+            if (tasksRes?.ok) {
+                const d = await tasksRes.json()
+                // Filter to only tasks created by the current user, sorted by deadline
+                const myTasks = (d.tasks || [])
+                    .filter((t: any) => t.created_by === crmUser?.id)
+                    .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+                    .slice(0, 6)
+                setUpcomingTasks(myTasks)
+            }
             setLoading(false)
         }
         fetchAll()
@@ -152,7 +163,7 @@ export default function CRMDashboard() {
     }
 
     // Prepare funnel data
-    const funnelSteps = ['new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted']
+    const funnelSteps = ['new', 'contacted', 'qualified', 'site_visit', 'negotiation', 'converted']
     const maxFunnel = Math.max(...funnelSteps.map(s => stats?.byStatus[s] || 0), 1)
 
     // Prepare source pie data with consistent colors
@@ -169,11 +180,12 @@ export default function CRMDashboard() {
 
     // Attention data
     const attention = stats?.attention
-    const hasAttention = attention && (
+    const hasAttention = (attention && (
         attention.unassigned.length > 0 ||
         attention.stale.length > 0 ||
-        attention.overdueFollowups.length > 0
-    )
+        attention.overdueFollowups.length > 0 ||
+        (attention.upcomingVisits && attention.upcomingVisits.length > 0)
+    )) || upcomingTasks.length > 0
 
     return (
         <div className={styles.pageContent}>
@@ -359,6 +371,36 @@ export default function CRMDashboard() {
                                         </div>
                                     </Link>
                                 ))}
+                            </div>
+                        )}
+
+                        {/* My Tasks — tasks created by current user, sorted by deadline */}
+                        {upcomingTasks.length > 0 && (
+                            <div className={styles.attentionCard} style={{ borderLeftColor: '#3b82f6' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    <CheckSquare size={14} style={{ color: '#3b82f6' }} />
+                                    <span className={styles.cardTitle}>
+                                        My Tasks ({upcomingTasks.length})
+                                    </span>
+                                </div>
+                                {upcomingTasks.map(t => {
+                                    const overdue = !t.is_completed && new Date(t.due_date) < new Date()
+                                    return (
+                                        <Link key={t.id} href={`/crm/leads/${t.lead_id}`} style={{ textDecoration: 'none' }}>
+                                            <div className={styles.attentionItem}>
+                                                <div className={styles.attentionDot} style={{ backgroundColor: overdue ? '#ef4444' : '#3b82f6' }} />
+                                                <div className={styles.attentionText}>
+                                                    <div className={styles.attentionTitle}>{t.title}</div>
+                                                    <div className={styles.attentionMeta}>
+                                                        {t.leads?.name || 'Lead'} &middot; {new Date(t.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} {new Date(t.due_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                        {overdue && <span style={{ color: '#ef4444', fontWeight: 600 }}> &middot; Overdue</span>}
+                                                    </div>
+                                                </div>
+                                                <ChevronRight size={14} style={{ color: 'var(--crm-text-dim)' }} />
+                                            </div>
+                                        </Link>
+                                    )
+                                })}
                             </div>
                         )}
                     </div>
@@ -793,6 +835,7 @@ export default function CRMDashboard() {
                     </div>
                 </div>
             </div>
+
         </div>
     )
 }

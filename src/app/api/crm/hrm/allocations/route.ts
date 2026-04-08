@@ -8,7 +8,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const LEAVE_TYPES = ['casual', 'sick', 'annual', 'maternity', 'paternity'] as const
+const LEAVE_TYPES = ['casual', 'sick', 'annual', 'maternity', 'paternity', 'general'] as const
 
 // GET /api/crm/hrm/allocations?financial_year=2025-26&employee_id=X&include_balance=true
 export async function GET(request: NextRequest) {

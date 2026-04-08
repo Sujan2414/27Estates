@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { CalendarCheck, Phone, Clock, CheckCircle2, XCircle, AlertCircle, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarCheck, Phone, Clock, CheckCircle2, XCircle, AlertCircle, Plus, ChevronLeft, ChevronRight, Pencil, Trash2, X } from 'lucide-react'
 import styles from '../crm.module.css'
 
 interface Visit {
@@ -46,6 +46,11 @@ export default function VisitsPage() {
     const [viewMode, setViewMode] = useState<'upcoming' | 'week' | 'all'>('upcoming')
     const [weekOffset, setWeekOffset] = useState(0)
     const [updatingId, setUpdatingId] = useState<string | null>(null)
+    const [editVisit, setEditVisit] = useState<Visit | null>(null)
+    const [editForm, setEditForm] = useState({ visit_date: '', visit_time: '', notes: '', status: '', outcome: '' })
+    const [saving, setSaving] = useState(false)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [outcomeVisitId, setOutcomeVisitId] = useState<string | null>(null)
 
     const today = new Date()
     const currentWeekStart = new Date(today)
@@ -70,6 +75,31 @@ export default function VisitsPage() {
             body: JSON.stringify({ id, status, outcome }),
         })
         setUpdatingId(null)
+        fetchVisits()
+    }
+
+    const openEdit = (v: Visit) => {
+        setEditVisit(v)
+        setEditForm({ visit_date: v.visit_date, visit_time: v.visit_time || '', notes: v.notes || '', status: v.status, outcome: v.outcome || '' })
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editVisit) return
+        setSaving(true)
+        await fetch('/api/crm/site-visits', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editVisit.id, visit_date: editForm.visit_date, visit_time: editForm.visit_time || null, notes: editForm.notes || null, status: editForm.status, outcome: editForm.outcome || null }),
+        })
+        setSaving(false)
+        setEditVisit(null)
+        fetchVisits()
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Delete this site visit? This cannot be undone.')) return
+        setDeletingId(id)
+        await fetch(`/api/crm/site-visits?id=${id}`, { method: 'DELETE' })
+        setDeletingId(null)
         fetchVisits()
     }
 
@@ -200,19 +230,46 @@ export default function VisitsPage() {
                                         </div>
 
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', alignItems: 'flex-end' }}>
-                                            <Link href={`/crm/leads/${v.lead_id}`} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-                                                View Lead
-                                            </Link>
+                                            <div style={{ display: 'flex', gap: '0.375rem' }}>
+                                                <Link href={`/crm/leads/${v.lead_id}`} className={styles.btnSecondary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.625rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+                                                    View Lead
+                                                </Link>
+                                                <button onClick={() => openEdit(v)} className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '0.375rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }} title="Edit">
+                                                    <Pencil size={12} />
+                                                </button>
+                                                <button onClick={() => handleDelete(v.id)} disabled={deletingId === v.id} className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '0.375rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#ef4444', borderColor: '#ef444430' }} title="Delete">
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
                                             {v.status === 'scheduled' && past && (
-                                                <div style={{ display: 'flex', gap: '0.375rem' }}>
-                                                    <button onClick={() => handleUpdateStatus(v.id, 'completed', 'interested')} disabled={updatingId === v.id}
-                                                        className={styles.btnPrimary} style={{ fontSize: '0.6875rem', padding: '0.375rem 0.625rem', backgroundColor: '#22c55e' }}>
-                                                        <CheckCircle2 size={12} /> Visited
-                                                    </button>
-                                                    <button onClick={() => handleUpdateStatus(v.id, 'no_show')} disabled={updatingId === v.id}
-                                                        className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '0.375rem 0.625rem', color: '#ef4444', borderColor: '#ef444430' }}>
-                                                        <XCircle size={12} /> No Show
-                                                    </button>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', alignItems: 'flex-end' }}>
+                                                    {outcomeVisitId === v.id ? (
+                                                        <>
+                                                            <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-muted)', fontWeight: 600 }}>Select outcome:</div>
+                                                            <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                                                <button onClick={() => { handleUpdateStatus(v.id, 'completed', 'interested'); setOutcomeVisitId(null) }} disabled={updatingId === v.id}
+                                                                    className={styles.btnPrimary} style={{ fontSize: '0.625rem', padding: '3px 8px', backgroundColor: '#22c55e' }}>Interested</button>
+                                                                <button onClick={() => { handleUpdateStatus(v.id, 'completed', 'not_interested'); setOutcomeVisitId(null) }} disabled={updatingId === v.id}
+                                                                    className={styles.btnPrimary} style={{ fontSize: '0.625rem', padding: '3px 8px', backgroundColor: '#ef4444' }}>Not Interested</button>
+                                                                <button onClick={() => { handleUpdateStatus(v.id, 'completed', 'follow_up'); setOutcomeVisitId(null) }} disabled={updatingId === v.id}
+                                                                    className={styles.btnPrimary} style={{ fontSize: '0.625rem', padding: '3px 8px', backgroundColor: '#3b82f6' }}>Follow Up</button>
+                                                                <button onClick={() => { handleUpdateStatus(v.id, 'completed', 'closed'); setOutcomeVisitId(null) }} disabled={updatingId === v.id}
+                                                                    className={styles.btnPrimary} style={{ fontSize: '0.625rem', padding: '3px 8px', backgroundColor: 'var(--crm-accent)' }}>Closed Deal</button>
+                                                            </div>
+                                                            <button onClick={() => setOutcomeVisitId(null)} className={styles.btnSecondary} style={{ fontSize: '0.625rem', padding: '2px 6px' }}>Cancel</button>
+                                                        </>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', gap: '0.375rem' }}>
+                                                            <button onClick={() => setOutcomeVisitId(v.id)} disabled={updatingId === v.id}
+                                                                className={styles.btnPrimary} style={{ fontSize: '0.6875rem', padding: '0.375rem 0.625rem', backgroundColor: '#22c55e' }}>
+                                                                <CheckCircle2 size={12} /> Visited
+                                                            </button>
+                                                            <button onClick={() => handleUpdateStatus(v.id, 'no_show')} disabled={updatingId === v.id}
+                                                                className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '0.375rem 0.625rem', color: '#ef4444', borderColor: '#ef444430' }}>
+                                                                <XCircle size={12} /> No Show
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                             {v.status === 'scheduled' && !past && (
@@ -228,6 +285,72 @@ export default function VisitsPage() {
                         })}
                     </div>
                 )
+            )}
+
+            {/* Edit Modal */}
+            {editVisit && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setEditVisit(null)}>
+                    <div onClick={e => e.stopPropagation()} style={{
+                        backgroundColor: 'var(--crm-surface)', borderRadius: '1rem', padding: '1.5rem', width: '100%', maxWidth: '420px',
+                        border: '1px solid var(--crm-border)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Edit Site Visit</h3>
+                            <button onClick={() => setEditVisit(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--crm-text-faint)', padding: '4px' }}><X size={18} /></button>
+                        </div>
+
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)', marginBottom: '1rem' }}>
+                            Lead: <strong style={{ color: 'var(--crm-text-secondary)' }}>{editVisit.leads?.name || 'Unknown'}</strong>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-faint)', display: 'block', marginBottom: '4px' }}>Visit Date</label>
+                                <input type="date" value={editForm.visit_date} onChange={e => setEditForm(f => ({ ...f, visit_date: e.target.value }))}
+                                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--crm-border)', background: 'var(--crm-bg)', color: 'var(--crm-text-secondary)', fontSize: '0.875rem' }} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-faint)', display: 'block', marginBottom: '4px' }}>Visit Time</label>
+                                <input type="time" value={editForm.visit_time} onChange={e => setEditForm(f => ({ ...f, visit_time: e.target.value }))}
+                                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--crm-border)', background: 'var(--crm-bg)', color: 'var(--crm-text-secondary)', fontSize: '0.875rem' }} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-faint)', display: 'block', marginBottom: '4px' }}>Status</label>
+                                <select value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}
+                                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--crm-border)', background: 'var(--crm-bg)', color: 'var(--crm-text-secondary)', fontSize: '0.875rem' }}>
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="no_show">No Show</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-faint)', display: 'block', marginBottom: '4px' }}>Outcome</label>
+                                <select value={editForm.outcome} onChange={e => setEditForm(f => ({ ...f, outcome: e.target.value }))}
+                                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--crm-border)', background: 'var(--crm-bg)', color: 'var(--crm-text-secondary)', fontSize: '0.875rem' }}>
+                                    <option value="">No outcome</option>
+                                    <option value="interested">Interested</option>
+                                    <option value="not_interested">Not Interested</option>
+                                    <option value="follow_up">Follow Up</option>
+                                    <option value="closed">Closed Deal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--crm-text-faint)', display: 'block', marginBottom: '4px' }}>Notes</label>
+                                <textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} rows={3}
+                                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--crm-border)', background: 'var(--crm-bg)', color: 'var(--crm-text-secondary)', fontSize: '0.875rem', resize: 'vertical' }}
+                                    placeholder="Add notes..." />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.25rem', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setEditVisit(null)} className={styles.btnSecondary} style={{ fontSize: '0.8125rem', padding: '0.5rem 1rem' }}>Cancel</button>
+                            <button onClick={handleSaveEdit} disabled={saving || !editForm.visit_date} className={styles.btnPrimary} style={{ fontSize: '0.8125rem', padding: '0.5rem 1rem' }}>
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )

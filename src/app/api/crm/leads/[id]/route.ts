@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
             .eq('id', id)
             .single(),
         supabase.from('lead_activities').select('*').eq('lead_id', id).order('created_at', { ascending: false }).limit(50),
-        supabase.from('lead_tasks').select('*').eq('lead_id', id).order('due_date', { ascending: true })
+        supabase.from('lead_tasks').select('*, creator:created_by (id, full_name)').eq('lead_id', id).order('due_date', { ascending: true })
     ])
 
     if (leadResult.error) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })

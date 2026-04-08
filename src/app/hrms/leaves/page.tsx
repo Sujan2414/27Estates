@@ -137,12 +137,13 @@ export default function MyLeavesPage() {
             )}
 
             {/* Stat summary */}
-            <div className={styles.statRow} style={{ marginBottom: '1.25rem', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))' }}>
+            <div className={styles.statRow} style={{ marginBottom: '1.25rem', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))' }}>
                 {[
-                    { label: 'Total',    value: leaves.length,  color: 'var(--h-text-1)' },
-                    { label: 'Pending',  value: pending,        color: '#d97706' },
-                    { label: 'Approved', value: leaves.filter(l => l.status === 'approved').length, color: '#16a34a' },
-                    { label: 'Rejected', value: leaves.filter(l => l.status === 'rejected').length, color: '#dc2626' },
+                    { label: 'Allocated', value: balances.reduce((s, b) => s + b.allocated_days, 0), color: '#0369a1' },
+                    { label: 'Used',      value: balances.reduce((s, b) => s + b.used_days, 0),      color: '#7c3aed' },
+                    { label: 'Balance',   value: totalBalance,   color: '#16a34a' },
+                    { label: 'Pending',   value: pending,        color: '#d97706' },
+                    { label: 'Rejected',  value: leaves.filter(l => l.status === 'rejected').length, color: '#dc2626' },
                 ].map(s => (
                     <div key={s.label} className={styles.statCard}>
                         <div className={styles.statLabel}>{s.label}</div>

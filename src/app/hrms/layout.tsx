@@ -54,8 +54,10 @@ function buildNav(role: HRMSRole, pendingLeaves: number): { section: string; ite
             section: 'My Space',
             items: [
                 { label: 'My Day',        href: '/hrms',            icon: LayoutDashboard, exact: true },
-                { label: 'My Attendance', href: '/hrms/attendance', icon: Clock },
-                { label: 'My Leaves',     href: '/hrms/leaves',     icon: Calendar },
+                ...(!isSA ? [
+                    { label: 'My Attendance', href: '/hrms/attendance', icon: Clock },
+                    { label: 'My Leaves',     href: '/hrms/leaves',     icon: Calendar },
+                ] : []),
                 { label: 'My Tasks',      href: '/hrms/tasks',      icon: CheckSquare },
             ],
         },
@@ -152,6 +154,28 @@ export default function HRMSLayout({ children }: { children: React.ReactNode }) 
     }, [router, supabase])
 
     useEffect(() => { init() }, [init])
+
+    // Sync profile changes from other sections (CMS, CRM)
+    useEffect(() => {
+        const handleProfileUpdate = (e: Event) => {
+            const detail = (e as CustomEvent).detail as { full_name: string; avatar_url?: string | null }
+            if (detail) setUser(prev => prev ? { ...prev, ...detail } : prev)
+        }
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'profile-sync' && e.newValue) {
+                try {
+                    const { full_name, avatar_url } = JSON.parse(e.newValue)
+                    setUser(prev => prev ? { ...prev, full_name, avatar_url } : prev)
+                } catch { /* ignore */ }
+            }
+        }
+        window.addEventListener('profile-updated', handleProfileUpdate)
+        window.addEventListener('storage', handleStorage)
+        return () => {
+            window.removeEventListener('profile-updated', handleProfileUpdate)
+            window.removeEventListener('storage', handleStorage)
+        }
+    }, [])
 
     const handleLogout = async () => {
         await supabase.auth.signOut()

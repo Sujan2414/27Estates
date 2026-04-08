@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     const { data: agents } = await admin
         .from('profiles')
         .select('id, full_name, email, role')
-        .in('role', ['agent', 'admin', 'super_admin'])
+        .in('role', ['agent', 'admin', 'manager'])
 
     if (!agents || agents.length === 0) {
         return NextResponse.json({ agents: [] })
@@ -65,7 +65,7 @@ export async function GET(req: Request) {
 
     const STAGE_PROB: Record<string, number> = {
         new: 0.05, contacted: 0.15, qualified: 0.35,
-        negotiation: 0.60, site_visit: 0.75, converted: 1.0, lost: 0,
+        site_visit: 0.60, negotiation: 0.75, converted: 1.0, lost: 0,
     }
 
     for (const l of leads) {

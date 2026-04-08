@@ -156,20 +156,38 @@ async function checkUnattendedLeads() {
 async function redistributeAbsentAgentLeads() {
     const today = new Date().toISOString().split('T')[0]
 
-    // Get absent agents today
-    const { data: absentRecords } = await supabase
-        .from('hrm_attendance')
-        .select('employee_id')
-        .eq('date', today)
-        .eq('status', 'absent')
+    // Get unavailable agents today (absent, not clocked in, or checked out)
+    const { data: agentProfiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'agent')
+    const allAgentIds = (agentProfiles || []).map(a => a.id)
 
-    if (!absentRecords || absentRecords.length === 0) {
-        return NextResponse.json({ redistributed: 0, message: 'No absent agents today' })
+    const { data: attendanceRecords } = await supabase
+        .from('hrm_attendance')
+        .select('employee_id, status, check_in, check_out')
+        .eq('date', today)
+        .in('employee_id', allAgentIds)
+
+    const unavailableIds = new Set<string>()
+    const hasRecord = new Set<string>()
+    for (const rec of (attendanceRecords || [])) {
+        hasRecord.add(rec.employee_id)
+        if (rec.status === 'absent' || rec.check_out) {
+            unavailableIds.add(rec.employee_id)
+        }
+    }
+    // Agents with no attendance record haven't clocked in
+    for (const id of allAgentIds) {
+        if (!hasRecord.has(id)) unavailableIds.add(id)
     }
 
-    const absentIds = absentRecords.map(r => r.employee_id)
+    const absentIds = Array.from(unavailableIds)
+    if (absentIds.length === 0) {
+        return NextResponse.json({ redistributed: 0, message: 'No absent/unavailable agents today' })
+    }
 
-    // Get available agents only (not absent, agents only)
+    // Get available agents only (clocked in and not checked out)
     const { data: allAgents } = await supabase
         .from('profiles')
         .select('id, full_name')

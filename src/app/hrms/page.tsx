@@ -16,6 +16,8 @@ interface AttendanceRecord {
 }
 interface LeaveBalance { leave_type: string; allocated_days: number; used_days: number; balance_days: number }
 interface Task { id: string; title: string; status: string; priority: string; due_date?: string | null }
+interface SiteVisit { id: string; lead_id: string; visit_date: string; visit_time?: string | null; status: string; leads?: { name: string } | null }
+interface CalendarEvent { id: string; date: string; time?: string | null; title: string; type: 'task' | 'visit'; color: string; href: string }
 
 function fmt12(ts: string | null | undefined) {
     if (!ts) return '—'
@@ -37,9 +39,300 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }
 const LEAVE_COLORS = ['#183C38','#BFA270','#3b82f6','#8b5cf6','#ef4444']
 const PRIORITY_COLOR: Record<string, string> = { urgent: '#ef4444', high: '#f59e0b', medium: '#3b82f6', low: '#9ca3af' }
 
+function UpcomingCalendar({ tasks, siteVisits, prominent }: { tasks: Task[]; siteVisits: SiteVisit[]; prominent?: boolean }) {
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+    const [viewMonth, setViewMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+
+    // Build events from tasks and site visits
+    const events: CalendarEvent[] = []
+
+    tasks.forEach(t => {
+        if (t.due_date) {
+            events.push({
+                id: `task-${t.id}`,
+                date: t.due_date,
+                time: null,
+                title: t.title,
+                type: 'task',
+                color: PRIORITY_COLOR[t.priority] || '#3b82f6',
+                href: '/hrms/tasks',
+            })
+        }
+    })
+
+    siteVisits.forEach(v => {
+        if (v.visit_date) {
+            events.push({
+                id: `visit-${v.id}`,
+                date: v.visit_date,
+                time: v.visit_time,
+                title: `Site Visit${v.leads?.name ? ` — ${v.leads.name}` : ''}`,
+                type: 'visit',
+                color: '#22c55e',
+                href: '/crm/visits',
+            })
+        }
+    })
+
+    // Group events by date
+    const grouped: Record<string, CalendarEvent[]> = {}
+    events.sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
+    events.forEach(e => {
+        if (!grouped[e.date]) grouped[e.date] = []
+        grouped[e.date].push(e)
+    })
+
+    // Mini calendar grid for current view month
+    const year = viewMonth.getFullYear()
+    const month = viewMonth.getMonth()
+    const firstDay = new Date(year, month, 1).getDay()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const monthLabel = viewMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+    const dayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+    // Selected date for event list
+    const [selectedDate, setSelectedDate] = useState(todayStr)
+
+    const selectedEvents = grouped[selectedDate] || []
+    const selectedDateObj = new Date(selectedDate + 'T00:00:00')
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+    const prevMonth = () => setViewMonth(new Date(year, month - 1, 1))
+    const nextMonth = () => setViewMonth(new Date(year, month + 1, 1))
+
+    // Also show upcoming events list (next 14 days with events)
+    const upcomingDays: { date: Date; dateStr: string; events: CalendarEvent[] }[] = []
+    for (let i = 0; i < 14; i++) {
+        const d = new Date(today)
+        d.setDate(d.getDate() + i)
+        const ds = d.toISOString().split('T')[0]
+        if ((grouped[ds] || []).length > 0 || ds === todayStr) {
+            upcomingDays.push({ date: d, dateStr: ds, events: grouped[ds] || [] })
+        }
+    }
+
+    if (prominent) {
+        // Full-width calendar with mini month grid + event list side by side
+        return (
+            <div className={styles.card} style={{ marginBottom: '1.5rem', overflow: 'hidden' }}>
+                <div className={styles.cardTitle} style={{ marginBottom: '1rem' }}>
+                    <Calendar size={16} style={{ color: '#06b6d4' }} />
+                    <span>Calendar Schedule</span>
+                    <Link href="/crm/visits" style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--h-text-3)', display: 'flex', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        View all <ChevronRight size={12} />
+                    </Link>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1.5rem' }}>
+                    {/* Mini month calendar */}
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <button onClick={prevMonth} style={{ border: 'none', background: 'var(--h-elevated)', cursor: 'pointer', borderRadius: '8px', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--h-text-2)' }}>
+                                {'<'}
+                            </button>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--h-text-1)' }}>{monthLabel}</span>
+                            <button onClick={nextMonth} style={{ border: 'none', background: 'var(--h-elevated)', cursor: 'pointer', borderRadius: '8px', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--h-text-2)' }}>
+                                {'>'}
+                            </button>
+                        </div>
+
+                        {/* Day headers */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '4px' }}>
+                            {dayHeaders.map((d, i) => (
+                                <div key={i} style={{ textAlign: 'center', fontSize: '0.65rem', fontWeight: 700, color: 'var(--h-text-4)', padding: '4px 0', textTransform: 'uppercase' }}>{d}</div>
+                            ))}
+                        </div>
+
+                        {/* Days grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                            {Array.from({ length: firstDay }).map((_, i) => (
+                                <div key={`empty-${i}`} />
+                            ))}
+                            {Array.from({ length: daysInMonth }).map((_, i) => {
+                                const dayNum = i + 1
+                                const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
+                                const isToday = ds === todayStr
+                                const isSelected = ds === selectedDate
+                                const hasEvents = (grouped[ds] || []).length > 0
+                                return (
+                                    <button
+                                        key={dayNum}
+                                        onClick={() => setSelectedDate(ds)}
+                                        style={{
+                                            width: '100%', aspectRatio: '1', border: 'none', borderRadius: '10px', cursor: 'pointer',
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px',
+                                            background: isSelected ? '#183C38' : isToday ? 'rgba(24,60,56,0.1)' : 'transparent',
+                                            color: isSelected ? '#fff' : isToday ? '#183C38' : 'var(--h-text-2)',
+                                            fontWeight: isToday || isSelected ? 700 : 400,
+                                            fontSize: '0.8rem',
+                                            transition: 'all 0.15s',
+                                            position: 'relative',
+                                        }}
+                                    >
+                                        {dayNum}
+                                        {hasEvents && (
+                                            <div style={{
+                                                width: 5, height: 5, borderRadius: '50%',
+                                                background: isSelected ? '#BFA270' : '#06b6d4',
+                                                position: 'absolute', bottom: '3px',
+                                            }} />
+                                        )}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Events for selected date */}
+                    <div style={{ borderLeft: '1px solid var(--h-border)', paddingLeft: '1.5rem' }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--h-text-1)', marginBottom: '0.75rem' }}>
+                            {selectedDate === todayStr ? 'Today' : selectedDateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </div>
+
+                        {selectedEvents.length === 0 ? (
+                            <div style={{ padding: '1.5rem 0', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--h-text-4)' }}>No events on this day</div>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {selectedEvents.map(ev => (
+                                    <Link key={ev.id} href={ev.href} style={{ textDecoration: 'none' }}>
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.625rem',
+                                            padding: '0.625rem 0.875rem', borderRadius: '10px',
+                                            background: `${ev.color}10`, borderLeft: `3px solid ${ev.color}`,
+                                            cursor: 'pointer', transition: 'all 0.15s',
+                                        }}
+                                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${ev.color}20` }}
+                                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = `${ev.color}10` }}
+                                        >
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--h-text-1)' }}>{ev.title}</div>
+                                                {ev.time && <div style={{ fontSize: '0.7rem', color: 'var(--h-text-4)', marginTop: '2px' }}>{ev.time}</div>}
+                                            </div>
+                                            <span style={{
+                                                fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase',
+                                                padding: '3px 8px', borderRadius: '4px',
+                                                background: `${ev.color}20`, color: ev.color,
+                                            }}>
+                                                {ev.type === 'visit' ? 'Visit' : 'Task'}
+                                            </span>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Upcoming events preview */}
+                        {upcomingDays.filter(d => d.events.length > 0 && d.dateStr !== selectedDate).length > 0 && (
+                            <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--h-border)', paddingTop: '0.75rem' }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--h-text-3)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Upcoming</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                    {upcomingDays.filter(d => d.events.length > 0 && d.dateStr !== selectedDate).slice(0, 4).map(day => (
+                                        <div key={day.dateStr}
+                                            onClick={() => { setSelectedDate(day.dateStr); setViewMonth(new Date(day.date.getFullYear(), day.date.getMonth(), 1)) }}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.5rem', borderRadius: '8px', cursor: 'pointer', transition: 'background 0.15s' }}
+                                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--h-elevated)')}
+                                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                        >
+                                            <div style={{
+                                                width: 32, height: 32, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                                background: 'var(--h-elevated)', fontSize: '0.6rem', fontWeight: 600, color: 'var(--h-text-2)',
+                                            }}>
+                                                <span style={{ fontSize: '0.5rem', textTransform: 'uppercase', opacity: 0.6 }}>{dayNames[day.date.getDay()]}</span>
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 700, lineHeight: 1 }}>{day.date.getDate()}</span>
+                                            </div>
+                                            <div style={{ flex: 1, fontSize: '0.75rem', color: 'var(--h-text-2)', fontWeight: 500 }}>
+                                                {day.events.map(e => e.title).join(', ')}
+                                            </div>
+                                            <span style={{ fontSize: '0.65rem', color: 'var(--h-text-4)' }}>{day.events.length} event{day.events.length > 1 ? 's' : ''}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    // Compact list view (used inside the grid for non-super-admin)
+    return (
+        <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
+            <div className={styles.cardTitle} style={{ marginBottom: '0.75rem' }}>
+                <Calendar size={16} style={{ color: '#06b6d4' }} />
+                <span>Calendar Schedule</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--h-text-3)', marginLeft: '0.5rem' }}>{viewMonth.toLocaleDateString('en-IN', { month: 'long' })}</span>
+                <Link href="/crm/visits" style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--h-text-3)', display: 'flex', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                    View all <ChevronRight size={12} />
+                </Link>
+            </div>
+
+            {upcomingDays.length === 0 ? (
+                <div className={styles.empty}>
+                    <div className={styles.emptyTitle}>No upcoming events</div>
+                    <div className={styles.emptyText}>Tasks and site visits will show up here</div>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+                    {upcomingDays.map(day => {
+                        const isToday = day.dateStr === todayStr
+                        const dayNum = day.date.getDate()
+                        const dayName = dayNames[day.date.getDay()]
+                        return (
+                            <div key={day.dateStr} style={{ display: 'flex', gap: '0.75rem', padding: '0.5rem 0', borderBottom: '1px solid var(--h-border)' }}>
+                                <div style={{
+                                    width: 44, minHeight: 44, borderRadius: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                    background: isToday ? '#183C38' : 'var(--h-elevated)',
+                                    color: isToday ? '#fff' : 'var(--h-text-2)',
+                                    border: `1px solid ${isToday ? '#183C38' : 'var(--h-border)'}`,
+                                }}>
+                                    <span style={{ fontSize: '0.6rem', fontWeight: 600, textTransform: 'uppercase', opacity: 0.7, lineHeight: 1 }}>{dayName}</span>
+                                    <span style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.2 }}>{dayNum}</span>
+                                </div>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                    {day.events.length === 0 ? (
+                                        <div style={{ fontSize: '0.78rem', color: 'var(--h-text-4)', padding: '0.5rem 0' }}>No events today</div>
+                                    ) : (
+                                        day.events.map(ev => (
+                                            <Link key={ev.id} href={ev.href} style={{ textDecoration: 'none' }}>
+                                                <div style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    padding: '0.4rem 0.625rem', borderRadius: '8px',
+                                                    background: `${ev.color}12`, borderLeft: `3px solid ${ev.color}`,
+                                                    cursor: 'pointer', transition: 'all 0.15s',
+                                                }}
+                                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${ev.color}22` }}
+                                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = `${ev.color}12` }}
+                                                >
+                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: ev.color, flexShrink: 0 }} />
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--h-text-1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.title}</div>
+                                                        {ev.time && <div style={{ fontSize: '0.65rem', color: 'var(--h-text-4)', marginTop: '1px' }}>{ev.time}</div>}
+                                                    </div>
+                                                    <span style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '2px 6px', borderRadius: '4px', background: `${ev.color}20`, color: ev.color }}>
+                                                        {ev.type === 'visit' ? 'Visit' : 'Task'}
+                                                    </span>
+                                                </div>
+                                            </Link>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+        </div>
+    )
+}
+
 export default function MyDayPage() {
     const supabase = createClient()
     const [userId, setUserId]         = useState<string | null>(null)
+    const [userRole, setUserRole]     = useState<string | null>(null)
     const [today]                     = useState(new Date().toISOString().split('T')[0])
     const [attendance, setAttendance] = useState<AttendanceRecord | null>(null)
     const [balances, setBalances]     = useState<LeaveBalance[]>([])
@@ -49,26 +342,38 @@ export default function MyDayPage() {
     const [workMode, setWorkMode]     = useState<'office' | 'work_from_home'>('office')
     const [locating, setLocating]     = useState(false)
     const [elapsed, setElapsed]       = useState('')
+    const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([])
+    const [allTasks, setAllTasks]     = useState<Task[]>([])
+
+    const isSuperAdmin = userRole === 'super_admin'
 
     const load = useCallback(async (uid: string) => {
         const fy = (() => {
             const now = new Date(); const y = now.getFullYear(); const m = now.getMonth() + 1
             return m >= 4 ? `${y}-${String(y + 1).slice(-2)}` : `${y - 1}-${String(y).slice(-2)}`
         })()
-        const [attRes, balRes, taskRes] = await Promise.all([
+        const [attRes, balRes, taskRes, visitRes] = await Promise.all([
             fetch(`/api/crm/hrm/attendance?employee_id=${uid}&date=${today}`),
             fetch(`/api/crm/hrm/allocations?employee_id=${uid}&financial_year=${fy}&include_balance=true`),
             fetch(`/api/crm/hrm/tasks?assigned_to=${uid}&status=todo,in_progress`),
+            fetch(`/api/crm/site-visits?agent_id=${uid}`).catch(() => null),
         ])
         if (attRes.ok)  { const d = await attRes.json();  setAttendance((d.records || d.attendance || [])[0] || null) }
         if (balRes.ok)  { const d = await balRes.json();  setBalances(d.allocations || []) }
-        if (taskRes.ok) { const d = await taskRes.json(); setTasks((d.tasks || []).slice(0, 5)) }
+        if (taskRes.ok) { const d = await taskRes.json(); const t = d.tasks || []; setTasks(t.slice(0, 5)); setAllTasks(t) }
+        if (visitRes?.ok) { const d = await visitRes.json(); setSiteVisits(d.visits || []) }
         setLoading(false)
     }, [today])
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            if (user) { setUserId(user.id); load(user.id) }
+        supabase.auth.getUser().then(async ({ data: { user } }) => {
+            if (user) {
+                setUserId(user.id)
+                // Fetch role for super_admin check
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+                if (profile?.role) setUserRole(profile.role)
+                load(user.id)
+            }
         })
     }, [load, supabase])
 
@@ -157,7 +462,8 @@ export default function MyDayPage() {
 
     return (
         <div>
-            {/* ── Check-in Hero ── */}
+            {/* ── Check-in Hero (hidden for super_admin) ── */}
+            {!isSuperAdmin && (
             <div style={{
                 background: 'linear-gradient(135deg, #183C38 0%, #2d7a6e 100%)',
                 borderRadius: '20px', padding: '1.75rem', marginBottom: '1.5rem',
@@ -254,13 +560,16 @@ export default function MyDayPage() {
                     </div>
                 </div>
             </div>
+            )}
 
             {/* ── Stats row ── */}
             <div className={styles.statRow} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
                 {[
                     { label: 'Open Tasks',    value: openTasks.length,    icon: <CheckSquare size={16} />, color: '#3b82f6', href: '/hrms/tasks' },
-                    { label: 'Leave Balance', value: balances.reduce((s, b) => s + b.balance_days, 0), icon: <Calendar size={16} />, color: '#22c55e', href: '/hrms/leaves' },
-                    { label: 'Work Mode',     value: attendance?.work_mode === 'work_from_home' ? 'WFH' : 'Office', icon: attendance?.work_mode === 'work_from_home' ? <Wifi size={16} /> : <Coffee size={16} />, color: '#f59e0b', href: '/hrms/attendance' },
+                    ...(!isSuperAdmin ? [
+                        { label: 'Leave Balance', value: balances.reduce((s, b) => s + b.balance_days, 0), icon: <Calendar size={16} />, color: '#22c55e', href: '/hrms/leaves' },
+                        { label: 'Work Mode',     value: attendance?.work_mode === 'work_from_home' ? 'WFH' : 'Office', icon: attendance?.work_mode === 'work_from_home' ? <Wifi size={16} /> : <Coffee size={16} />, color: '#f59e0b', href: '/hrms/attendance' },
+                    ] : []),
                 ].map(s => (
                     <Link key={s.label} href={s.href} style={{ textDecoration: 'none' }}>
                         <div className={styles.statCard} style={{ cursor: 'pointer', transition: 'box-shadow 0.15s' }}
@@ -278,7 +587,8 @@ export default function MyDayPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-                {/* Leave Balances */}
+                {/* Leave Balances (hidden for super_admin) */}
+                {!isSuperAdmin && (
                 <div className={styles.card}>
                     <div className={styles.cardTitle}>
                         <Calendar size={16} style={{ color: '#22c55e' }} /> Leave Balances
@@ -310,6 +620,7 @@ export default function MyDayPage() {
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* Today's Tasks */}
                 <div className={styles.card}>
@@ -349,10 +660,14 @@ export default function MyDayPage() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {[
-                            { label: 'Apply for Leave',   href: '/hrms/leaves',     icon: Calendar,    color: '#22c55e' },
-                            { label: 'View Attendance',   href: '/hrms/attendance', icon: Clock,       color: '#3b82f6' },
+                            ...(!isSuperAdmin ? [
+                                { label: 'Apply for Leave',   href: '/hrms/leaves',     icon: Calendar,    color: '#22c55e' },
+                                { label: 'View Attendance',   href: '/hrms/attendance', icon: Clock,       color: '#3b82f6' },
+                            ] : []),
                             { label: 'My Tasks Board',    href: '/hrms/tasks',      icon: CheckSquare, color: '#8b5cf6' },
-                            { label: 'Regularise Attendance', href: '/hrms/attendance', icon: TrendingUp, color: '#f59e0b' },
+                            ...(!isSuperAdmin ? [
+                                { label: 'Regularise Attendance', href: '/hrms/attendance', icon: TrendingUp, color: '#f59e0b' },
+                            ] : []),
                         ].map(q => {
                             const Icon = q.icon
                             return (
@@ -372,7 +687,12 @@ export default function MyDayPage() {
                         })}
                     </div>
                 </div>
+
             </div>
+
+            {/* ── Calendar Schedule ── */}
+            <UpcomingCalendar tasks={allTasks} siteVisits={siteVisits} prominent />
+
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
     )

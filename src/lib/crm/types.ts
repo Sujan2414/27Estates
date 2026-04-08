@@ -1,7 +1,7 @@
 // CRM Types
 
 export type LeadSource = 'website' | 'meta_ads' | 'google_ads' | '99acres' | 'magicbricks' | 'housing' | 'justdial' | 'chatbot' | 'whatsapp' | 'manual' | 'referral'
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'negotiation' | 'site_visit' | 'converted' | 'lost'
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'site_visit' | 'negotiation' | 'converted' | 'lost'
 export type LeadPriority = 'hot' | 'warm' | 'cold'
 export type ActivityType = 'call' | 'email_sent' | 'email_received' | 'whatsapp' | 'site_visit' | 'note' | 'status_change' | 'chatbot' | 'system'
 

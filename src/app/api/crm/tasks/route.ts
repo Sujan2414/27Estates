@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
         .from('lead_tasks')
-        .select(`*, leads (name, phone)`)
+        .select(`*, leads (name, phone), creator:created_by (id, full_name)`)
         .order('due_date', { ascending: true })
 
     if (leadId) query = query.eq('lead_id', leadId)

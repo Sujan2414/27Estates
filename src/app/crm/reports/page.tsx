@@ -70,7 +70,7 @@ export default function ReportsPage() {
             }))
         : []
 
-    const conversionFunnel = ['new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted'].map(s => ({
+    const conversionFunnel = ['new', 'contacted', 'qualified', 'site_visit', 'negotiation', 'converted'].map(s => ({
         stage: s.replace('_', ' '), count: data?.byStatus[s] || 0,
         pct: data?.total ? (((data.byStatus[s] || 0) / data.total) * 100).toFixed(1) : '0',
     }))

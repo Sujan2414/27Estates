@@ -42,7 +42,7 @@ const statusColors: Record<string, string> = {
     negotiation: '#f97316', site_visit: '#06b6d4', converted: '#22c55e', lost: '#ef4444',
 }
 
-const statuses = ['all', 'new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted', 'lost']
+const statuses = ['all', 'new', 'contacted', 'qualified', 'site_visit', 'negotiation', 'converted', 'lost']
 const sources = ['all', 'website', 'meta_ads', 'google_ads', '99acres', 'magicbricks', 'housing', 'justdial', 'chatbot', 'whatsapp', 'manual', 'referral']
 const priorities = ['all', 'hot', 'warm', 'cold']
 

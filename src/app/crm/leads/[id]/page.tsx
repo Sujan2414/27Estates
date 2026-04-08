@@ -31,7 +31,7 @@ const activityIcons: Record<string, React.ReactNode> = {
     whatsapp: <MessageSquare size={14} />, site_visit: <Eye size={14} />, note: <StickyNote size={14} />,
     status_change: <Clock size={14} />, chatbot: <MessageSquare size={14} />, system: <Clock size={14} />,
 }
-const statusSteps = ['new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted']
+const statusSteps = ['new', 'contacted', 'qualified', 'site_visit', 'negotiation', 'converted']
 
 interface SiteVisit {
     id: string; lead_id: string; visit_date: string; visit_time?: string
@@ -82,8 +82,12 @@ export default function LeadDetailPage() {
     const [newTask, setNewTask] = useState({ title: '', due_date: '', description: '' })
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
     const [editTaskData, setEditTaskData] = useState({ title: '', description: '', due_date: '' })
-    const [newVisit, setNewVisit] = useState({ visit_date: '', visit_time: '', notes: '' })
+    const [newVisit, setNewVisit] = useState({ visit_date: '', visit_time: '', notes: '', assigned_to: '' })
+    const [editingVisitId, setEditingVisitId] = useState<string | null>(null)
+    const [editVisitData, setEditVisitData] = useState({ visit_date: '', visit_time: '', notes: '' })
+    const [outcomeVisitId, setOutcomeVisitId] = useState<string | null>(null)
     const [lostReason, setLostReason] = useState('')
+    const [lostReasonCustom, setLostReasonCustom] = useState('')
     const [editing, setEditing] = useState(false)
     const [editData, setEditData] = useState<Partial<Lead & { budget_min: number | null; budget_max: number | null; next_follow_up_at: string | null }>>({})
     const [tagInput, setTagInput] = useState('')
@@ -181,11 +185,11 @@ export default function LeadDetailPage() {
         fetchLead()
     }
 
-    const handleStatusChange = (s: string) => { patch({ status: s }) }
+    const handleStatusChange = (s: string) => { patch({ status: s, changed_by: currentUserId || 'admin' }) }
     const handleMarkLost = async () => {
         await fetch(`/api/crm/leads/${id}`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'lost', lost_reason: lostReason }),
+            body: JSON.stringify({ status: 'lost', lost_reason: lostReason === 'Other' ? (lostReasonCustom || 'Other') : lostReason, changed_by: currentUserId || 'admin' }),
         })
         setShowLostModal(false); fetchLead()
     }
@@ -227,7 +231,7 @@ export default function LeadDetailPage() {
     }
     const handleAddActivity = async () => {
         if (!newActivity.title) return
-        await fetch('/api/crm/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newActivity }) })
+        await fetch('/api/crm/activities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newActivity, created_by: currentUserId || undefined }) })
         setShowAddActivity(false); setNewActivity({ type: 'note', title: '', description: '' }); fetchLead()
     }
     const handleAddTask = async () => {
@@ -256,10 +260,19 @@ export default function LeadDetailPage() {
     const handleAddVisit = async () => {
         if (!newVisit.visit_date) return
         await fetch('/api/crm/site-visits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newVisit }) })
-        setShowAddVisit(false); setNewVisit({ visit_date: '', visit_time: '', notes: '' }); fetchLead()
+        setShowAddVisit(false); setNewVisit({ visit_date: '', visit_time: '', notes: '', assigned_to: '' }); fetchLead()
     }
     const handleVisitStatus = async (visitId: string, status: string, outcome?: string) => {
         await fetch('/api/crm/site-visits', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: visitId, status, outcome }) })
+        fetchLead()
+    }
+    const handleDeleteVisit = async (visitId: string) => {
+        if (!confirm('Delete this site visit? This cannot be undone.')) return
+        await fetch(`/api/crm/site-visits?id=${visitId}`, { method: 'DELETE' })
+        fetchLead()
+    }
+    const handleEditVisit = async (visitId: string, updates: { visit_date?: string; visit_time?: string; notes?: string }) => {
+        await fetch('/api/crm/site-visits', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: visitId, ...updates }) })
         fetchLead()
     }
 
@@ -288,6 +301,13 @@ export default function LeadDetailPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>{lead.name}</h1>
                         <ScoreBadge score={score} />
+                        {lead.status !== 'lost' && (
+                            <button onClick={() => setShowLostModal(true)} style={{
+                                padding: '0.25rem 0.625rem', borderRadius: '0.375rem', fontSize: '0.6875rem',
+                                fontWeight: 500, cursor: 'pointer', border: '1px solid #ef444440',
+                                backgroundColor: 'transparent', color: '#ef4444',
+                            }}>Mark as Lost</button>
+                        )}
                     </div>
                     <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-muted)' }}>{isAdminUser && <>{sourceLabels[lead.source]} · </>}{formatRelative(lead.created_at)}</p>
                 </div>
@@ -320,11 +340,6 @@ export default function LeadDetailPage() {
                             }}>{statusConfig[step]?.label}</button>
                         ))}
                     </div>
-                    <button onClick={() => setShowLostModal(true)} style={{
-                        marginTop: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', fontSize: '0.6875rem',
-                        fontWeight: 500, cursor: 'pointer', border: '1px solid #ef444440',
-                        backgroundColor: 'transparent', color: '#ef4444',
-                    }}>Mark as Lost</button>
                 </div>
             ) : (
                 <div className={styles.card} style={{ marginBottom: '1.5rem', borderColor: '#ef444430', backgroundColor: '#ef444408' }}>
@@ -335,6 +350,17 @@ export default function LeadDetailPage() {
                         </div>
                         <button onClick={() => patch({ status: 'new', lost_reason: null })} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Reopen</button>
                     </div>
+                </div>
+            )}
+
+            {/* Tags — below status pipeline */}
+            {lead.tags && lead.tags.length > 0 && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '1.25rem', marginTop: '-0.75rem' }}>
+                    {lead.tags.map((tag: string) => (
+                        <span key={tag} style={{ fontSize: '0.7rem', padding: '3px 10px', borderRadius: '999px', backgroundColor: 'var(--crm-accent-bg)', color: 'var(--crm-accent)', fontWeight: 600, border: '1px solid var(--crm-accent)30' }}>
+                            #{tag}
+                        </span>
+                    ))}
                 </div>
             )}
 
@@ -436,16 +462,6 @@ export default function LeadDetailPage() {
                                     </div>
                                 )}
 
-                                {/* Tags */}
-                                {lead.tags && lead.tags.length > 0 && (
-                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
-                                        {lead.tags.map((tag: string) => (
-                                            <span key={tag} style={{ fontSize: '0.65rem', padding: '2px 7px', borderRadius: '999px', backgroundColor: 'var(--crm-border)', color: 'var(--crm-text-dim)', fontWeight: 500 }}>
-                                                #{tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}
@@ -992,9 +1008,9 @@ export default function LeadDetailPage() {
                                                     <div style={{ fontSize: '0.6875rem', color: overdue ? '#ef4444' : 'var(--crm-text-faint)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                         <Calendar size={10} />{formatDateTime(t.due_date)} {overdue && '· Overdue'}
                                                     </div>
-                                                    {t.creator_name && (
+                                                    {(t.creator_name || (t as any).creator?.full_name) && (
                                                         <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '2px' }}>
-                                                            Added by {t.creator_name}
+                                                            Added by {t.creator_name || (t as any).creator?.full_name}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1033,6 +1049,17 @@ export default function LeadDetailPage() {
                                             <input type="time" value={newVisit.visit_time} onChange={e => setNewVisit({ ...newVisit, visit_time: e.target.value })} className={styles.formInput} />
                                         </div>
                                     </div>
+                                    <div style={{ marginBottom: '0.5rem' }}>
+                                        <label className={styles.formLabel}>Assign To</label>
+                                        <select value={newVisit.assigned_to} onChange={e => setNewVisit({ ...newVisit, assigned_to: e.target.value })} className={styles.formSelect}>
+                                            <option value="">Select person...</option>
+                                            {isAdminUser ? agents.map(a => (
+                                                <option key={a.id} value={a.id}>{a.full_name} ({a.role})</option>
+                                            )) : currentUserId ? (
+                                                <option value={currentUserId}>{currentUserName || 'Me'}</option>
+                                            ) : null}
+                                        </select>
+                                    </div>
                                     <textarea value={newVisit.notes} onChange={e => setNewVisit({ ...newVisit, notes: e.target.value })} placeholder="Notes" rows={2} className={styles.formInput} style={{ resize: 'vertical', marginBottom: '0.5rem' }} />
                                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                         <button onClick={() => setShowAddVisit(false)} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Cancel</button>
@@ -1043,8 +1070,28 @@ export default function LeadDetailPage() {
                             {visits.length > 0 ? visits.map(v => {
                                 const isPast = new Date(v.visit_date) < new Date()
                                 const statusColor = v.status === 'completed' ? '#22c55e' : v.status === 'no_show' ? '#ef4444' : v.status === 'cancelled' ? '#6b7280' : '#f59e0b'
+                                const isEditingThis = editingVisitId === v.id
                                 return (
                                     <div key={v.id} style={{ padding: '0.75rem', borderRadius: '0.5rem', backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border)', marginBottom: '0.5rem' }}>
+                                        {isEditingThis ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <div style={{ flex: 1 }}>
+                                                        <label className={styles.formLabel}>Date</label>
+                                                        <input type="date" value={editVisitData.visit_date} onChange={e => setEditVisitData(d => ({ ...d, visit_date: e.target.value }))} className={styles.formInput} />
+                                                    </div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <label className={styles.formLabel}>Time</label>
+                                                        <input type="time" value={editVisitData.visit_time} onChange={e => setEditVisitData(d => ({ ...d, visit_time: e.target.value }))} className={styles.formInput} />
+                                                    </div>
+                                                </div>
+                                                <textarea value={editVisitData.notes} onChange={e => setEditVisitData(d => ({ ...d, notes: e.target.value }))} placeholder="Notes" rows={2} className={styles.formInput} style={{ resize: 'vertical' }} />
+                                                <div style={{ display: 'flex', gap: '0.375rem', justifyContent: 'flex-end' }}>
+                                                    <button onClick={() => setEditingVisitId(null)} className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '4px 8px' }}>Cancel</button>
+                                                    <button onClick={async () => { await handleEditVisit(v.id, editVisitData); setEditingVisitId(null) }} className={styles.btnPrimary} style={{ fontSize: '0.6875rem', padding: '4px 8px' }}>Save</button>
+                                                </div>
+                                            </div>
+                                        ) : (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                             <div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1063,13 +1110,41 @@ export default function LeadDetailPage() {
                                                 {v.notes && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '4px' }}>{v.notes}</div>}
                                                 {v.outcome && <div style={{ fontSize: '0.75rem', color: 'var(--crm-accent)', marginTop: '4px' }}>Outcome: {v.outcome}</div>}
                                             </div>
-                                            {v.status === 'scheduled' && isPast && (
-                                                <div style={{ display: 'flex', gap: '0.375rem' }}>
-                                                    <button onClick={() => handleVisitStatus(v.id, 'completed', 'interested')} className={styles.btnPrimary} style={{ fontSize: '0.6875rem', padding: '4px 8px', backgroundColor: '#22c55e' }}>Visited</button>
-                                                    <button onClick={() => handleVisitStatus(v.id, 'no_show')} className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '4px 8px', color: '#ef4444' }}>No Show</button>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', alignItems: 'flex-end' }}>
+                                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                    <button onClick={() => { setEditingVisitId(v.id); setEditVisitData({ visit_date: v.visit_date, visit_time: v.visit_time || '', notes: v.notes || '' }) }}
+                                                        className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '4px 6px' }} title="Edit">
+                                                        <Pencil size={11} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteVisit(v.id)}
+                                                        className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '4px 6px', color: '#ef4444', borderColor: '#ef444430' }} title="Delete">
+                                                        <Trash2 size={11} />
+                                                    </button>
                                                 </div>
-                                            )}
+                                                {v.status === 'scheduled' && isPast && (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', alignItems: 'flex-end' }}>
+                                                        {outcomeVisitId === v.id ? (
+                                                            <>
+                                                                <div style={{ fontSize: '0.625rem', color: 'var(--crm-text-muted)', fontWeight: 600 }}>Select outcome:</div>
+                                                                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                                                    <button onClick={() => { handleVisitStatus(v.id, 'completed', 'interested'); setOutcomeVisitId(null) }} className={styles.btnPrimary} style={{ fontSize: '0.625rem', padding: '3px 6px', backgroundColor: '#22c55e' }}>Interested</button>
+                                                                    <button onClick={() => { handleVisitStatus(v.id, 'completed', 'not_interested'); setOutcomeVisitId(null) }} className={styles.btnPrimary} style={{ fontSize: '0.625rem', padding: '3px 6px', backgroundColor: '#ef4444' }}>Not Interested</button>
+                                                                    <button onClick={() => { handleVisitStatus(v.id, 'completed', 'follow_up'); setOutcomeVisitId(null) }} className={styles.btnPrimary} style={{ fontSize: '0.625rem', padding: '3px 6px', backgroundColor: '#3b82f6' }}>Follow Up</button>
+                                                                    <button onClick={() => { handleVisitStatus(v.id, 'completed', 'closed'); setOutcomeVisitId(null) }} className={styles.btnPrimary} style={{ fontSize: '0.625rem', padding: '3px 6px', backgroundColor: 'var(--crm-accent)' }}>Closed Deal</button>
+                                                                </div>
+                                                                <button onClick={() => setOutcomeVisitId(null)} className={styles.btnSecondary} style={{ fontSize: '0.625rem', padding: '2px 6px' }}>Cancel</button>
+                                                            </>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', gap: '0.375rem' }}>
+                                                                <button onClick={() => setOutcomeVisitId(v.id)} className={styles.btnPrimary} style={{ fontSize: '0.6875rem', padding: '4px 8px', backgroundColor: '#22c55e' }}>Visited</button>
+                                                                <button onClick={() => handleVisitStatus(v.id, 'no_show')} className={styles.btnSecondary} style={{ fontSize: '0.6875rem', padding: '4px 8px', color: '#ef4444' }}>No Show</button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
+                                        )}
                                     </div>
                                 )
                             }) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No site visits scheduled</div>}
@@ -1099,7 +1174,7 @@ export default function LeadDetailPage() {
                                 <option value="Other">Other</option>
                             </select>
                             {lostReason === 'Other' && (
-                                <textarea value={lostReason} onChange={e => setLostReason(e.target.value)} placeholder="Describe reason..." rows={2} className={styles.formInput} style={{ resize: 'vertical' }} />
+                                <textarea value={lostReasonCustom} onChange={e => setLostReasonCustom(e.target.value)} placeholder="Describe reason..." rows={2} className={styles.formInput} style={{ resize: 'vertical' }} />
                             )}
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

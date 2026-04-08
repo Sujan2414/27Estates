@@ -94,6 +94,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         checkUser()
     }, [router, supabase, isLoginPage])
 
+    // Sync profile changes from other sections (CRM, HRMS)
+    useEffect(() => {
+        const handleProfileUpdate = (e: Event) => {
+            const detail = (e as CustomEvent).detail as { full_name: string; avatar_url?: string | null }
+            if (detail) setUser(prev => prev ? { ...prev, ...detail } : prev)
+        }
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'profile-sync' && e.newValue) {
+                try {
+                    const { full_name, avatar_url } = JSON.parse(e.newValue)
+                    setUser(prev => prev ? { ...prev, full_name, avatar_url } : prev)
+                } catch { /* ignore */ }
+            }
+        }
+        window.addEventListener('profile-updated', handleProfileUpdate)
+        window.addEventListener('storage', handleStorage)
+        return () => {
+            window.removeEventListener('profile-updated', handleProfileUpdate)
+            window.removeEventListener('storage', handleStorage)
+        }
+    }, [])
+
     const handleLogout = async () => {
         await supabase.auth.signOut()
         router.push('/admin/login')

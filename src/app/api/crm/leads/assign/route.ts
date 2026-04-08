@@ -21,26 +21,66 @@ async function getWorkSettings() {
     }
 }
 
-// Get today's absent agent IDs
-async function getAbsentAgentIds(): Promise<Set<string>> {
+// Get IDs of agents who are unavailable today:
+// - Marked absent
+// - Haven't clocked in yet
+// - Already checked out
+async function getUnavailableAgentIds(): Promise<Set<string>> {
     const today = new Date().toISOString().split('T')[0]
-    const { data } = await supabase
+
+    // Get all agents first
+    const { data: allAgents } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'agent')
+
+    const allAgentIds = new Set((allAgents || []).map(a => a.id))
+
+    // Get today's attendance records for agents
+    const { data: attendanceRecords } = await supabase
         .from('hrm_attendance')
-        .select('employee_id')
+        .select('employee_id, status, check_in, check_out')
         .eq('date', today)
-        .eq('status', 'absent')
-    return new Set((data || []).map(r => r.employee_id))
+        .in('employee_id', Array.from(allAgentIds))
+
+    const unavailable = new Set<string>()
+    const hasRecord = new Set<string>()
+
+    for (const rec of (attendanceRecords || [])) {
+        hasRecord.add(rec.employee_id)
+
+        // Absent agents are unavailable
+        if (rec.status === 'absent') {
+            unavailable.add(rec.employee_id)
+            continue
+        }
+
+        // Checked out agents are unavailable (check_out is set)
+        if (rec.check_out) {
+            unavailable.add(rec.employee_id)
+            continue
+        }
+    }
+
+    // Agents with NO attendance record today haven't clocked in — unavailable
+    for (const agentId of allAgentIds) {
+        if (!hasRecord.has(agentId)) {
+            unavailable.add(agentId)
+        }
+    }
+
+    return unavailable
 }
 
-// Get available agents (non-absent agents only — not admin/super_admin)
+// Get available agents (only clocked-in, not checked-out, not absent)
 async function getAvailableAgents() {
-    const absentIds = await getAbsentAgentIds()
+    const unavailableIds = await getUnavailableAgentIds()
     const { data } = await supabase
         .from('profiles')
         .select('id, full_name, role')
         .eq('role', 'agent')
         .order('full_name')
-    return (data || []).filter(a => !absentIds.has(a.id))
+    return (data || []).filter(a => !unavailableIds.has(a.id))
 }
 
 // Parse "HH:MM" to { h, m }

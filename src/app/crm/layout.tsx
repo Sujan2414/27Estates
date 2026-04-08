@@ -26,6 +26,52 @@ interface NavGroup {
     id: string; label: string; items: NavItem[]
 }
 
+// Notification sound — short pleasant chime using Web Audio API
+function playNotificationSound() {
+    try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(830, ctx.currentTime)
+        osc.frequency.setValueAtTime(990, ctx.currentTime + 0.1)
+        osc.frequency.setValueAtTime(830, ctx.currentTime + 0.2)
+        gain.gain.setValueAtTime(0.3, ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
+        osc.start(ctx.currentTime)
+        osc.stop(ctx.currentTime + 0.4)
+    } catch { /* silent fallback */ }
+}
+
+function showDesktopNotification(n: { title: string; body?: string; link?: string }) {
+    if (typeof window === 'undefined' || !('Notification' in window)) return
+    if (Notification.permission !== 'granted') return
+
+    playNotificationSound()
+
+    const notif = new window.Notification(n.title, {
+        body: n.body || '',
+        icon: '/favicon.png',
+        badge: '/favicon.png',
+        tag: `crm-${Date.now()}`,
+        requireInteraction: false,
+        silent: false,
+    })
+
+    if (n.link) {
+        notif.onclick = () => {
+            window.focus()
+            window.location.href = n.link!
+            notif.close()
+        }
+    }
+
+    // Auto-close after 6s
+    setTimeout(() => notif.close(), 6000)
+}
+
 function CRMLayoutInner({ children }: { children: React.ReactNode }) {
     const [crmUser, setCrmUser] = useState<CRMUser | null>(null)
     const [loading, setLoading] = useState(true)
@@ -36,6 +82,8 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
     const [unreadCount, setUnreadCount] = useState(0)
     const [showNotifs, setShowNotifs] = useState(false)
     const notifRef = useRef<HTMLDivElement>(null)
+    const prevUnreadIdsRef = useRef<Set<string>>(new Set())
+    const isFirstFetchRef = useRef(true)
     const router = useRouter()
     const pathname = usePathname()
     const supabase = useMemo(() => createClient(), [])
@@ -82,17 +130,70 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
         init()
     }, [router, supabase])
 
+    // Sync profile changes from other sections (CMS, HRMS)
+    useEffect(() => {
+        const handleProfileUpdate = (e: Event) => {
+            const detail = (e as CustomEvent).detail as { full_name: string; avatar_url?: string | null }
+            if (detail) setCrmUser(prev => prev ? { ...prev, ...detail } : prev)
+        }
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'profile-sync' && e.newValue) {
+                try {
+                    const { full_name, avatar_url } = JSON.parse(e.newValue)
+                    setCrmUser(prev => prev ? { ...prev, full_name, avatar_url } : prev)
+                } catch { /* ignore */ }
+            }
+        }
+        window.addEventListener('profile-updated', handleProfileUpdate)
+        window.addEventListener('storage', handleStorage)
+        return () => {
+            window.removeEventListener('profile-updated', handleProfileUpdate)
+            window.removeEventListener('storage', handleStorage)
+        }
+    }, [])
+
+    // Request notification permission on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission()
+        }
+    }, [])
+
     const fetchNotifications = async () => {
         try {
             const res = await fetch('/api/crm/notifications?limit=20')
-            if (res.ok) { const d = await res.json(); setNotifications(d.notifications || []); setUnreadCount(d.unreadCount || 0) }
+            if (res.ok) {
+                const d = await res.json()
+                const newNotifs: Notification[] = d.notifications || []
+                const newUnread = d.unreadCount || 0
+
+                // On subsequent fetches, detect NEW unread notifications and fire desktop notifications
+                if (!isFirstFetchRef.current) {
+                    const prevIds = prevUnreadIdsRef.current
+                    newNotifs.forEach(n => {
+                        if (!n.is_read && !prevIds.has(n.id)) {
+                            showDesktopNotification({ title: n.title, body: n.body, link: n.link })
+                        }
+                    })
+                }
+                isFirstFetchRef.current = false
+
+                // Track current unread IDs for next comparison
+                prevUnreadIdsRef.current = new Set(newNotifs.filter(n => !n.is_read).map(n => n.id))
+                setNotifications(newNotifs)
+                setUnreadCount(newUnread)
+            }
         } catch { /* silent */ }
     }
 
     useEffect(() => {
         fetchNotifications()
         const interval = setInterval(fetchNotifications, 30000)
-        return () => clearInterval(interval)
+        // Also trigger task deadline check every 5 minutes
+        const taskCheck = setInterval(() => { fetch('/api/crm/task-reminders').catch(() => {}) }, 300000)
+        // Initial check
+        fetch('/api/crm/task-reminders').catch(() => {})
+        return () => { clearInterval(interval); clearInterval(taskCheck) }
     }, [])
 
     useEffect(() => {

@@ -67,7 +67,13 @@ export default function ProfileModal({ user, onClose, onUpdate }: Props) {
             })
             if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
             setMsg({ ok: true, text: 'Profile saved!' })
-            onUpdate?.({ full_name: fullName.trim(), avatar_url: avatarUrl })
+            const updatedProfile = { full_name: fullName.trim(), avatar_url: avatarUrl }
+            onUpdate?.(updatedProfile)
+            // Broadcast profile change to ALL sections (CRM, HRMS, CMS) via localStorage + custom event
+            try {
+                localStorage.setItem('profile-sync', JSON.stringify({ ...updatedProfile, ts: Date.now() }))
+                window.dispatchEvent(new CustomEvent('profile-updated', { detail: updatedProfile }))
+            } catch { /* localStorage unavailable */ }
         } catch (e: any) {
             setMsg({ ok: false, text: e.message })
         } finally {

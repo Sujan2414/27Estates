@@ -63,7 +63,7 @@ const scheduleStatusConfig: Record<string, { color: string; label: string }> = {
     escalated: { color: '#ef4444', label: 'Escalated' },
     reassigned: { color: '#06b6d4', label: 'Reassigned' },
 }
-const statuses = ['all', 'new', 'contacted', 'qualified', 'negotiation', 'site_visit', 'converted', 'lost']
+const statuses = ['all', 'new', 'contacted', 'qualified', 'site_visit', 'negotiation', 'converted', 'lost']
 const sources = ['all', 'website', 'meta_ads', 'google_ads', '99acres', 'magicbricks', 'housing', 'justdial', 'chatbot', 'manual', 'referral']
 const priorities = ['all', 'hot', 'warm', 'cold']
 
