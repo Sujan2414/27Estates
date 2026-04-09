@@ -42,28 +42,47 @@ export default function CMSTasksScreen() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
-      let query = supabase.from('tasks').select('*')
-        .eq('assigned_to', user.id)
+      // Get employee record first
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      let query = supabase.from('lead_tasks').select('*, leads(name)')
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (filter !== 'all') {
-        query = query.eq('status', filter)
+      // If employee found, filter by assigned_to; otherwise show all for the user
+      if (emp) {
+        query = query.or(`assigned_to.eq.${emp.id},created_by.eq.${emp.id}`)
+      }
+
+      if (filter === 'completed') {
+        query = query.eq('is_completed', true)
+      } else if (filter === 'in_progress' || filter === 'pending') {
+        query = query.eq('is_completed', false)
       }
 
       const { data } = await query
-      const list = data || []
+      const list = (data || []).map((t: any) => ({
+        ...t,
+        status: t.is_completed ? 'completed' : (t.due_date && new Date(t.due_date) < new Date() ? 'overdue' : 'pending'),
+        priority: t.priority || 'medium',
+        progress: t.is_completed ? 100 : 0,
+      }))
       setTasks(list)
 
-      // Only compute summary on 'all' filter fetch
-      if (filter === 'all') {
-        setSummary({
-          total: list.length,
-          completed: list.filter(t => t.status === 'completed').length,
-          inProgress: list.filter(t => t.status === 'in_progress').length,
-          pending: list.filter(t => t.status === 'pending').length,
-        })
-      }
+      // Compute summary from all tasks
+      const allQuery = await supabase.from('lead_tasks').select('is_completed, due_date')
+        .or(emp ? `assigned_to.eq.${emp.id},created_by.eq.${emp.id}` : 'id.not.is.null')
+        .limit(200)
+      const allTasks = allQuery.data || []
+      setSummary({
+        total: allTasks.length,
+        completed: allTasks.filter((t: any) => t.is_completed).length,
+        inProgress: allTasks.filter((t: any) => !t.is_completed && t.due_date && new Date(t.due_date) >= new Date()).length,
+        pending: allTasks.filter((t: any) => !t.is_completed).length,
+      })
     } catch (e) {
       console.warn('CMS loadTasks error:', e)
     }

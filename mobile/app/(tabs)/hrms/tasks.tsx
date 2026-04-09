@@ -41,17 +41,35 @@ export default function TasksScreen() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
-      let query = supabase.from('tasks').select('*')
-        .eq('assigned_to', user.id)
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!emp) { setLoading(false); return }
+
+      let query = supabase.from('lead_tasks').select('*, leads(name)')
+        .or(`assigned_to.eq.${emp.id},created_by.eq.${emp.id}`)
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (filter !== 'all') {
-        query = query.eq('status', filter)
+      if (filter === 'completed') {
+        query = query.eq('is_completed', true)
+      } else if (filter === 'in_progress') {
+        query = query.eq('is_completed', false)
+      } else if (filter === 'pending') {
+        query = query.eq('is_completed', false)
       }
 
       const { data } = await query
-      setTasks(data || [])
+      setTasks((data || []).map((d: any) => ({
+        id: d.id,
+        title: d.title || d.subject || 'Untitled Task',
+        status: d.is_completed ? 'completed' : 'in_progress',
+        priority: d.priority || 'medium',
+        progress: d.is_completed ? 100 : 0,
+        due_date: d.due_date,
+        description: d.description || d.notes || '',
+      })))
     } catch (e) {
       console.warn('Tasks loadData error:', e)
     }

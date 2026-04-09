@@ -53,9 +53,15 @@ export default function ExpensesScreen() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!emp) { setLoading(false); return }
+
       const { data } = await supabase.from('hrm_expenses').select('*')
-        .eq('employee_id', user.id)
-        .order('date', { ascending: false })
+        .eq('employee_id', emp.id)
+        .order('created_at', { ascending: false })
         .limit(50)
 
       const list = data || []
@@ -105,8 +111,14 @@ export default function ExpensesScreen() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!emp) return
+
       await supabase.from('hrm_expenses').insert({
-        employee_id: user.id,
+        employee_id: emp.id,
         title: addTitle,
         amount: parseFloat(addAmount),
         category: addCategory.toLowerCase(),

@@ -62,6 +62,13 @@ export default function CreateLeadScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { Alert.alert('Error', 'Not logged in.'); setSaving(false); return }
+
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!emp) { Alert.alert('Error', 'Employee record not found.'); setSaving(false); return }
+
       const toNum = (s: string) => s ? parseFloat(s.replace(/[^0-9.]/g, '')) * 100000 : null
       const { error } = await supabase.from('leads').insert({
         name: name.trim(), phone: phone.trim(), email: email.trim() || null,
@@ -71,7 +78,7 @@ export default function CreateLeadScreen() {
         preferred_location: preferredLocation.trim() || null,
         budget_min: toNum(budgetMin), budget_max: toNum(budgetMax),
         notes: notes.trim() || null,
-        assigned_to: user.id, created_by: user.id,
+        assigned_to: emp.id, created_by: emp.id,
       })
       if (error) throw error
       haptic.success()

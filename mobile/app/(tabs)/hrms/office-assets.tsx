@@ -64,9 +64,15 @@ export default function OfficeAssetsScreen() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!emp) { setLoading(false); return }
+
       const { data } = await supabase.from('hrm_assets')
         .select('*')
-        .eq('employee_id', user.id)
+        .eq('employee_id', emp.id)
         .order('assigned_date', { ascending: false })
 
       if (data) {

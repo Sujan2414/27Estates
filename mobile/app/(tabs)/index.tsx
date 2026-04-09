@@ -75,23 +75,42 @@ export default function HomeScreen() {
 
       const todayStr = format(new Date(), 'yyyy-MM-dd')
 
-      const [profileRes, tasksRes, visitsRes] = await Promise.all([
-        supabase.from('employees').select('full_name, role, avatar_url')
-          .eq('user_id', user.id).maybeSingle(),
-        supabase.from('tasks').select('*')
-          .eq('assigned_to', user.id)
-          .gte('due_date', todayStr)
+      // Get employee record
+      const profileRes = await supabase.from('employees')
+        .select('id, full_name, role, avatar_url')
+        .eq('user_id', user.id).maybeSingle()
+
+      if (profileRes.data) setProfile(profileRes.data)
+
+      const empId = profileRes.data?.id
+
+      // Fetch tasks and site visits using employee ID
+      const [tasksRes, visitsRes] = await Promise.all([
+        supabase.from('lead_tasks').select('*, leads(name)')
+          .eq('is_completed', false)
           .order('due_date', { ascending: true })
           .limit(5),
-        supabase.from('site_visits').select('*')
+        supabase.from('site_visits').select('*, leads(name), properties(title)')
           .eq('visit_date', todayStr)
           .order('visit_time', { ascending: true })
           .limit(5),
       ])
 
-      if (profileRes.data) setProfile(profileRes.data)
-      if (tasksRes.data) setTasks(tasksRes.data)
-      if (visitsRes.data) setSiteVisits(visitsRes.data)
+      if (tasksRes.data) {
+        setTasks(tasksRes.data.map((t: any) => ({
+          ...t,
+          status: t.is_completed ? 'completed' : 'pending',
+          priority: t.priority || 'medium',
+          progress: t.is_completed ? 100 : 0,
+        })))
+      }
+      if (visitsRes.data) {
+        setSiteVisits(visitsRes.data.map((v: any) => ({
+          ...v,
+          lead_name: v.leads?.name,
+          project_name: v.properties?.title,
+        })))
+      }
     } catch (e) {
       console.warn('Home loadData error:', e)
     }

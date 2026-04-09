@@ -43,10 +43,16 @@ export default function PipelineScreen() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    const { data: emp } = await supabase.from('employees')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!emp) return
+
     const { data } = await supabase
       .from('leads')
       .select('id, name, phone, priority, source, status, projects(project_name), properties(title)')
-      .eq('assigned_to', user.id)
+      .eq('assigned_to', emp.id)
       .order('created_at', { ascending: false })
 
     if (data) {

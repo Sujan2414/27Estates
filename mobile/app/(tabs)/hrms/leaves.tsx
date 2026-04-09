@@ -52,8 +52,15 @@ export default function LeavesScreen() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
+      // Look up employee record by auth user_id
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!emp) { setLoading(false); return }
+
       const { data } = await supabase.from('hrm_leaves').select('*')
-        .eq('employee_id', user.id)
+        .eq('employee_id', emp.id)
         .order('start_date', { ascending: false })
         .limit(50)
 
@@ -119,11 +126,17 @@ export default function LeavesScreen() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!emp) return
+
       const startDate = applyStart || format(new Date(), 'yyyy-MM-dd')
       const endDate = applyEnd || startDate
 
       await supabase.from('hrm_leaves').insert({
-        employee_id: user.id,
+        employee_id: emp.id,
         type: applyType.toLowerCase(),
         start_date: startDate,
         end_date: endDate,

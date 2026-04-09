@@ -14,21 +14,21 @@ import { colors, shadows, radius } from '@/theme/colors'
  */
 
 interface EmployeeLocation {
-  employee_id: string
+  id: string
   full_name: string
   role?: string
-  lat: number
-  lng: number
-  updated_at?: string
+  department?: string
+  phone?: string
+  email?: string
 }
 
 interface Property {
   id: string
-  name: string
-  type: string
+  title: string
+  property_type?: string
+  location?: string
   city?: string
-  lat?: number
-  lng?: number
+  price?: number
 }
 
 export default function MapTab() {
@@ -41,8 +41,8 @@ export default function MapTab() {
   const loadData = useCallback(async () => {
     try {
       const [empRes, propRes] = await Promise.all([
-        supabase.from('employee_locations').select('*').limit(50),
-        supabase.from('projects').select('id, name, type, city, lat, lng').limit(50),
+        supabase.from('employees').select('id, full_name, role, department, phone, email').limit(50),
+        supabase.from('properties').select('id, title, property_type, location, city, price').limit(50),
       ])
       setEmployees(empRes.data || [])
       setProperties(propRes.data || [])
@@ -111,7 +111,7 @@ export default function MapTab() {
       ) : tab === 'employees' ? (
         <FlatList
           data={employees}
-          keyExtractor={item => item.employee_id}
+          keyExtractor={item => item.id}
           contentContainerStyle={s.list}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -123,14 +123,14 @@ export default function MapTab() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.cardName}>{item.full_name}</Text>
-                {item.role && <Text style={s.cardSub}>{item.role}</Text>}
+                {item.role && <Text style={s.cardSub}>{item.role}{item.department ? ` · ${item.department}` : ''}</Text>}
               </View>
-              <View style={s.coordBox}>
-                <Ionicons name="location" size={12} color={colors.primary} />
-                <Text style={s.coordText}>
-                  {item.lat?.toFixed(4)}, {item.lng?.toFixed(4)}
-                </Text>
-              </View>
+              {item.phone && (
+                <View style={s.coordBox}>
+                  <Ionicons name="call" size={12} color={colors.primary} />
+                  <Text style={s.coordText}>{item.phone}</Text>
+                </View>
+              )}
             </View>
           )}
           ListEmptyComponent={
@@ -151,23 +151,25 @@ export default function MapTab() {
           renderItem={({ item }) => (
             <View style={[s.card, shadows.xs]}>
               <View style={[s.propIcon, {
-                backgroundColor: item.type === 'residential' ? colors.infoLight : colors.successLight
+                backgroundColor: item.property_type === 'residential' ? colors.infoLight : colors.successLight
               }]}>
                 <Ionicons
-                  name={item.type === 'residential' ? 'home' : 'business'}
+                  name={item.property_type === 'residential' ? 'home' : 'business'}
                   size={18}
-                  color={item.type === 'residential' ? colors.info : colors.success}
+                  color={item.property_type === 'residential' ? colors.info : colors.success}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.cardName}>{item.name}</Text>
-                <Text style={s.cardSub}>{item.city || item.type}</Text>
+                <Text style={s.cardName}>{item.title}</Text>
+                <Text style={s.cardSub}>{item.location || item.city || item.property_type || ''}</Text>
               </View>
-              {item.lat && (
+              {item.price ? (
                 <View style={s.coordBox}>
-                  <Ionicons name="navigate" size={12} color={colors.primary} />
+                  <Text style={[s.coordText, { color: colors.primary, fontWeight: '600' }]}>
+                    ₹{item.price >= 10000000 ? `${(item.price / 10000000).toFixed(1)}Cr` : item.price >= 100000 ? `${(item.price / 100000).toFixed(1)}L` : item.price.toLocaleString()}
+                  </Text>
                 </View>
-              )}
+              ) : null}
             </View>
           )}
           ListEmptyComponent={

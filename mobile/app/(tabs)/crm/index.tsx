@@ -50,8 +50,14 @@ export default function CRMScreen() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!emp) { setLoading(false); return }
+
       const { data } = await supabase.from('leads').select('*')
-        .eq('assigned_to', user.id)
+        .eq('assigned_to', emp.id)
         .order('created_at', { ascending: false })
         .limit(50)
 
