@@ -60,16 +60,23 @@ export default function AttendanceScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
-      setUserId(user.id)
+
+      // Look up employee record
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      const empId = emp?.id || user.id
+      setUserId(empId)
 
       const todayStr = format(new Date(), 'yyyy-MM-dd')
       const monthStart = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd')
 
       const [{ data: todayRec }, { data: monthRecs }] = await Promise.all([
         supabase.from('hrm_attendance').select('*')
-          .eq('employee_id', user.id).eq('date', todayStr).maybeSingle(),
+          .eq('employee_id', empId).eq('date', todayStr).maybeSingle(),
         supabase.from('hrm_attendance').select('*')
-          .eq('employee_id', user.id).gte('date', monthStart)
+          .eq('employee_id', empId).gte('date', monthStart)
           .order('date', { ascending: false }),
       ])
 
