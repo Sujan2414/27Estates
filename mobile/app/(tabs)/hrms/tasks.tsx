@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import {
   View, Text, Pressable, FlatList, SafeAreaView,
-  StyleSheet, RefreshControl,
+  StyleSheet, RefreshControl, Image,
 } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -196,9 +196,11 @@ export default function TasksScreen() {
           }
           ListEmptyComponent={
             <View style={s.empty}>
-              <View style={s.emptyIcon}>
-                <Ionicons name="checkbox-outline" size={28} color={colors.primary} />
-              </View>
+              <Image
+                source={require('../../../assets/illustrations/croods-sitting.png')}
+                style={s.emptyImage}
+                resizeMode="contain"
+              />
               <Text style={s.emptyTitle}>No Tasks Found</Text>
               <Text style={s.emptyDesc}>
                 {filter === 'all'
@@ -269,11 +271,7 @@ const s = StyleSheet.create({
   metaText: { fontSize: 11, color: colors.textMuted },
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyIcon: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center',
-    marginBottom: 4,
-  },
+  emptyImage: { width: 200, height: 180, marginBottom: 8 },
   emptyTitle: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   emptyDesc: { fontSize: 12, color: colors.textMuted, textAlign: 'center' },
 

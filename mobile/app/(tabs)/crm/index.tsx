@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import {
   View, Text, Pressable, FlatList, SafeAreaView,
-  StyleSheet, RefreshControl,
+  StyleSheet, RefreshControl, Image,
 } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -180,9 +180,11 @@ export default function CRMScreen() {
           }
           ListEmptyComponent={
             <View style={s.empty}>
-              <View style={s.emptyIcon}>
-                <Ionicons name="clipboard-outline" size={28} color={colors.primary} />
-              </View>
+              <Image
+                source={require('../../../assets/illustrations/croods-ui.png')}
+                style={s.emptyImage}
+                resizeMode="contain"
+              />
               <Text style={s.emptyTitle}>No Leads Yet</Text>
               <Text style={s.emptyDesc}>Your assigned leads will appear here.</Text>
             </View>
@@ -246,11 +248,7 @@ const s = StyleSheet.create({
   tempDot: { width: 6, height: 6, borderRadius: 3 },
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyIcon: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center',
-    marginBottom: 4,
-  },
+  emptyImage: { width: 200, height: 180, marginBottom: 8 },
   emptyTitle: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   emptyDesc: { fontSize: 12, color: colors.textMuted, textAlign: 'center' },
 

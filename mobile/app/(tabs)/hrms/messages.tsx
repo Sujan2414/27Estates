@@ -1,64 +1,147 @@
-import { View, Text, Pressable, FlatList, SafeAreaView, StyleSheet } from 'react-native'
-import { router } from 'expo-router'
+import { useState, useCallback, useMemo } from 'react'
+import {
+  View, Text, Pressable, FlatList, TextInput, SafeAreaView,
+  StyleSheet, RefreshControl, Image,
+} from 'react-native'
+import { router, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { supabase } from '@/lib/supabase'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { colors, shadows, radius, type as t } from '@/theme/colors'
 
-interface Message {
+interface Employee {
   id: string
-  name: string
-  preview: string
-  time: string
-  avatarColor: string
-  unread: boolean
+  full_name: string
+  email: string | null
+  phone: string | null
+  role: string | null
+  department: string | null
+  avatar_url: string | null
 }
 
-const MESSAGES: Message[] = [
-  {
-    id: '1', name: 'Sarah Johnson', preview: 'Can you review the property listing for Plot 21?',
-    time: '2m ago', avatarColor: colors.primary, unread: true,
-  },
-  {
-    id: '2', name: 'Raj Patel', preview: 'The client meeting has been rescheduled to 3 PM.',
-    time: '15m ago', avatarColor: colors.info, unread: true,
-  },
-  {
-    id: '3', name: 'Priya Sharma', preview: 'I have uploaded the site inspection photos.',
-    time: '1h ago', avatarColor: colors.success, unread: false,
-  },
-  {
-    id: '4', name: 'Amit Desai', preview: 'The expense report has been approved.',
-    time: '3h ago', avatarColor: colors.warning, unread: false,
-  },
-  {
-    id: '5', name: 'Team 21 Estates', preview: 'Monthly target update: 78% achieved so far.',
-    time: 'Yesterday', avatarColor: colors.danger, unread: false,
-  },
+const AVATAR_COLORS = [
+  colors.primary, '#4A90D9', '#E67E22', '#27AE60', '#8E44AD',
+  '#E74C3C', '#F39C12', '#1ABC9C', '#2C3E50', '#D35400',
 ]
 
-export default function MessagesScreen() {
-  const getInitials = (name: string) =>
-    name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+function getAvatarColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash)
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
 
-  const renderItem = ({ item }: { item: Message }) => (
-    <Pressable
-      style={({ pressed }) => [s.messageItem, pressed && { backgroundColor: colors.surfaceHover }]}
-      onPress={() => router.push({ pathname: '/(tabs)/hrms/chat/[id]', params: { id: item.id, name: item.name } })}
-    >
-      <View style={[s.avatar, { backgroundColor: item.avatarColor }]}>
-        <Text style={s.avatarText}>{getInitials(item.name)}</Text>
-      </View>
-      <View style={s.messageContent}>
-        <View style={s.messageTop}>
-          <Text style={[s.messageName, item.unread && { fontWeight: '700' }]}>{item.name}</Text>
-          <Text style={s.messageTime}>{item.time}</Text>
+function getInitials(name: string): string {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?'
+}
+
+export default function MessagesScreen() {
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [search, setSearch] = useState('')
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  const loadEmployees = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
+
+      const { data: emp } = await supabase.from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (emp) setCurrentUserId(emp.id)
+
+      const { data } = await supabase.from('employees')
+        .select('id, full_name, email, phone, role, department, avatar_url')
+        .order('full_name', { ascending: true })
+
+      setEmployees(data || [])
+    } catch (e) {
+      console.warn('Messages loadEmployees error:', e)
+    }
+    setLoading(false)
+  }, [])
+
+  useFocusEffect(useCallback(() => { loadEmployees() }, [loadEmployees]))
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await loadEmployees()
+    setRefreshing(false)
+  }
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return employees.filter(e => e.id !== currentUserId)
+    const q = search.toLowerCase()
+    return employees
+      .filter(e => e.id !== currentUserId)
+      .filter(e =>
+        e.full_name?.toLowerCase().includes(q) ||
+        e.role?.toLowerCase().includes(q) ||
+        e.department?.toLowerCase().includes(q) ||
+        e.email?.toLowerCase().includes(q)
+      )
+  }, [employees, search, currentUserId])
+
+  const renderItem = ({ item }: { item: Employee }) => {
+    const avatarColor = getAvatarColor(item.id)
+    const initials = getInitials(item.full_name || 'Unknown')
+
+    return (
+      <Pressable
+        style={({ pressed }) => [s.employeeItem, pressed && { backgroundColor: colors.surfaceHover }]}
+        onPress={() => router.push({
+          pathname: '/(tabs)/hrms/chat/[id]',
+          params: { id: item.id, name: item.full_name || 'Unknown' },
+        })}
+      >
+        {item.avatar_url ? (
+          <View style={[s.avatar, { backgroundColor: avatarColor }]}>
+            <Text style={s.avatarText}>{initials}</Text>
+          </View>
+        ) : (
+          <View style={[s.avatar, { backgroundColor: avatarColor }]}>
+            <Text style={s.avatarText}>{initials}</Text>
+          </View>
+        )}
+
+        <View style={s.employeeInfo}>
+          <Text style={s.employeeName} numberOfLines={1}>{item.full_name || 'Unknown'}</Text>
+          <View style={s.metaRow}>
+            {item.role ? (
+              <View style={s.roleBadge}>
+                <Text style={s.roleText}>{item.role}</Text>
+              </View>
+            ) : null}
+            {item.department ? (
+              <Text style={s.departmentText} numberOfLines={1}>{item.department}</Text>
+            ) : null}
+          </View>
         </View>
-        <Text style={[s.messagePreview, item.unread && { color: colors.textPrimary }]} numberOfLines={1}>
-          {item.preview}
-        </Text>
-      </View>
-      {item.unread && <View style={s.unreadDot} />}
-    </Pressable>
-  )
+
+        <Ionicons name="chatbubble-outline" size={18} color={colors.textMuted} />
+      </Pressable>
+    )
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={s.header}>
+          <Pressable style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
+            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={s.headerTitle}>Messages</Text>
+          <View style={{ width: 36 }} />
+        </View>
+        <View style={{ padding: 16, gap: 12 }}>
+          <Skeleton height={44} borderRadius={22} />
+          {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} height={64} borderRadius={8} />)}
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={s.safe}>
@@ -71,18 +154,64 @@ export default function MessagesScreen() {
         <View style={{ width: 36 }} />
       </View>
 
+      {/* Search Bar */}
+      <View style={s.searchWrap}>
+        <View style={s.searchBar}>
+          <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+          <TextInput
+            style={s.searchInput}
+            placeholder="Search by name, role, or department..."
+            placeholderTextColor={colors.textMuted}
+            value={search}
+            onChangeText={setSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Employee Count */}
+      <View style={s.countRow}>
+        <Ionicons name="people-outline" size={14} color={colors.textMuted} />
+        <Text style={s.countText}>
+          {filtered.length} team member{filtered.length !== 1 ? 's' : ''}
+          {search ? ` matching "${search}"` : ''}
+        </Text>
+      </View>
+
+      {/* Employee List */}
       <FlatList
-        data={MESSAGES}
+        data={filtered}
         keyExtractor={item => item.id}
         renderItem={renderItem}
         contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
         ItemSeparatorComponent={() => <View style={s.separator} />}
         ListEmptyComponent={
           <View style={s.empty}>
-            <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
-            <Text style={s.emptyText}>No messages yet</Text>
+            <Image
+              source={require('../../../assets/illustrations/croods-friends.png')}
+              style={s.emptyImage}
+              resizeMode="contain"
+            />
+            <Text style={s.emptyTitle}>
+              {search ? 'No Results' : 'No Team Members'}
+            </Text>
+            <Text style={s.emptyDesc}>
+              {search
+                ? `No employees found matching "${search}"`
+                : 'No employees found in the system.'}
+            </Text>
           </View>
         }
+        keyboardShouldPersistTaps="handled"
       />
     </SafeAreaView>
   )
@@ -101,28 +230,51 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
 
-  messageItem: {
+  searchWrap: {
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
+  },
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    height: 44, borderRadius: 22,
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: 14,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  searchInput: {
+    flex: 1, fontSize: 14, color: colors.textPrimary,
+    paddingVertical: 0,
+  },
+
+  countRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 20, paddingVertical: 10,
+  },
+  countText: { fontSize: 12, color: colors.textMuted, fontWeight: '500' },
+
+  employeeItem: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14, gap: 12,
+    paddingHorizontal: 16, paddingVertical: 12, gap: 12,
   },
   avatar: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 48, height: 48, borderRadius: 24,
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  messageContent: { flex: 1 },
-  messageTop: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 3,
+  avatarText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  employeeInfo: { flex: 1 },
+  employeeName: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, marginBottom: 4 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  roleBadge: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: 100,
+    paddingHorizontal: 8, paddingVertical: 2,
   },
-  messageName: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
-  messageTime: { fontSize: 11, color: colors.textMuted },
-  messagePreview: { fontSize: 12, color: colors.textSecondary },
-  unreadDot: {
-    width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary,
-  },
-  separator: { height: 1, backgroundColor: colors.border, marginLeft: 72 },
+  roleText: { fontSize: 10, fontWeight: '600', color: colors.primary },
+  departmentText: { fontSize: 12, color: colors.textMuted },
 
-  empty: { alignItems: 'center', paddingVertical: 80, gap: 12 },
-  emptyText: { ...t.body, color: colors.textMuted },
+  separator: { height: 1, backgroundColor: colors.border, marginLeft: 76 },
+
+  empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
+  emptyImage: { width: 200, height: 180, marginBottom: 8 },
+  emptyTitle: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  emptyDesc: { fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 40 },
 })

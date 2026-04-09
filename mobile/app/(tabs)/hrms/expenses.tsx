@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import {
   View, Text, Pressable, FlatList, SafeAreaView,
   StyleSheet, RefreshControl, Modal, TextInput,
-  Platform, KeyboardAvoidingView,
+  Platform, KeyboardAvoidingView, Image,
 } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -211,9 +211,11 @@ export default function ExpensesScreen() {
           }
           ListEmptyComponent={
             <View style={s.empty}>
-              <View style={s.emptyIcon}>
-                <Ionicons name="receipt-outline" size={28} color={colors.primary} />
-              </View>
+              <Image
+                source={require('../../../assets/illustrations/croods-windows.png')}
+                style={s.emptyImage}
+                resizeMode="contain"
+              />
               <Text style={s.emptyTitle}>No Expenses</Text>
               <Text style={s.emptyDesc}>You haven't submitted any expenses yet.</Text>
             </View>
@@ -393,11 +395,7 @@ const s = StyleSheet.create({
   statusBadgeText: { fontSize: 10, fontWeight: '600' },
 
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyIcon: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center',
-    marginBottom: 4,
-  },
+  emptyImage: { width: 200, height: 180, marginBottom: 8 },
   emptyTitle: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   emptyDesc: { fontSize: 12, color: colors.textMuted, textAlign: 'center' },
 
