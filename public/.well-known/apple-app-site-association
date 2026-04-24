@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["67VDCY6SK2.com.twentysevenestates.listings"],
+        "components": [
+          {
+            "/": "/properties/*",
+            "comment": "Deep-link property detail pages into the 27 Estates iOS app"
+          },
+          {
+            "/": "/projects/*",
+            "comment": "Deep-link project detail pages into the 27 Estates iOS app"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["67VDCY6SK2.com.twentysevenestates.listings"]
+  }
+}

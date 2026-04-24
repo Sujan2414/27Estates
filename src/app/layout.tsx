@@ -38,6 +38,11 @@ export const metadata: Metadata = {
     other: {
         'llms.txt': 'https://www.27estates.com/llms.txt',
         'llms-full.txt': 'https://www.27estates.com/llms-full.txt',
+        // Apple Smart App Banner — when someone opens a 27estates.com URL on
+        // iOS Safari and the 27 Estates iOS app is installed, Safari shows
+        // "Open" to deep-link; otherwise shows "View on App Store" to drive
+        // the install.  App-ID below is the ASC id for 27 Estates on iOS.
+        'apple-itunes-app': 'app-id=6763353231',
     },
     openGraph: {
         title: "27 Estates | Own the Extraordinary",

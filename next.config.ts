@@ -14,6 +14,22 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  // Serve iOS Universal Links + Android App Links verification files with
+  // the right Content-Type so Apple / Google can verify domain ownership.
+  // AASA ships without a file extension, so Next.js would otherwise default
+  // to application/octet-stream and Apple rejects verification.
+  async headers() {
+    return [
+      {
+        source: '/.well-known/apple-app-site-association',
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+      },
+      {
+        source: '/.well-known/assetlinks.json',
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
