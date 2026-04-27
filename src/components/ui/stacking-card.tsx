@@ -5,6 +5,7 @@ import { useTransform, motion, useScroll } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { MapPin } from 'lucide-react';
+import { proxyUrl } from '@/lib/proxy-url';
 
 interface ProjectCardData {
     id: string;
@@ -301,7 +302,10 @@ export function StackingCards({ showHeader = true }: StackingCardsProps) {
                     const formatted: ProjectCardData[] = adProjects.map(p => ({
                         id: p.id,
                         title: p.project_name,
-                        image: p.ad_card_image!,
+                        // Rewrite legacy origins so cards uploaded to the
+                        // old jiobase / ulgashwdsaxaiebtqrvf hosts still
+                        // resolve until they're migrated in DB.
+                        image: proxyUrl(p.ad_card_image!),
                         linkTo: `/projects/${p.id}`,
                         location: p.location || undefined,
                         city: p.city || undefined,

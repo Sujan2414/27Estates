@@ -1067,7 +1067,12 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     <div className={styles.sectionContainer}>
                         <h2 className={styles.sectionTitle}>BROCHURE</h2>
                         <BrochureSection
-                            brochureUrl={project.brochure_url}
+                            // Rewrite legacy ulgashwdsaxaiebtqrvf / jiobase
+                            // hosts to the live Supabase origin so PDFs that
+                            // were uploaded under the old project still load
+                            // (was returning 402 Payment Required from the
+                            // suspended old Supabase).
+                            brochureUrl={proxyUrl(project.brochure_url)}
                             projectName={project.project_name}
                         />
                     </div>

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Upload, X, Loader2 } from 'lucide-react'
+import { proxyUrl } from '@/lib/proxy-url'
 
 interface ImageUploadProps {
     value: string
@@ -132,7 +133,12 @@ export default function ImageUpload({
                     border: '1px solid #e2e8f0',
                 }}>
                     <img
-                        src={value}
+                        // proxyUrl rewrites legacy hosts (jiobase.com,
+                        // ulgashwdsaxaiebtqrvf.supabase.co — both dead) to
+                        // the live qjesattjnuoogqgiorws origin so old
+                        // ad-card / brochure URLs in the DB still preview
+                        // correctly until they're migrated.
+                        src={proxyUrl(value)}
                         alt="Preview"
                         style={{
                             width: '100%',
