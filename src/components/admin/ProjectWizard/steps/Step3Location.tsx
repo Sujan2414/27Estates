@@ -5,10 +5,10 @@ import { ArrowLeft, ArrowRight } from 'lucide-react'
 import styles from '../../PropertyWizard/property-wizard.module.css'
 import dynamic from 'next/dynamic'
 
-// Dynamic import for Map
-const PropertyMap = dynamic(() => import('@/components/emergent/PropertyMap'), {
+// Dynamic import — Leaflet touches `window` so SSR has to be off.
+const LocationPicker = dynamic(() => import('@/components/admin/LocationPicker'), {
     ssr: false,
-    loading: () => <div style={{ height: '300px', background: '#f5f5f5', borderRadius: '1rem' }} />
+    loading: () => <div style={{ height: '380px', background: '#f5f5f5', borderRadius: '0.75rem' }} />
 })
 
 interface StepProps {
@@ -47,25 +47,31 @@ export default function ProjectStep3Location({ initialData, onNext, onBack }: St
         return isNaN(num) ? null : num
     }
 
-    // Construct preview item for map
-    const mapPreviewItem = {
-        id: 'preview',
-        title: 'New Project',
-        location: address.location || address.city || 'Bangalore',
-        latitude: parseCoord(address.latitude),
-        longitude: parseCoord(address.longitude),
-        type: 'project' as const,
-        images: [],
-        min_price: 'Price on Request',
+    // Two-way sync between the interactive picker and the manual lat/lng
+    // inputs below — picking on the map updates the inputs; typing in the
+    // inputs updates the pin (via the controlled value).
+    const setCoords = (la: number, ln: number) => {
+        setAddress(prev => ({
+            ...prev,
+            latitude: la.toFixed(6),
+            longitude: ln.toFixed(6),
+        }))
     }
+
+    const initialSearch = [address.location, address.city].filter(Boolean).join(', ')
 
     return (
         <form onSubmit={handleSubmit}>
             <h2 className={styles.stepTitle}>Location</h2>
 
-            {/* Map Preview */}
-            <div style={{ height: '350px', marginBottom: '2rem', borderRadius: '1rem', overflow: 'hidden' }}>
-                <PropertyMap properties={[]} projects={[mapPreviewItem]} />
+            {/* Interactive picker — click / drag / search to set lat & lng */}
+            <div style={{ marginBottom: '2rem' }}>
+                <LocationPicker
+                    lat={parseCoord(address.latitude)}
+                    lng={parseCoord(address.longitude)}
+                    onChange={setCoords}
+                    initialSearch={initialSearch}
+                />
             </div>
 
             <div className={styles.grid2}>
