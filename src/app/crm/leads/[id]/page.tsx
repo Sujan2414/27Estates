@@ -14,6 +14,7 @@ import styles from '../../crm.module.css'
 import type { Lead, LeadActivity, LeadTask } from '@/lib/crm/types'
 import { proxyUrl } from '@/lib/proxy-url'
 import { useCRMUser, isAdmin } from '../../crm-context'
+import PropertySearchInput from '@/components/crm/PropertySearchInput'
 
 const sourceLabels: Record<string, string> = {
     website: 'Website', meta_ads: 'Meta Ads', google_ads: 'Google Ads', '99acres': '99acres',
@@ -72,8 +73,19 @@ export default function LeadDetailPage() {
     const [activities, setActivities] = useState<LeadActivity[]>([])
     const [tasks, setTasks] = useState<LeadTask[]>([])
     const [visits, setVisits] = useState<SiteVisit[]>([])
+    const [callLogs, setCallLogs] = useState<Array<{
+        id: string
+        duration_seconds: number | null
+        summary: string | null
+        temperature: string | null
+        confidence: number | null
+        signals_positive: string[] | null
+        signals_negative: string[] | null
+        next_action: string | null
+        called_at: string | null
+    }>>([])
     const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'visits'>('timeline')
+    const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'visits' | 'calls'>('timeline')
     const [showAddActivity, setShowAddActivity] = useState(false)
     const [showAddTask, setShowAddTask] = useState(false)
     const [showAddVisit, setShowAddVisit] = useState(false)
@@ -83,6 +95,7 @@ export default function LeadDetailPage() {
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
     const [editTaskData, setEditTaskData] = useState({ title: '', description: '', due_date: '' })
     const [newVisit, setNewVisit] = useState({ visit_date: '', visit_time: '', notes: '', assigned_to: '' })
+    const [newVisitProperty, setNewVisitProperty] = useState<import('@/components/crm/PropertySearchInput').SelectedProperty | null>(null)
     const [editingVisitId, setEditingVisitId] = useState<string | null>(null)
     const [editVisitData, setEditVisitData] = useState({ visit_date: '', visit_time: '', notes: '' })
     const [outcomeVisitId, setOutcomeVisitId] = useState<string | null>(null)
@@ -113,10 +126,31 @@ export default function LeadDetailPage() {
     const [prefSaving, setPrefSaving] = useState(false)
 
     const fetchLead = async () => {
-        const [leadRes, visitsRes] = await Promise.all([
+        const supa = createClient()
+        const [leadRes, visitsRes, callsRes] = await Promise.all([
             fetch(`/api/crm/leads/${id}`),
             fetch(`/api/crm/site-visits?lead_id=${id}`),
+            // call_logs is populated by the separate AI calling app via the
+            // shared Supabase backend. Read directly — no server route needed.
+            supa
+                .from('call_logs')
+                .select('id, duration_seconds, summary, temperature, confidence, signals_positive, signals_negative, next_action, called_at')
+                .eq('lead_id', id)
+                .order('called_at', { ascending: false }),
         ])
+        if (callsRes && !callsRes.error) {
+            setCallLogs((callsRes.data as unknown as Array<{
+                id: string
+                duration_seconds: number | null
+                summary: string | null
+                temperature: string | null
+                confidence: number | null
+                signals_positive: string[] | null
+                signals_negative: string[] | null
+                next_action: string | null
+                called_at: string | null
+            }>) || [])
+        }
         if (leadRes.ok) {
             const d = await leadRes.json()
             setLead(d.lead)
@@ -258,9 +292,35 @@ export default function LeadDetailPage() {
         setEditingTaskId(null); fetchLead()
     }
     const handleAddVisit = async () => {
-        if (!newVisit.visit_date) return
-        await fetch('/api/crm/site-visits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: id, ...newVisit }) })
-        setShowAddVisit(false); setNewVisit({ visit_date: '', visit_time: '', notes: '', assigned_to: '' }); fetchLead()
+        // Hard gates so the visit-driven map + arrival tracking actually work
+        // downstream. These must match the mobile add-site-visit gates.
+        if (!newVisitProperty) {
+            alert('Please pick the property the lead is visiting.')
+            return
+        }
+        if (newVisitProperty.latitude == null || newVisitProperty.longitude == null) {
+            alert('That listing has no map coordinates. Open it in admin and pin the location, then come back.')
+            return
+        }
+        if (!newVisit.visit_date) { alert('Pick a visit date.'); return }
+        if (!newVisit.visit_time) { alert('Pick a visit time so reminders can fire and arrival can be tracked.'); return }
+        if (!newVisit.assigned_to) { alert('Assign the visit to someone so we know whose location to track.'); return }
+
+        const payload = {
+            lead_id: id,
+            ...newVisit,
+            property_id: newVisitProperty.kind === 'property' ? newVisitProperty.id : null,
+            project_id: newVisitProperty.kind === 'project' ? newVisitProperty.id : null,
+        }
+        await fetch('/api/crm/site-visits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        })
+        setShowAddVisit(false)
+        setNewVisit({ visit_date: '', visit_time: '', notes: '', assigned_to: '' })
+        setNewVisitProperty(null)
+        fetchLead()
     }
     const handleVisitStatus = async (visitId: string, status: string, outcome?: string) => {
         await fetch('/api/crm/site-visits', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: visitId, status, outcome }) })
@@ -918,6 +978,9 @@ export default function LeadDetailPage() {
                         <button className={`${styles.pillTab} ${activeTab === 'visits' ? styles.pillTabActive : ''}`} onClick={() => setActiveTab('visits')}>
                             Site Visits ({visits.length})
                         </button>
+                        <button className={`${styles.pillTab} ${activeTab === 'calls' ? styles.pillTabActive : ''}`} onClick={() => setActiveTab('calls')}>
+                            AI Calls ({callLogs.length})
+                        </button>
                     </div>
 
                     {/* Timeline */}
@@ -946,18 +1009,31 @@ export default function LeadDetailPage() {
                                     </div>
                                 </div>
                             )}
-                            {activities.length > 0 ? activities.map((a, i) => (
-                                <div key={a.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem 0', borderBottom: i < activities.length - 1 ? '1px solid var(--crm-border)' : 'none' }}>
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--crm-text-muted)', flexShrink: 0 }}>
-                                        {activityIcons[a.type] || <Clock size={14} />}
+                            {activities.length > 0 ? activities.map((a, i) => {
+                                // Strip source info from activity text for non-admin users
+                                let title = a.title
+                                let description = a.description
+                                if (!isAdminUser) {
+                                    // Redact "Lead created from 99acres" → "Lead created"
+                                    title = title?.replace(/\s+from\s+(website|meta[\s_]?ads|google[\s_]?ads|99acres|magicbricks|housing\.?com?|justdial|chatbot|whatsapp|manual|referral|b2bbricks|sulekha|commonfloor)/gi, '')
+                                    // Redact "Campaign: ..." and "Source: ..." lines in description
+                                    if (description) {
+                                        description = description.replace(/Campaign:\s*[^\n]*/gi, '').replace(/Source:\s*[^\n]*/gi, '').replace(/Template:\s*[^\n]*/gi, '').trim() || undefined
+                                    }
+                                }
+                                return (
+                                    <div key={a.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem 0', borderBottom: i < activities.length - 1 ? '1px solid var(--crm-border)' : 'none' }}>
+                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--crm-elevated)', border: '1px solid var(--crm-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--crm-text-muted)', flexShrink: 0 }}>
+                                            {activityIcons[a.type] || <Clock size={14} />}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{title}</div>
+                                            {description && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '0.125rem' }}>{description}</div>}
+                                            <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>{formatRelative(a.created_at)} · {a.creator_name || a.created_by}</div>
+                                        </div>
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--crm-text-secondary)' }}>{a.title}</div>
-                                        {a.description && <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-muted)', marginTop: '0.125rem' }}>{a.description}</div>}
-                                        <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', marginTop: '0.25rem' }}>{formatRelative(a.created_at)} · {a.creator_name || a.created_by}</div>
-                                    </div>
-                                </div>
-                            )) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No activity yet</div>}
+                                )
+                            }) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No activity yet</div>}
                         </div>
                     )}
 
@@ -1039,18 +1115,25 @@ export default function LeadDetailPage() {
                             </div>
                             {showAddVisit && (
                                 <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--crm-elevated)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)' }}>
+                                    <div style={{ marginBottom: '0.5rem' }}>
+                                        <label className={styles.formLabel}>Property *</label>
+                                        <PropertySearchInput
+                                            selected={newVisitProperty}
+                                            onSelect={setNewVisitProperty}
+                                        />
+                                    </div>
                                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                         <div style={{ flex: 1 }}>
                                             <label className={styles.formLabel}>Date *</label>
                                             <input type="date" value={newVisit.visit_date} onChange={e => setNewVisit({ ...newVisit, visit_date: e.target.value })} className={styles.formInput} />
                                         </div>
                                         <div style={{ flex: 1 }}>
-                                            <label className={styles.formLabel}>Time</label>
+                                            <label className={styles.formLabel}>Time *</label>
                                             <input type="time" value={newVisit.visit_time} onChange={e => setNewVisit({ ...newVisit, visit_time: e.target.value })} className={styles.formInput} />
                                         </div>
                                     </div>
                                     <div style={{ marginBottom: '0.5rem' }}>
-                                        <label className={styles.formLabel}>Assign To</label>
+                                        <label className={styles.formLabel}>Assign To *</label>
                                         <select value={newVisit.assigned_to} onChange={e => setNewVisit({ ...newVisit, assigned_to: e.target.value })} className={styles.formSelect}>
                                             <option value="">Select person...</option>
                                             {isAdminUser ? agents.map(a => (
@@ -1062,8 +1145,8 @@ export default function LeadDetailPage() {
                                     </div>
                                     <textarea value={newVisit.notes} onChange={e => setNewVisit({ ...newVisit, notes: e.target.value })} placeholder="Notes" rows={2} className={styles.formInput} style={{ resize: 'vertical', marginBottom: '0.5rem' }} />
                                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                        <button onClick={() => setShowAddVisit(false)} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Cancel</button>
-                                        <button onClick={handleAddVisit} className={styles.btnPrimary} style={{ fontSize: '0.75rem' }} disabled={!newVisit.visit_date}>Schedule</button>
+                                        <button onClick={() => { setShowAddVisit(false); setNewVisitProperty(null) }} className={styles.btnSecondary} style={{ fontSize: '0.75rem' }}>Cancel</button>
+                                        <button onClick={handleAddVisit} className={styles.btnPrimary} style={{ fontSize: '0.75rem' }} disabled={!newVisit.visit_date || !newVisit.visit_time || !newVisitProperty || !newVisit.assigned_to}>Schedule</button>
                                     </div>
                                 </div>
                             )}
@@ -1148,6 +1231,115 @@ export default function LeadDetailPage() {
                                     </div>
                                 )
                             }) : <div className={styles.emptyState} style={{ padding: '2rem' }}>No site visits scheduled</div>}
+                        </div>
+                    )}
+
+                    {/* AI Calls — summaries logged by the separate AI calling app */}
+                    {activeTab === 'calls' && (
+                        <div className={styles.card}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
+                                <span className={styles.cardTitle}>AI Call Summaries</span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--crm-text-faint)' }}>
+                                    Auto-logged from the AI calling app
+                                </span>
+                            </div>
+                            {callLogs.length === 0 ? (
+                                <div className={styles.emptyState} style={{ padding: '2rem' }}>
+                                    No AI calls logged yet for this lead.
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {callLogs.map((c) => {
+                                        const tempColor =
+                                            c.temperature === 'hot'  ? '#ef4444' :
+                                            c.temperature === 'warm' ? '#f59e0b' :
+                                            c.temperature === 'cold' ? '#3b82f6' : '#6b7280'
+                                        const tempBg =
+                                            c.temperature === 'hot'  ? 'rgba(239,68,68,0.12)' :
+                                            c.temperature === 'warm' ? 'rgba(245,158,11,0.12)' :
+                                            c.temperature === 'cold' ? 'rgba(59,130,246,0.12)' : 'rgba(107,114,128,0.12)'
+                                        const dur = c.duration_seconds ?? 0
+                                        const mins = Math.floor(dur / 60)
+                                        const secs = dur % 60
+                                        return (
+                                            <div key={c.id} style={{
+                                                border: '1px solid var(--crm-border, #e5e7eb)',
+                                                borderRadius: '0.625rem',
+                                                padding: '0.875rem 1rem',
+                                                background: 'var(--crm-elevated, #fafafa)',
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: 6 }}>
+                                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                        {c.temperature && (
+                                                            <span style={{
+                                                                fontSize: '0.7rem', fontWeight: 700,
+                                                                padding: '3px 8px', borderRadius: 999,
+                                                                background: tempBg, color: tempColor,
+                                                                textTransform: 'uppercase', letterSpacing: 0.4,
+                                                            }}>
+                                                                {c.temperature}
+                                                            </span>
+                                                        )}
+                                                        {c.confidence != null && (
+                                                            <span style={{ fontSize: '0.7rem', color: 'var(--crm-text-secondary)', fontWeight: 600 }}>
+                                                                {c.confidence}% confidence
+                                                            </span>
+                                                        )}
+                                                        <span style={{ fontSize: '0.7rem', color: 'var(--crm-text-faint)' }}>
+                                                            · {mins}m {secs}s
+                                                        </span>
+                                                    </div>
+                                                    {c.called_at && (
+                                                        <span style={{ fontSize: '0.7rem', color: 'var(--crm-text-faint)' }}>
+                                                            {new Date(c.called_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {c.summary && (
+                                                    <p style={{ fontSize: '0.82rem', color: 'var(--crm-text-primary, #111827)', lineHeight: 1.55, margin: '0 0 0.6rem' }}>
+                                                        {c.summary}
+                                                    </p>
+                                                )}
+
+                                                {((c.signals_positive?.length ?? 0) > 0 || (c.signals_negative?.length ?? 0) > 0) && (
+                                                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                                                        {c.signals_positive?.map((s, i) => (
+                                                            <span key={`p-${i}`} style={{
+                                                                fontSize: '0.68rem', padding: '2px 7px', borderRadius: 999,
+                                                                background: 'rgba(34,197,94,0.12)', color: '#16a34a', fontWeight: 600,
+                                                            }}>
+                                                                + {s}
+                                                            </span>
+                                                        ))}
+                                                        {c.signals_negative?.map((s, i) => (
+                                                            <span key={`n-${i}`} style={{
+                                                                fontSize: '0.68rem', padding: '2px 7px', borderRadius: 999,
+                                                                background: 'rgba(239,68,68,0.12)', color: '#dc2626', fontWeight: 600,
+                                                            }}>
+                                                                − {s}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {c.next_action && (
+                                                    <div style={{
+                                                        fontSize: '0.75rem',
+                                                        padding: '6px 10px',
+                                                        borderRadius: 6,
+                                                        background: 'rgba(99,102,241,0.08)',
+                                                        color: '#4338ca',
+                                                        borderLeft: '3px solid #6366f1',
+                                                    }}>
+                                                        <strong>Next:</strong> {c.next_action}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

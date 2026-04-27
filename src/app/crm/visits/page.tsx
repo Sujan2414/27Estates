@@ -13,9 +13,23 @@ interface Visit {
     status: string
     outcome?: string
     notes?: string
+    arrived_at?: string | null
+    departed_at?: string | null
+    time_spent_seconds?: number | null
+    missed?: boolean
+    arrival_method?: string | null
     leads?: { name: string; phone: string | null; email: string | null }
     properties?: { title: string } | null
     projects?: { project_name: string } | null
+    agent?: { full_name: string | null; avatar_url: string | null } | null
+}
+
+function formatDuration(s: number): string {
+    if (!s || s < 1) return '—'
+    if (s < 60) return `${s}s`
+    const m = Math.floor(s / 60)
+    if (m < 60) return `${m}m`
+    return `${Math.floor(m / 60)}h ${m % 60}m`
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -117,11 +131,64 @@ export default function VisitsPage() {
     const isToday = (date: Date) => date.toDateString() === today.toDateString()
     const isPast = (date: string) => new Date(date + 'T23:59:59') < today
 
+    // Live banner data — anyone currently arrived but not departed.
+    const onSiteNow = visits.filter(v => v.arrived_at && !v.departed_at)
+    const completedToday = visits.filter(v => v.departed_at && v.visit_date === new Date().toISOString().split('T')[0])
+    const missedSoFar = visits.filter(v => v.missed)
+
     return (
         <div className={styles.pageContent}>
             <div style={{ marginBottom: '1.5rem' }}>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>Site Visits</h1>
                 <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)' }}>Track and manage all scheduled site visits</p>
+            </div>
+
+            {/* Live activity banner — three side-by-side stat cards. Updates
+                every minute via the live counter on rendered values. */}
+            <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem',
+                marginBottom: '1.5rem',
+            }}>
+                <div style={{
+                    padding: '0.875rem 1rem', borderRadius: '0.625rem',
+                    backgroundColor: onSiteNow.length > 0 ? 'rgba(34, 197, 94, 0.08)' : 'var(--crm-elevated)',
+                    border: `1px solid ${onSiteNow.length > 0 ? 'rgba(34,197,94,0.3)' : 'var(--crm-border)'}`,
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        {onSiteNow.length > 0 && (
+                            <span style={{
+                                width: 7, height: 7, borderRadius: '50%', backgroundColor: '#22c55e',
+                                animation: 'pulse 2s infinite',
+                            }} />
+                        )}
+                        <span style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--crm-text-faint)' }}>On site now</span>
+                    </div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#22c55e', lineHeight: 1.1 }}>{onSiteNow.length}</div>
+                    {onSiteNow.length > 0 && (
+                        <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-secondary)', marginTop: 6 }}>
+                            {onSiteNow.slice(0, 2).map(v => v.agent?.full_name?.split(' ')[0] || 'Someone').join(', ')}
+                            {onSiteNow.length > 2 ? ` +${onSiteNow.length - 2}` : ''}
+                        </div>
+                    )}
+                </div>
+
+                <div style={{
+                    padding: '0.875rem 1rem', borderRadius: '0.625rem',
+                    backgroundColor: 'var(--crm-elevated)',
+                    border: '1px solid var(--crm-border)',
+                }}>
+                    <div style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--crm-text-faint)', marginBottom: 4 }}>Done today</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--crm-text-primary)', lineHeight: 1.1 }}>{completedToday.length}</div>
+                </div>
+
+                <div style={{
+                    padding: '0.875rem 1rem', borderRadius: '0.625rem',
+                    backgroundColor: missedSoFar.length > 0 ? 'rgba(239, 68, 68, 0.08)' : 'var(--crm-elevated)',
+                    border: `1px solid ${missedSoFar.length > 0 ? 'rgba(239,68,68,0.3)' : 'var(--crm-border)'}`,
+                }}>
+                    <div style={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--crm-text-faint)', marginBottom: 4 }}>Missed</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: missedSoFar.length > 0 ? '#ef4444' : 'var(--crm-text-primary)', lineHeight: 1.1 }}>{missedSoFar.length}</div>
+                </div>
             </div>
 
             {/* View Toggle */}
@@ -223,6 +290,42 @@ export default function VisitsPage() {
                                             {(v.properties?.title || v.projects?.project_name) && (
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--crm-accent)', marginTop: '0.25rem' }}>
                                                     📍 {v.properties?.title || v.projects?.project_name}
+                                                </div>
+                                            )}
+
+                                            {/* Arrival / duration / missed badges — the whole point of
+                                                the live visit-tracking system. Admin sees at a glance
+                                                whether the assignee actually went and how long they spent. */}
+                                            {(v.arrived_at || v.missed) && (
+                                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.375rem', fontSize: '0.6875rem' }}>
+                                                    {v.missed ? (
+                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', backgroundColor: 'rgba(239,68,68,0.12)', color: '#ef4444', fontWeight: 700 }}>
+                                                            ⚠ Missed
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', backgroundColor: 'rgba(34,197,94,0.12)', color: '#22c55e', fontWeight: 700 }}>
+                                                                ⏱ Arrived {new Date(v.arrived_at!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                                {v.arrival_method === 'manual' ? ' (manual)' : ''}
+                                                            </span>
+                                                            {v.departed_at ? (
+                                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', backgroundColor: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontWeight: 700 }}>
+                                                                    🕐 {formatDuration(v.time_spent_seconds || 0)} on site
+                                                                </span>
+                                                            ) : (
+                                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', backgroundColor: 'rgba(245,158,11,0.12)', color: '#f59e0b', fontWeight: 700 }}>
+                                                                    🟢 On site now · {formatDuration(Math.floor((Date.now() - new Date(v.arrived_at!).getTime()) / 1000))}
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Assignee chip */}
+                                            {v.agent?.full_name && (
+                                                <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-muted)', marginTop: '0.25rem' }}>
+                                                    Assigned to {v.agent.full_name}
                                                 </div>
                                             )}
 

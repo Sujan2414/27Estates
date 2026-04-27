@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
             *,
             leads (name, phone, email),
             properties (title, property_id),
-            projects (project_name)
+            projects (project_name),
+            agent:agent_id (full_name, avatar_url)
         `)
         .order('visit_date', { ascending: true })
         .order('visit_time', { ascending: true })
