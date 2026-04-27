@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, ZoomControl, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Search, MapPin, Loader2, Crosshair } from 'lucide-react'
@@ -242,7 +242,15 @@ export default function LocationPicker({
                     zoom={initialZoom}
                     style={{ height: '100%', width: '100%' }}
                     scrollWheelZoom
+                    zoomControl={false}
                 >
+                    {/* Move the +/- buttons to the bottom-right so they don't
+                        sit underneath the autocomplete dropdown that drops
+                        down from the search bar above. The default top-left
+                        position was being covered by the dropdown's own
+                        space, making it look like the buttons were blocking
+                        the search results. */}
+                    <ZoomControl position="bottomright" />
                     <TileLayer
                         attribution='&copy; OpenStreetMap contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
