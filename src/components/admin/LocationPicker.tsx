@@ -283,49 +283,85 @@ export default function LocationPicker({
                 )}
             </div>
 
-            {/* Manual lat/lng inputs — sit directly under the map so the
-                admin can paste exact coords or fine-tune without scrolling
-                away. Two-way bound: editing here moves the pin (the parent
-                re-renders this component with new lat/lng), and dragging
-                the pin updates these via onChange. */}
+            {/* Manual lat/lng inputs — see CoordInput for why these need
+                local string state. Pin and inputs are two-way bound, but
+                the inputs hold their own draft string while typing so a
+                value like "77." doesn't immediately get rounded back to
+                "77" by the parent re-render (which used to make backspace
+                "stick" at the first digit). */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#344054', marginBottom: 4 }}>Latitude</label>
-                    <input
-                        type="number"
-                        step="any"
-                        value={lat ?? ''}
-                        onChange={e => {
-                            const la = parseFloat(e.target.value)
-                            if (!isNaN(la) && lng != null) onChange(la, lng)
-                            else if (!isNaN(la)) onChange(la, 0)
-                        }}
-                        placeholder="e.g. 12.9716"
-                        style={{
-                            width: '100%', padding: '10px 12px', fontSize: 14,
-                            border: '1px solid #d0d5dd', borderRadius: 8, outline: 'none',
-                        }}
-                    />
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#344054', marginBottom: 4 }}>Longitude</label>
-                    <input
-                        type="number"
-                        step="any"
-                        value={lng ?? ''}
-                        onChange={e => {
-                            const ln = parseFloat(e.target.value)
-                            if (!isNaN(ln) && lat != null) onChange(lat, ln)
-                            else if (!isNaN(ln)) onChange(0, ln)
-                        }}
-                        placeholder="e.g. 77.5946"
-                        style={{
-                            width: '100%', padding: '10px 12px', fontSize: 14,
-                            border: '1px solid #d0d5dd', borderRadius: 8, outline: 'none',
-                        }}
-                    />
-                </div>
+                <CoordInput
+                    label="Latitude"
+                    value={lat}
+                    placeholder="e.g. 12.9716"
+                    onCommit={(la) => { if (la != null) onChange(la, lng ?? 0) }}
+                />
+                <CoordInput
+                    label="Longitude"
+                    value={lng}
+                    placeholder="e.g. 77.5946"
+                    onCommit={(ln) => { if (ln != null) onChange(lat ?? 0, ln) }}
+                />
             </div>
+        </div>
+    )
+}
+
+/**
+ * Tiny lat-or-lng input that keeps its own draft string while the user is
+ * typing. Pushes the parsed number up to the parent on every change AS LONG
+ * AS the draft parses to a valid number — but the displayed value is the
+ * draft string itself, not the parent prop. This way:
+ *   • "12.9716" → "12.971" → "12.97" → ... → "" all work without snapback
+ *   • Trailing "." (in "77.") survives until the user types the next digit
+ *   • Pin drag from the map still updates the displayed value, because the
+ *     prop change resyncs the draft (handled by the useEffect below)
+ */
+function CoordInput({
+    label, value, placeholder, onCommit,
+}: {
+    label: string
+    value: number | null
+    placeholder: string
+    onCommit: (n: number | null) => void
+}) {
+    const [draft, setDraft] = useState<string>(value != null ? String(value) : '')
+
+    // Resync the draft when the parent value changes from outside (e.g. user
+    // dragged the pin or picked an autocomplete suggestion). Skip the resync
+    // if the draft already parses to the same number — otherwise typing
+    // "12.97" right after the parent set "12.97000000" would be clobbered.
+    useEffect(() => {
+        const parsed = parseFloat(draft)
+        const same = !isNaN(parsed) && value != null && Math.abs(parsed - value) < 1e-7
+        if (!same) setDraft(value != null ? String(value) : '')
+        // We deliberately don't depend on `draft` — only react to external value changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value])
+
+    return (
+        <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#344054', marginBottom: 4 }}>{label}</label>
+            <input
+                type="text"
+                inputMode="decimal"
+                value={draft}
+                placeholder={placeholder}
+                onChange={e => {
+                    const next = e.target.value
+                    setDraft(next)
+                    if (next.trim() === '') {
+                        onCommit(null)
+                        return
+                    }
+                    const n = parseFloat(next)
+                    if (!isNaN(n)) onCommit(n)
+                }}
+                style={{
+                    width: '100%', padding: '10px 12px', fontSize: 14,
+                    border: '1px solid #d0d5dd', borderRadius: 8, outline: 'none',
+                }}
+            />
         </div>
     )
 }
