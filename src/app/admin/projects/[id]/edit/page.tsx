@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import BrochureUpload from '@/components/admin/BrochureUpload'
 import BHKMultiSelect from '@/components/admin/BHKMultiSelect'
 import ImageUpload from '@/components/admin/ImageUpload'
@@ -13,6 +14,13 @@ import styles from '../../../admin.module.css'
 import formStyles from '../../../properties/form.module.css'
 import { AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from '@/lib/amenities-data'
 import { Check, Search } from 'lucide-react'
+
+// Leaflet touches `window` so SSR has to be off. Same picker the new-listing
+// wizards use — keeps the lat/lng-correction UX identical between Add + Edit.
+const LocationPicker = dynamic(() => import('@/components/admin/LocationPicker'), {
+    ssr: false,
+    loading: () => <div style={{ height: '380px', background: '#f5f5f5', borderRadius: '0.75rem' }} />,
+})
 
 interface Developer {
     id: string
@@ -1174,6 +1182,22 @@ export default function EditProjectPage() {
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Location</h2>
 
+                    {/* Interactive map — click / drag / search to fix the pin
+                        if the existing lat/lng is wrong. Two-way bound to the
+                        manual lat/lng inputs further down. */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <LocationPicker
+                            lat={address.latitude ? parseFloat(address.latitude) : null}
+                            lng={address.longitude ? parseFloat(address.longitude) : null}
+                            onChange={(la, ln) => setAddress(prev => ({
+                                ...prev,
+                                latitude: la.toFixed(6),
+                                longitude: ln.toFixed(6),
+                            }))}
+                            initialSearch={[address.location, address.city].filter(Boolean).join(', ')}
+                        />
+                    </div>
+
                     <div className={formStyles.grid2}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Address</label>
@@ -1222,16 +1246,6 @@ export default function EditProjectPage() {
                         </div>
                     </div>
 
-                    <div className={formStyles.grid3}>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Latitude</label>
-                            <input type="text" name="latitude" value={address.latitude} onChange={handleAddressChange} className={formStyles.input} />
-                        </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Longitude</label>
-                            <input type="text" name="longitude" value={address.longitude} onChange={handleAddressChange} className={formStyles.input} />
-                        </div>
-                    </div>
                 </div>
 
                 {/* Contact */}

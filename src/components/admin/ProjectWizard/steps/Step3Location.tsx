@@ -122,17 +122,6 @@ export default function ProjectStep3Location({ initialData, onNext, onBack }: St
                 </div>
             </div>
 
-            <div className={styles.grid3}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Latitude</label>
-                    <input type="text" name="latitude" value={address.latitude} onChange={handleChange} className={styles.input} />
-                </div>
-                <div className={styles.field}>
-                    <label className={styles.label}>Longitude</label>
-                    <input type="text" name="longitude" value={address.longitude} onChange={handleChange} className={styles.input} />
-                </div>
-            </div>
-
             <div className={styles.actions}>
                 <button type="button" onClick={onBack} className={`${styles.btn} ${styles.secondaryBtn}`}>
                     <ArrowLeft size={18} /> Back

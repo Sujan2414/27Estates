@@ -5,12 +5,20 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Plus, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import styles from '../../../admin.module.css'
 import formStyles from '../../form.module.css'
 import { AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from '@/lib/amenities-data'
 import { Check, Search } from 'lucide-react'
+
+// Leaflet touches `window` so SSR has to be off. Same picker the new-listing
+// wizards use — keeps the lat/lng-correction UX identical between Add + Edit.
+const LocationPicker = dynamic(() => import('@/components/admin/LocationPicker'), {
+    ssr: false,
+    loading: () => <div style={{ height: '380px', background: '#f5f5f5', borderRadius: '0.75rem' }} />,
+})
 
 interface Agent {
     id: string
@@ -1020,6 +1028,22 @@ export default function EditPropertyPage() {
                 <div className={formStyles.section}>
                     <h2 className={formStyles.sectionTitle}>Address</h2>
 
+                    {/* Interactive map — click / drag / search to fix the pin
+                        if the existing lat/lng is wrong. Two-way bound to the
+                        manual lat/lng inputs further down. */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <LocationPicker
+                            lat={address.lat ? parseFloat(address.lat) : null}
+                            lng={address.lng ? parseFloat(address.lng) : null}
+                            onChange={(la, ln) => setAddress(prev => ({
+                                ...prev,
+                                lat: la.toFixed(6),
+                                lng: ln.toFixed(6),
+                            }))}
+                            initialSearch={[address.area, address.city].filter(Boolean).join(', ')}
+                        />
+                    </div>
+
                     <div className={formStyles.grid2}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Street</label>
@@ -1046,19 +1070,9 @@ export default function EditPropertyPage() {
                         </div>
                     </div>
 
-                    <div className={formStyles.grid3}>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Country</label>
-                            <input type="text" name="country" value={address.country} onChange={handleAddressChange} className={formStyles.input} />
-                        </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Latitude</label>
-                            <input type="text" name="lat" value={address.lat} onChange={handleAddressChange} className={formStyles.input} />
-                        </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>Longitude</label>
-                            <input type="text" name="lng" value={address.lng} onChange={handleAddressChange} className={formStyles.input} />
-                        </div>
+                    <div className={formStyles.field}>
+                        <label className={formStyles.label}>Country</label>
+                        <input type="text" name="country" value={address.country} onChange={handleAddressChange} className={formStyles.input} />
                     </div>
                 </div>
 

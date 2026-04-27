@@ -94,17 +94,6 @@ export default function PropertyLocationStep({ initialData, onNext, onBack }: St
                 />
             </div>
 
-            <div className={styles.grid2}>
-                <div className={styles.field}>
-                    <label className={styles.label}>Lat</label>
-                    <input type="number" step="any" name="latitude" value={formData.latitude} onChange={handleChange} className={styles.input} placeholder="Latitude" />
-                </div>
-                <div className={styles.field}>
-                    <label className={styles.label}>Long</label>
-                    <input type="number" step="any" name="longitude" value={formData.longitude} onChange={handleChange} className={styles.input} placeholder="Longitude" />
-                </div>
-            </div>
-
             <div className={styles.field}>
                 <label className={styles.label}>Building/Premises</label>
                 <input type="text" name="building_name" value={formData.building_name} onChange={handleChange} className={styles.input} />
