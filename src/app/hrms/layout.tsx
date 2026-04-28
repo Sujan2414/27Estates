@@ -77,6 +77,7 @@ function buildNav(role: HRMSRole, pendingLeaves: number): { section: string; ite
                 ...(isSA ? [
                     { label: 'Leave Allocations', href: '/hrms/allocations', icon: Sliders },
                     { label: 'Work Settings',     href: '/hrms/settings',    icon: Settings },
+                    { label: 'Payroll Control',   href: '/crm/hrm/payroll',  icon: TrendingUp },
                 ] : []),
             ],
         }] : []),
