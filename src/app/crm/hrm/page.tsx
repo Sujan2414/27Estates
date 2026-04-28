@@ -117,6 +117,7 @@ export default function HRMOverviewPage() {
                     { label: 'Present Today', value: todayAttendance.present + todayAttendance.wfh, color: '#22c55e', icon: Clock, href: '/crm/hrm/attendance' },
                     { label: 'Pending Leaves', value: pendingLeaves, color: '#f59e0b', icon: Calendar, href: '/crm/hrm/leaves' },
                     { label: 'Open Tasks', value: openTasks, color: '#8b5cf6', icon: ClipboardList, href: '/crm/hrm/tasks' },
+                    { label: 'Payroll Control', value: 'Manage →', color: '#16a34a', icon: TrendingUp, href: '/crm/hrm/payroll' },
                 ].map(s => (
                     <Link key={s.label} href={s.href} style={{ textDecoration: 'none' }}>
                         <div className={styles.statCard} style={{ cursor: 'pointer', transition: 'border-color 0.15s' }}>
