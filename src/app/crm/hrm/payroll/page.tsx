@@ -44,7 +44,7 @@ export default function PayrollControlPage() {
             const { data: emps } = await supabase
                 .from('profiles')
                 .select('id, full_name, role, designation')
-                .neq('role', 'super_admin')
+                .in('role', ['agent', 'admin', 'manager'])
                 .order('full_name')
 
             setEmployees(emps || [])
