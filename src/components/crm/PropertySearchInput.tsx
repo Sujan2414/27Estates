@@ -202,8 +202,8 @@ export default function PropertySearchInput({ selected, onSelect, warnIfNoCoords
                     type="text"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    onFocus={() => hits.length > 0 && setOpen(true)}
-                    placeholder="Search property by name or ID…"
+                    onFocus={() => query.trim().length >= 2 && setOpen(true)}
+                    placeholder="Search listing by name or ID…"
                     autoComplete="off"
                     className={styles.input}
                 />
@@ -211,6 +211,21 @@ export default function PropertySearchInput({ selected, onSelect, warnIfNoCoords
                     <span style={{ fontSize: 10, color: 'var(--crm-text-muted)' }}>Searching…</span>
                 )}
             </div>
+            {/* Show the dropdown whenever the user has typed something searchable.
+                Empty-state row tells them the search ran and nothing matched —
+                otherwise the picker just looks broken on a no-results query. */}
+            {open && query.trim().length >= 2 && !searching && hits.length === 0 && (
+                <ul className={styles.dropdown}>
+                    <li style={{
+                        padding: '12px 14px',
+                        fontSize: 13,
+                        color: 'var(--crm-text-muted)',
+                        textAlign: 'center',
+                    }}>
+                        No listings matched <strong style={{ color: 'var(--crm-text-primary)' }}>&quot;{query.trim()}&quot;</strong>
+                    </li>
+                </ul>
+            )}
             {open && hits.length > 0 && (
                 <ul className={styles.dropdown}>
                     {hits.map(h => {

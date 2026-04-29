@@ -1116,7 +1116,7 @@ export default function LeadDetailPage() {
                             {showAddVisit && (
                                 <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--crm-elevated)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)' }}>
                                     <div style={{ marginBottom: '0.5rem' }}>
-                                        <label className={styles.formLabel}>Property *</label>
+                                        <label className={styles.formLabel}>Listing *</label>
                                         <PropertySearchInput
                                             selected={newVisitProperty}
                                             onSelect={setNewVisitProperty}
