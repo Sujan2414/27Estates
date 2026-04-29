@@ -1,0 +1,79 @@
+/* Scoped to the property search input. Inline styles can't target
+   ::placeholder or :focus-within, so the few rules that need pseudo-class
+   selectors live here. */
+
+.wrap {
+    position: relative;
+}
+
+.inputBox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border: 1px solid var(--crm-border);
+    border-radius: 8px;
+    background: var(--crm-elevated);
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.inputBox:focus-within {
+    border-color: var(--crm-btn-primary-bg, #183C38);
+    box-shadow: 0 0 0 3px rgba(24, 60, 56, 0.18);
+}
+
+.input {
+    flex: 1;
+    padding: 10px 0;
+    border: 0;
+    outline: none;
+    font-size: 13px;
+    background: transparent;
+    color: var(--crm-text-primary);
+}
+
+.input::placeholder {
+    color: var(--crm-text-faint);
+    opacity: 1;
+}
+
+.dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    z-index: 50;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.hit {
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    transition: background-color 90ms ease;
+}
+
+.hit:hover {
+    background: var(--crm-elevated);
+}
+
+.selected {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--crm-border);
+    border-radius: 8px;
+    background: var(--crm-elevated);
+}

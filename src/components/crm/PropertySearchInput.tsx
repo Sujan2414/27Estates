@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MapPin, Search, X, AlertCircle } from 'lucide-react'
+import styles from './PropertySearchInput.module.css'
 
 export interface SelectedProperty {
     kind: 'property' | 'project'
@@ -42,6 +43,11 @@ interface SearchHit {
  * parallel; debounced 300ms after typing stops. Shows up to 8 results with
  * a "no coordinates" warning where applicable so the admin sees the gap
  * BEFORE submitting.
+ *
+ * Theming: every color goes through the --crm-* CSS variables so the
+ * picker auto-flips between light and dark mode the same way the rest of
+ * the CRM does. The previous version was hardcoded to white/dark-text and
+ * looked broken in dark mode (text was invisible against dark page bg).
  */
 export default function PropertySearchInput({ selected, onSelect, warnIfNoCoords = true }: Props) {
     const supabase = createClient()
@@ -145,30 +151,30 @@ export default function PropertySearchInput({ selected, onSelect, warnIfNoCoords
         const hasCoords = selected.latitude != null && selected.longitude != null
         return (
             <div ref={containerRef}>
-                <div style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 8,
-                    padding: '10px 12px', border: '1px solid #d0d5dd', borderRadius: 8,
-                    background: '#f0fdf4',
-                }}>
-                    <MapPin size={16} color="#166534" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div className={styles.selected}>
+                    <MapPin size={16} color="#22c55e" style={{ marginTop: 2, flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#101828', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{
+                            fontSize: 13, fontWeight: 600,
+                            color: 'var(--crm-text-primary)',
+                            display: 'flex', alignItems: 'center', gap: 6,
+                        }}>
                             <span style={{
                                 fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
-                                background: selected.kind === 'project' ? '#dbeafe' : '#dcfce7',
-                                color: selected.kind === 'project' ? '#1e40af' : '#166534',
+                                background: selected.kind === 'project' ? 'rgba(59,130,246,0.18)' : 'rgba(34,197,94,0.18)',
+                                color: selected.kind === 'project' ? '#60a5fa' : '#4ade80',
                                 textTransform: 'uppercase', letterSpacing: 0.5,
                             }}>{selected.kind}</span>
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.title}</span>
                         </div>
-                        <div style={{ fontSize: 11, color: '#475467', marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: 'var(--crm-text-muted)', marginTop: 2 }}>
                             {[selected.location, selected.city].filter(Boolean).join(', ') || 'Location not set'}
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={clear}
-                        style={{ background: 'none', border: 0, cursor: 'pointer', color: '#475467', padding: 0, display: 'flex' }}
+                        style={{ background: 'none', border: 0, cursor: 'pointer', color: 'var(--crm-text-muted)', padding: 0, display: 'flex' }}
                     >
                         <X size={14} />
                     </button>
@@ -176,11 +182,12 @@ export default function PropertySearchInput({ selected, onSelect, warnIfNoCoords
                 {warnIfNoCoords && !hasCoords && (
                     <div style={{
                         marginTop: 6, display: 'flex', alignItems: 'flex-start', gap: 6,
-                        fontSize: 11, color: '#B42318', padding: '6px 10px',
-                        background: '#FEF3F2', border: '1px solid #FECDCA', borderRadius: 6,
+                        fontSize: 11, color: '#f87171', padding: '6px 10px',
+                        background: 'rgba(239,68,68,0.10)',
+                        border: '1px solid rgba(239,68,68,0.25)', borderRadius: 6,
                     }}>
                         <AlertCircle size={13} style={{ marginTop: 1, flexShrink: 0 }} />
-                        <span>This listing has no map coordinates. Open the listing in admin and pin the location, otherwise arrival tracking can't work.</span>
+                        <span>This listing has no map coordinates. Open the listing in admin and pin the location, otherwise arrival tracking can&apos;t work.</span>
                     </div>
                 )}
             </div>
@@ -188,13 +195,9 @@ export default function PropertySearchInput({ selected, onSelect, warnIfNoCoords
     }
 
     return (
-        <div ref={containerRef} style={{ position: 'relative' }}>
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '0 12px', border: '1px solid #d0d5dd', borderRadius: 8,
-                background: '#fff',
-            }}>
-                <Search size={14} color="#667085" />
+        <div ref={containerRef} className={styles.wrap}>
+            <div className={styles.inputBox}>
+                <Search size={14} style={{ color: 'var(--crm-text-muted)' }} />
                 <input
                     type="text"
                     value={query}
@@ -202,52 +205,42 @@ export default function PropertySearchInput({ selected, onSelect, warnIfNoCoords
                     onFocus={() => hits.length > 0 && setOpen(true)}
                     placeholder="Search property by name or ID…"
                     autoComplete="off"
-                    style={{
-                        flex: 1, padding: '10px 0', border: 0, outline: 'none',
-                        fontSize: 13, background: 'transparent',
-                    }}
+                    className={styles.input}
                 />
                 {searching && (
-                    <span style={{ fontSize: 10, color: '#667085' }}>Searching…</span>
+                    <span style={{ fontSize: 10, color: 'var(--crm-text-muted)' }}>Searching…</span>
                 )}
             </div>
             {open && hits.length > 0 && (
-                <ul style={{
-                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-                    background: '#fff', border: '1px solid #d0d5dd', borderRadius: 8,
-                    boxShadow: '0 8px 24px rgba(16,24,40,0.12)',
-                    listStyle: 'none', margin: 0, padding: 4, zIndex: 50,
-                    maxHeight: 280, overflowY: 'auto',
-                }}>
+                <ul className={styles.dropdown}>
                     {hits.map(h => {
                         const hasCoords = h.latitude != null && h.longitude != null
                         return (
                             <li
                                 key={`${h.kind}-${h.id}`}
                                 onClick={() => choose(h)}
-                                style={{
-                                    padding: '10px 12px', borderRadius: 6, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'flex-start', gap: 8,
-                                }}
-                                onMouseEnter={(e) => { (e.target as HTMLElement).style.background = '#f0fdf4' }}
-                                onMouseLeave={(e) => { (e.target as HTMLElement).style.background = 'transparent' }}
+                                className={styles.hit}
                             >
                                 <span style={{
                                     fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                    background: h.kind === 'project' ? '#dbeafe' : '#dcfce7',
-                                    color: h.kind === 'project' ? '#1e40af' : '#166534',
+                                    background: h.kind === 'project' ? 'rgba(59,130,246,0.18)' : 'rgba(34,197,94,0.18)',
+                                    color: h.kind === 'project' ? '#60a5fa' : '#4ade80',
                                     textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2,
                                 }}>{h.kind}</span>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#101828', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <div style={{
+                                        fontSize: 13, fontWeight: 600,
+                                        color: 'var(--crm-text-primary)',
+                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                    }}>
                                         {h.title}
                                     </div>
-                                    <div style={{ fontSize: 11, color: '#667085', marginTop: 2 }}>
+                                    <div style={{ fontSize: 11, color: 'var(--crm-text-muted)', marginTop: 2 }}>
                                         #{h.short_id} · {[h.location, h.city].filter(Boolean).join(', ') || 'Location not set'}
                                     </div>
                                 </div>
                                 {!hasCoords && (
-                                    <span title="No coordinates" style={{ flexShrink: 0, color: '#B42318', marginTop: 4 }}>
+                                    <span title="No coordinates" style={{ flexShrink: 0, color: '#f87171', marginTop: 4 }}>
                                         <AlertCircle size={13} />
                                     </span>
                                 )}
