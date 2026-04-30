@@ -140,6 +140,27 @@ export async function PATCH(request: NextRequest) {
 
             if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+            // Mirror the clock-in coordinates into employee_locations so the
+            // team map shows web users too. Mobile users keep updating this
+            // row continuously via location-tracker; web users get a static
+            // pin (one write at clock-in) tagged device='web' so the map
+            // labels them "last seen on web at HH:MM" instead of treating
+            // them as live mobile tracks.
+            if (typeof lat === 'number' && typeof lng === 'number' && (lat !== 0 || lng !== 0)) {
+                await supabase
+                    .from('employee_locations')
+                    .upsert(
+                        {
+                            employee_id,
+                            lat,
+                            lng,
+                            device: 'web',
+                            updated_at: now.toISOString(),
+                        },
+                        { onConflict: 'employee_id' }
+                    )
+            }
+
             // On clock-in, auto-assign any unassigned leads to this agent (fire and forget)
             assignUnassignedLeadsOnClockIn(employee_id).catch(err =>
                 console.error('Auto-assign on clock-in failed:', err)
