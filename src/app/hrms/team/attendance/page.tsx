@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Clock } from 'lucide-react'
+import { Clock, Calendar } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import styles from '../../hrms.module.css'
 
 interface AttRecord {
@@ -44,13 +45,19 @@ export default function TeamAttendancePage() {
     const [employees, setEmployees] = useState<Employee[]>([])
     const [loading, setLoading] = useState(true)
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    // Holiday for the selected date, if any. When set we skip the
+    // absent-synthesis entirely and show a single "Public holiday" banner.
+    const [holiday, setHoliday] = useState<{ name: string; type: string } | null>(null)
 
     const load = useCallback(async () => {
         setLoading(true)
+        setHoliday(null)
         try {
-            const [attRes, empRes] = await Promise.all([
+            const supabase = createClient()
+            const [attRes, empRes, holidayRes] = await Promise.all([
                 fetch(`/api/crm/hrm/attendance?date=${date}`),
                 fetch('/api/crm/hrm/employees'),
+                supabase.from('hrm_holidays').select('name, type').eq('date', date).maybeSingle(),
             ])
             if (attRes.ok) {
                 const d = await attRes.json()
@@ -60,6 +67,7 @@ export default function TeamAttendancePage() {
                 const d = await empRes.json()
                 setEmployees(d.employees || [])
             }
+            if (holidayRes.data) setHoliday(holidayRes.data as { name: string; type: string })
         } catch (e) {
             console.warn('TeamAttendance load failed', e)
         }
@@ -72,21 +80,46 @@ export default function TeamAttendancePage() {
     // roster without an attendance row for this working day is synthesised as
     // 'absent' so the CEO sees who is actually missing — the previous build
     // hid them entirely, which made the "present today" count silently lie.
+    //
+    // Super-admins are excluded from this list entirely. They run the agency,
+    // they don't punch a clock — showing them as 'Absent' every day is just
+    // noise. If they ever do clock in (e.g. for testing), their row still
+    // doesn't surface here. Also dedupe by employee id in case the
+    // /employees endpoint returns duplicates from a join.
     const merged: AttRecord[] = useMemo(() => {
-        const workingDay = isWorkingDay(date)
+        // A 'working day' here means: it's not Sunday AND it's not a public
+        // holiday in hrm_holidays. On non-working days we surface 'off'
+        // instead of 'absent' so nobody gets unfairly flagged.
+        const workingDay = isWorkingDay(date) && !holiday
         const byEmpId = new Map<string, AttRecord>()
         records.forEach(r => {
             const empId = r.employee?.id
             if (empId) byEmpId.set(empId, r)
         })
 
+        // Dedupe by both id AND name. The employees endpoint occasionally
+        // returns the same person twice (data drift in profiles or a
+        // joined-twice query); rendering the same name as two 'Absent'
+        // rows looks broken. Filter out super_admins entirely — they run
+        // the agency, they don't punch a clock.
+        const seenIds = new Set<string>()
+        const seenNames = new Set<string>()
         return employees
+            .filter(emp => {
+                if (emp.role === 'super_admin') return false
+                if (seenIds.has(emp.id)) return false
+                const nameKey = (emp.full_name || '').trim().toLowerCase()
+                if (nameKey && seenNames.has(nameKey)) return false
+                seenIds.add(emp.id)
+                if (nameKey) seenNames.add(nameKey)
+                return true
+            })
             .map((emp): AttRecord => {
                 const existing = byEmpId.get(emp.id)
                 if (existing) return existing
                 // No record for this employee on this day:
-                //   working day → mark absent so it shows up in the audit
-                //   non-working day → mark with a neutral 'off' status
+                //   working day      → mark absent so it shows up in the audit
+                //   weekend/holiday  → mark with a neutral 'off' status
                 return {
                     date,
                     status: workingDay ? 'absent' : 'off',
@@ -102,7 +135,7 @@ export default function TeamAttendancePage() {
                 if (pa !== pb) return pa - pb
                 return (a.employee?.full_name ?? '').localeCompare(b.employee?.full_name ?? '')
             })
-    }, [records, employees, date])
+    }, [records, employees, date, holiday])
 
     const presentCount = merged.filter(r => ['present', 'work_from_home', 'late', 'half_day'].includes(r.status)).length
     const absentCount = merged.filter(r => r.status === 'absent').length
@@ -114,11 +147,19 @@ export default function TeamAttendancePage() {
                 <div>
                     <div className={styles.pageTitle}>Team Attendance</div>
                     <div className={styles.pageSubtitle}>
-                        {presentCount}/{totalCount} present
-                        {absentCount > 0 && (
-                            <span style={{ marginLeft: '0.75rem', color: '#dc2626', fontWeight: 600 }}>
-                                · {absentCount} absent
+                        {holiday ? (
+                            <span style={{ color: '#7c3aed', fontWeight: 600 }}>
+                                Public holiday — {holiday.name}
                             </span>
+                        ) : (
+                            <>
+                                {presentCount}/{totalCount} present
+                                {absentCount > 0 && (
+                                    <span style={{ marginLeft: '0.75rem', color: '#dc2626', fontWeight: 600 }}>
+                                        · {absentCount} absent
+                                    </span>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
@@ -131,6 +172,24 @@ export default function TeamAttendancePage() {
                     max={new Date().toISOString().split('T')[0]}
                 />
             </div>
+
+            {holiday && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.75rem 1rem', marginBottom: '1rem',
+                    background: 'rgba(139,92,246,0.10)',
+                    border: '1px solid rgba(139,92,246,0.25)',
+                    borderRadius: '0.5rem',
+                }}>
+                    <Calendar size={16} style={{ color: '#7c3aed' }} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#7c3aed' }}>
+                        {holiday.name}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--h-text-muted)' }}>
+                        — office closed, attendance not required.
+                    </span>
+                </div>
+            )}
 
             <div className={styles.card} style={{ padding: 0, overflow: 'hidden' }}>
                 {loading ? (
