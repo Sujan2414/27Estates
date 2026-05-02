@@ -33,11 +33,21 @@ const STATUS_PRIORITY: Record<string, number> = {
     absent: 0, late: 1, half_day: 2, work_from_home: 3, present: 4,
 }
 
-// Mon–Sat work week (default Indian office). Sunday (0) = day off, no absence
-// recorded. Adjust here if hrm_work_settings ever exposes a working-days array.
+// Org schedule: Mon–Fri full day, Saturday half-day (still expected to
+// attend, just shorter), Sunday off, public holidays off. Saturday counts
+// as a working day for absent-tracking purposes — only Sunday + listed
+// holidays exempt employees from being marked absent.
 function isWorkingDay(dateStr: string): boolean {
     const d = new Date(dateStr + 'T00:00:00')
-    return d.getDay() !== 0
+    return d.getDay() !== 0 // Sunday = 0
+}
+function isSaturday(dateStr: string): boolean {
+    const d = new Date(dateStr + 'T00:00:00')
+    return d.getDay() === 6
+}
+function isSunday(dateStr: string): boolean {
+    const d = new Date(dateStr + 'T00:00:00')
+    return d.getDay() === 0
 }
 
 export default function TeamAttendancePage() {
@@ -151,9 +161,18 @@ export default function TeamAttendancePage() {
                             <span style={{ color: '#7c3aed', fontWeight: 600 }}>
                                 Public holiday — {holiday.name}
                             </span>
+                        ) : isSunday(date) ? (
+                            <span style={{ color: '#6b7280', fontWeight: 600 }}>
+                                Sunday — office closed
+                            </span>
                         ) : (
                             <>
                                 {presentCount}/{totalCount} present
+                                {isSaturday(date) && (
+                                    <span style={{ marginLeft: '0.5rem', color: '#7c3aed', fontWeight: 600 }}>
+                                        · Saturday (half day)
+                                    </span>
+                                )}
                                 {absentCount > 0 && (
                                     <span style={{ marginLeft: '0.75rem', color: '#dc2626', fontWeight: 600 }}>
                                         · {absentCount} absent
@@ -173,7 +192,10 @@ export default function TeamAttendancePage() {
                 />
             </div>
 
-            {holiday && (
+            {/* Day-context banner — holiday > Sunday > Saturday > nothing.
+                Holiday + Sunday read as 'office closed' (no absence flagged).
+                Saturday is still a working day, just half. */}
+            {holiday ? (
                 <div style={{
                     display: 'flex', alignItems: 'center', gap: '0.5rem',
                     padding: '0.75rem 1rem', marginBottom: '1rem',
@@ -189,7 +211,39 @@ export default function TeamAttendancePage() {
                         — office closed, attendance not required.
                     </span>
                 </div>
-            )}
+            ) : isSunday(date) ? (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.75rem 1rem', marginBottom: '1rem',
+                    background: 'rgba(107,114,128,0.10)',
+                    border: '1px solid rgba(107,114,128,0.25)',
+                    borderRadius: '0.5rem',
+                }}>
+                    <Calendar size={16} style={{ color: '#6b7280' }} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#6b7280' }}>
+                        Sunday
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--h-text-muted)' }}>
+                        — office closed, attendance not required.
+                    </span>
+                </div>
+            ) : isSaturday(date) ? (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.75rem 1rem', marginBottom: '1rem',
+                    background: 'rgba(124,58,237,0.08)',
+                    border: '1px solid rgba(124,58,237,0.20)',
+                    borderRadius: '0.5rem',
+                }}>
+                    <Calendar size={16} style={{ color: '#7c3aed' }} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#7c3aed' }}>
+                        Saturday — half day
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--h-text-muted)' }}>
+                        — staff still expected to attend.
+                    </span>
+                </div>
+            ) : null}
 
             <div className={styles.card} style={{ padding: 0, overflow: 'hidden' }}>
                 {loading ? (
