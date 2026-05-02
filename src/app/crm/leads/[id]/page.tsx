@@ -170,7 +170,16 @@ export default function LeadDetailPage() {
                 possession: lp.possession || '',
             })
         }
-        if (visitsRes.ok) { const d = await visitsRes.json(); setVisits(d.visits || []) }
+        if (visitsRes.ok) {
+            const d = await visitsRes.json()
+            setVisits(d.visits || [])
+        } else {
+            // Don't silently zero the count — surface the error in the
+            // console so we can see when the API is actually broken vs
+            // when the lead just genuinely has no visits.
+            const txt = await visitsRes.text().catch(() => '')
+            console.warn('[lead-detail] /api/crm/site-visits failed', visitsRes.status, txt)
+        }
         setLoading(false)
     }
     useEffect(() => { fetchLead() }, [id])
