@@ -311,6 +311,14 @@ export default function LeadDetailPage() {
             ...newVisit,
             property_id: newVisitProperty.kind === 'property' ? newVisitProperty.id : null,
             project_id: newVisitProperty.kind === 'project' ? newVisitProperty.id : null,
+            // "Others" path — listing isn't in the DB. Send name + lat/lng
+            // so GPS arrival tracking still works and the visit displays a
+            // custom location label.
+            ...(newVisitProperty.kind === 'custom' ? {
+                custom_location_name: newVisitProperty.title,
+                custom_location_lat:  newVisitProperty.latitude,
+                custom_location_lng:  newVisitProperty.longitude,
+            } : {}),
             // created_by is a UUID FK on lead_activities; previously we sent
             // the literal string 'admin' which the activities insert silently
             // dropped. Pass the current user's id when known.

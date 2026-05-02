@@ -79,18 +79,30 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'lead_id and visit_date are required' }, { status: 400 })
     }
 
+    // Build insert payload conditionally — the custom_location_* columns
+    // only exist after migration 20260430_site_visits_custom_location.sql.
+    // Sending those keys when the columns don't exist would 500 the entire
+    // INSERT with a 42703 error. So we omit them entirely unless the caller
+    // is using the "Others" path AND has supplied a name + coords.
+    const insertRow: Record<string, any> = {
+        lead_id: body.lead_id,
+        property_id: body.property_id || null,
+        project_id: body.project_id || null,
+        agent_id: body.assigned_to || body.agent_id || null,
+        visit_date: body.visit_date,
+        visit_time: body.visit_time || null,
+        status: 'scheduled',
+        notes: body.notes || null,
+    }
+    if (body.custom_location_name && typeof body.custom_location_lat === 'number' && typeof body.custom_location_lng === 'number') {
+        insertRow.custom_location_name = body.custom_location_name
+        insertRow.custom_location_lat  = body.custom_location_lat
+        insertRow.custom_location_lng  = body.custom_location_lng
+    }
+
     const { data, error } = await sb
         .from('site_visits')
-        .insert({
-            lead_id: body.lead_id,
-            property_id: body.property_id || null,
-            project_id: body.project_id || null,
-            agent_id: body.assigned_to || body.agent_id || null,
-            visit_date: body.visit_date,
-            visit_time: body.visit_time || null,
-            status: 'scheduled',
-            notes: body.notes || null,
-        })
+        .insert(insertRow)
         .select()
         .single()
 
