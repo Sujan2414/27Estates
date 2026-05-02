@@ -64,18 +64,32 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    // Log as lead activity
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-    await supabase.from('lead_activities').insert({
-        lead_id: body.lead_id,
-        type: 'site_visit',
-        title: `Site visit scheduled for ${body.visit_date}${body.visit_time ? ' at ' + body.visit_time : ''}`,
-        metadata: { visit_id: data.id },
-        created_by: body.created_by || 'admin',
-    })
+    // Log as lead activity. Non-fatal: if this fails (FK on created_by,
+    // missing column, etc.) the visit is still saved successfully — we
+    // just lose the timeline entry. Previously a failure here was hidden
+    // and the activities row was silently lost.
+    try {
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+        // created_by is a UUID FK on profiles. If the caller didn't send a
+        // valid UUID we omit it rather than send 'admin' (which used to
+        // make the insert silently fail).
+        const isUuid = typeof body.created_by === 'string'
+            && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.created_by)
+        const activityRow: Record<string, any> = {
+            lead_id: body.lead_id,
+            type: 'site_visit',
+            title: `Site visit scheduled for ${body.visit_date}${body.visit_time ? ' at ' + body.visit_time : ''}`,
+            metadata: { visit_id: data.id },
+        }
+        if (isUuid) activityRow.created_by = body.created_by
+        const { error: actErr } = await supabase.from('lead_activities').insert(activityRow)
+        if (actErr) console.warn('[site-visits] lead_activities insert failed:', actErr.message)
+    } catch (e) {
+        console.warn('[site-visits] lead_activities insert threw:', e)
+    }
 
     return NextResponse.json({ visit: data }, { status: 201 })
 }

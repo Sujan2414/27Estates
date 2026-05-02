@@ -311,12 +311,24 @@ export default function LeadDetailPage() {
             ...newVisit,
             property_id: newVisitProperty.kind === 'property' ? newVisitProperty.id : null,
             project_id: newVisitProperty.kind === 'project' ? newVisitProperty.id : null,
+            // created_by is a UUID FK on lead_activities; previously we sent
+            // the literal string 'admin' which the activities insert silently
+            // dropped. Pass the current user's id when known.
+            created_by: crmUser?.id ?? null,
         }
-        await fetch('/api/crm/site-visits', {
+        const res = await fetch('/api/crm/site-visits', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         })
+        // Previously this handler awaited the fetch and ignored the result —
+        // any API failure (RLS, FK violation, validation) silently closed
+        // the form and the user thought the visit was saved when it wasn't.
+        if (!res.ok) {
+            const j = await res.json().catch(() => null)
+            alert(`Could not schedule the visit: ${j?.error || res.statusText}`)
+            return
+        }
         setShowAddVisit(false)
         setNewVisit({ visit_date: '', visit_time: '', notes: '', assigned_to: '' })
         setNewVisitProperty(null)
