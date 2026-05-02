@@ -9,6 +9,18 @@ const getSupabase = () => createClient(
 ) as any
 
 // GET /api/crm/site-visits?lead_id=xxx or ?upcoming=true
+//
+// CRITICAL: this endpoint had `agent:agent_id (full_name, avatar_url)` in the
+// embedded select — but `site_visits.agent_id` has NO foreign-key constraint
+// to `profiles` in the schema. PostgREST returns PGRST200 on any embed it
+// can't resolve via FK, which 500s the WHOLE query. The lead-detail page
+// then silently shows "Site Visits (0)" even though the row was just
+// inserted (visible in activity log). This was the client's exact complaint:
+// "shows scheduled in activity logs but we can't see it anywhere".
+//
+// Defensive rewrite: fetch the raw site_visits rows, then batch-resolve the
+// joined data via separate queries. A few extra round trips, but resilient
+// to schema gaps and per-table RLS.
 export async function GET(request: NextRequest) {
     const sb = getSupabase()
     const { searchParams } = new URL(request.url)
@@ -18,13 +30,7 @@ export async function GET(request: NextRequest) {
 
     let query = sb
         .from('site_visits')
-        .select(`
-            *,
-            leads (name, phone, email),
-            properties (title, property_id),
-            projects (project_name),
-            agent:agent_id (full_name, avatar_url)
-        `)
+        .select('*')
         .order('visit_date', { ascending: true })
         .order('visit_time', { ascending: true })
 
@@ -32,10 +38,36 @@ export async function GET(request: NextRequest) {
     if (upcoming) query = query.gte('visit_date', new Date().toISOString().split('T')[0]).eq('status', 'scheduled')
     if (date) query = query.eq('visit_date', date)
 
-    const { data, error } = await query.limit(100)
+    const { data: rows, error } = await query.limit(100)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    return NextResponse.json({ visits: data || [] })
+    const visits = rows || []
+    const leadIds  = [...new Set(visits.map((v: any) => v.lead_id).filter(Boolean))]
+    const propIds  = [...new Set(visits.map((v: any) => v.property_id).filter(Boolean))]
+    const projIds  = [...new Set(visits.map((v: any) => v.project_id).filter(Boolean))]
+    const agentIds = [...new Set(visits.map((v: any) => v.agent_id).filter(Boolean))]
+
+    const [leadsRes, propsRes, projsRes, agentsRes] = await Promise.all([
+        leadIds.length  ? sb.from('leads').select('id, name, phone, email').in('id', leadIds)        : Promise.resolve({ data: [], error: null }),
+        propIds.length  ? sb.from('properties').select('id, title, property_id').in('id', propIds)   : Promise.resolve({ data: [], error: null }),
+        projIds.length  ? sb.from('projects').select('id, project_name').in('id', projIds)          : Promise.resolve({ data: [], error: null }),
+        agentIds.length ? sb.from('profiles').select('id, full_name, avatar_url').in('id', agentIds): Promise.resolve({ data: [], error: null }),
+    ])
+
+    const leadMap  = new Map((leadsRes.data  ?? []).map((r: any) => [r.id, r]))
+    const propMap  = new Map((propsRes.data  ?? []).map((r: any) => [r.id, r]))
+    const projMap  = new Map((projsRes.data  ?? []).map((r: any) => [r.id, r]))
+    const agentMap = new Map((agentsRes.data ?? []).map((r: any) => [r.id, r]))
+
+    const enriched = visits.map((v: any) => ({
+        ...v,
+        leads:      v.lead_id     ? leadMap.get(v.lead_id)     ?? null : null,
+        properties: v.property_id ? propMap.get(v.property_id) ?? null : null,
+        projects:   v.project_id  ? projMap.get(v.project_id)  ?? null : null,
+        agent:      v.agent_id    ? agentMap.get(v.agent_id)   ?? null : null,
+    }))
+
+    return NextResponse.json({ visits: enriched })
 }
 
 // POST /api/crm/site-visits
