@@ -633,9 +633,9 @@ const Dashboard = () => {
 
             {/* ===== DESKTOP HEADER ===== */}
             <div className={styles.header}>
-                <h1 className={styles.pageTitle}>
+                <h2 className={styles.pageTitle}>
                     Hi, {profileName || user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'Guest'} 👋
-                </h1>
+                </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
                         onClick={() => setShowPostForm(!showPostForm)}
