@@ -26,11 +26,22 @@ const inter = Inter({
 export const metadata: Metadata = {
     metadataBase: new URL('https://www.27estates.com'),
     title: {
-        default: "27 Estates | Own the Extraordinary",
-        template: "%s | 27 Estates"
+        default:
+            'Luxury Real Estate in Bangalore | Premium Apartments, Villas & New Project Launches | 27 Estates',
+        template: '%s | 27 Estates',
     },
-    description: "Discover premium properties that redefine luxury living. 27 Estates - your trusted partner for extraordinary real estate in India's most prime locations.", // Modified
-    keywords: ["real estate", "luxury homes", "properties", "India", "Bangalore", "premium apartments", "villas", "buy home", "rent home"], // Added India, kept Bangalore in keywords
+    description:
+        "Discover premium apartments, villas, and new project launches in Bangalore from 27 Estates — Bangalore's trusted luxury real estate advisory. Explore Whitefield, Sarjapur Road, Koramangala & more.",
+    keywords: [
+        'luxury real estate bangalore',
+        'premium apartments bangalore',
+        'luxury villas bangalore',
+        'new project launches bangalore',
+        'real estate advisory bangalore',
+        'property consultant bangalore',
+        'whitefield apartments',
+        'sarjapur road properties',
+    ],
     authors: [{ name: "27 Estates" }],
     creator: "27 Estates",
     publisher: "27 Estates",
@@ -47,8 +58,9 @@ export const metadata: Metadata = {
         'apple-itunes-app': 'app-id=6763353231',
     },
     openGraph: {
-        title: "27 Estates | Own the Extraordinary",
-        description: "Discover premium properties that redefine luxury living in India's most prime locations.", // Modified
+        title: 'Luxury Real Estate in Bangalore | Premium Apartments, Villas & New Launches | 27 Estates',
+        description:
+            "Discover premium apartments, villas, and new project launches in Bangalore from 27 Estates — Bangalore's trusted luxury real estate advisory.",
         url: 'https://www.27estates.com',
         siteName: '27 Estates',
         images: [
@@ -56,7 +68,7 @@ export const metadata: Metadata = {
                 url: '/og-image.jpg',
                 width: 1200,
                 height: 630,
-                alt: '27 Estates - Luxury Real Estate',
+                alt: '27 Estates - Luxury Real Estate in Bangalore',
             },
         ],
         locale: 'en_IN',
@@ -64,8 +76,9 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: 'summary_large_image',
-        title: "27 Estates | Own the Extraordinary",
-        description: "Discover premium properties that redefine luxury living in India's most prime locations.", // Modified
+        title: 'Luxury Real Estate in Bangalore | 27 Estates',
+        description:
+            'Discover premium apartments, villas, and new project launches in Bangalore from 27 Estates.',
         images: ['/og-image.jpg'],
     },
     icons: {
