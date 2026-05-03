@@ -8,6 +8,8 @@ import "./globals.css";
 import StickyViewListingsBtn from '@/components/ui/StickyViewListingsBtn';
 import ChatWidget from '@/components/ChatWidget';
 import PageTracker from '@/components/PageTracker';
+import JsonLd from '@/components/seo/JsonLd';
+import { buildOrganizationSchema, buildWebSiteSchema } from '@/lib/seo/schema';
 
 const playfair = Playfair_Display({
     subsets: ["latin"],
@@ -110,51 +112,8 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className={`${playfair.variable} ${inter.variable}`}>
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{
-                        __html: JSON.stringify({
-                            "@context": "https://schema.org",
-                            "@type": "RealEstateAgent",
-                            "name": "27 Estates",
-                            "url": "https://www.27estates.com",
-                            "logo": "https://www.27estates.com/og-image.jpg",
-                            "image": "https://www.27estates.com/og-image.jpg",
-                            "description": "Discover premium properties that redefine luxury living. 27 Estates - your trusted partner for extraordinary real estate in India's most prime locations.",
-                            "address": {
-                                "@type": "PostalAddress",
-                                "streetAddress": "83, Prestige Copper Arch, Infantry Road",
-                                "addressLocality": "Bangalore",
-                                "addressRegion": "Karnataka",
-                                "postalCode": "560001",
-                                "addressCountry": "IN"
-                            },
-                            "telephone": "+918095799929",
-                            "email": "connect@27estates.com",
-                            "sameAs": [
-                                "https://www.linkedin.com/company/27estates/",
-                                "https://www.instagram.com/27estates/",
-                                "https://www.facebook.com/27estates/"
-                            ]
-                        })
-                    }}
-                />
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{
-                        __html: JSON.stringify({
-                            "@context": "https://schema.org",
-                            "@type": "WebSite",
-                            "name": "27 Estates",
-                            "url": "https://www.27estates.com",
-                            "potentialAction": {
-                                "@type": "SearchAction",
-                                "target": "https://www.27estates.com/properties/search?q={search_term_string}",
-                                "query-input": "required name=search_term_string"
-                            }
-                        })
-                    }}
-                />
+                <JsonLd data={buildOrganizationSchema()} />
+                <JsonLd data={buildWebSiteSchema()} />
                 <AuthProvider>
                     <SmoothScroll>
                         <PageTransitionLayout>
