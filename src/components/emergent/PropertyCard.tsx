@@ -106,12 +106,14 @@ const PropertyCard = ({ property, isBookmarked: initialBookmarked, onBookmarkCha
     };
 
     const handleCardClick = () => {
-        // Check if it looks like a project or has is_project flag (if we add it to the interface)
-        // Since we are adding is_project to the object passed in via Dashboard, we can cast or check property['is_project']
+        // Prefer slug for SEO-friendly URLs; fall back to UUID id if no slug.
+        // The detail routes accept either, but slug URLs carry the keyword
+        // signal and are what the sitemap emits.
+        const handle = (property.slug as string | null | undefined) || property.id;
         if ((property as any).is_project) {
-            router.push(`/projects/${property.id}`);
+            router.push(`/projects/${handle}`);
         } else {
-            router.push(`/properties/${property.id}`);
+            router.push(`/properties/${handle}`);
         }
     };
 

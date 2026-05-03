@@ -10,7 +10,7 @@ export default async function HomePage() {
     // Fetch featured projects for SEO
     const { data: projects } = await supabase
         .from('projects')
-        .select('id, project_name, location, city, category, developer_name, min_price, max_price, bhk_options, display_order')
+        .select('id, slug, project_name, location, city, category, developer_name, min_price, max_price, bhk_options, display_order')
         .order('display_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(20);
@@ -18,7 +18,7 @@ export default async function HomePage() {
     // Fetch featured properties for SEO
     const { data: properties } = await supabase
         .from('properties')
-        .select('id, title, location, city, category, price, price_text, bedrooms, sqft, property_type')
+        .select('id, slug, title, location, city, category, price, price_text, bedrooms, sqft, property_type')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -49,7 +49,7 @@ export default async function HomePage() {
                         <ul>
                             {projects.map(p => (
                                 <li key={p.id}>
-                                    <a href={`/projects/${p.id}`}>
+                                    <a href={`/projects/${p.slug || p.id}`}>
                                         {p.project_name} — {p.category} in {p.location || p.city}
                                         {p.developer_name ? ` by ${p.developer_name}` : ''}
                                         {p.min_price ? ` — Starting ${formatPrice(p.min_price)}` : ''}
@@ -67,7 +67,7 @@ export default async function HomePage() {
                         <ul>
                             {properties.map(p => (
                                 <li key={p.id}>
-                                    <a href={`/properties/${p.id}`}>
+                                    <a href={`/properties/${p.slug || p.id}`}>
                                         {p.title} — {p.category} for {p.property_type} in {p.location || p.city}
                                         {p.price ? ` — ${p.price_text || formatPrice(p.price)}` : ''}
                                         {p.bedrooms ? ` — ${p.bedrooms} BHK` : ''}

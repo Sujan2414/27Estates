@@ -9,6 +9,7 @@ import styles from './ProjectCard.module.css';
 
 interface ProjectCardProps {
     id: string;
+    slug?: string | null;
     project_name: string;
     location: string;
     city?: string | null;
@@ -26,6 +27,7 @@ interface ProjectCardProps {
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
     id,
+    slug,
     project_name,
     location,
     city,
@@ -102,7 +104,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
     return (
         <div className={styles.cardWrapper}>
-            <Link href={`/projects/${id}`} className={styles.card}>
+            <Link href={`/projects/${slug || id}`} className={styles.card}>
                 {/* Image */}
                 <div className={styles.imageContainer}>
                     <img

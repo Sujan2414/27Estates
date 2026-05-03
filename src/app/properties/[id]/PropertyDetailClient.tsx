@@ -804,7 +804,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                             return (
                                 <a
                                     key={p.id}
-                                    href={`/properties/${p.id}`}
+                                    href={`/properties/${(p as { slug?: string | null }).slug || p.id}`}
                                     style={{
                                         display: 'flex', gap: '1rem', background: '#fff',
                                         borderRadius: '14px', border: '1px solid #e8e8e8',

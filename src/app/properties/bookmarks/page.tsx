@@ -58,7 +58,7 @@ const PropertyBookmarkCard = ({ property, onBookmarkChange }: { property: Proper
 
     return (
         <div className={styles.propCard}>
-            <Link href={`/properties/${property.id}`} className={styles.propCardLink}>
+            <Link href={`/properties/${(property as { slug?: string | null }).slug || property.id}`} className={styles.propCardLink}>
                 <div className={styles.propImageWrap}>
                     <img
                         src={image}

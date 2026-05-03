@@ -172,6 +172,7 @@ export default async function TopLevelCityCategoryPage({ params }: Props) {
                                             <ProjectCard
                                                 key={p.id}
                                                 id={p.id}
+                                                slug={(p as { slug?: string | null }).slug ?? null}
                                                 project_name={p.project_name}
                                                 location={p.location || ''}
                                                 city={p.city}
