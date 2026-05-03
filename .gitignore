@@ -65,6 +65,10 @@ stdout.txt
 .vscode/
 .idea/
 
+# Claude Code local state (worktrees, scheduled tasks)
+/.claude/worktrees/
+/.claude/scheduled_tasks.lock
+
 # Supabase local (optional - uncomment if you don't want to track)
 # /supabase/
 
