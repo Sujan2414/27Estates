@@ -146,14 +146,14 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
 
     const fetchPropertyData = async () => {
         try {
-            const propertyId = resolvedParams?.id || '';
+            const handle = resolvedParams?.id || '';
+            const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-            // Fetch property from Supabase
-            const { data: propertyData, error: propError } = await supabase
-                .from('properties')
-                .select('*')
-                .eq('id', propertyId)
-                .single();
+            // Fetch property from Supabase by id or slug
+            const baseQuery = supabase.from('properties').select('*');
+            const { data: propertyData, error: propError } = UUID_RE.test(handle)
+                ? await baseQuery.eq('id', handle).single()
+                : await baseQuery.eq('slug', handle).single();
 
             if (propError || !propertyData) {
                 setLoading(false);

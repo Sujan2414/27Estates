@@ -225,13 +225,13 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
 
     const fetchProjectData = async () => {
         try {
-            const projectId = resolvedParams?.id || '';
+            const handle = resolvedParams?.id || '';
+            const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-            const { data: projectData, error: projError } = await supabase
-                .from('projects')
-                .select('*')
-                .eq('id', projectId)
-                .single();
+            const baseQuery = supabase.from('projects').select('*');
+            const { data: projectData, error: projError } = UUID_RE.test(handle)
+                ? await baseQuery.eq('id', handle).single()
+                : await baseQuery.eq('slug', handle).single();
 
             if (projError || !projectData) {
                 setLoading(false);
