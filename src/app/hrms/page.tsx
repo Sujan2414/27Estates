@@ -344,6 +344,9 @@ export default function MyDayPage() {
     const [elapsed, setElapsed]       = useState('')
     const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([])
     const [allTasks, setAllTasks]     = useState<Task[]>([])
+    const [locRefreshing, setLocRefreshing] = useState(false)
+    const [locRefreshedAt, setLocRefreshedAt] = useState<Date | null>(null)
+    const [locDeniedToast, setLocDeniedToast] = useState(false)
 
     const isSuperAdmin = userRole === 'super_admin'
 
@@ -415,6 +418,56 @@ export default function MyDayPage() {
         } finally { setChecking(false) }
     }
 
+    // Web users only get a single static pin (one write at clock-in) unless
+    // we refresh it periodically. Browsers won't track in the background, so
+    // we bump the location either on a manual click or whenever the tab
+    // becomes visible after >10 min idle. Geolocation prompts that get
+    // denied surface a small toast pointing at the browser permission UI —
+    // silent failure is the reason web pins were going stale.
+    const refreshLocation = useCallback(async (silent = false) => {
+        if (!userId) return
+        if (!navigator.geolocation) {
+            if (!silent) setLocDeniedToast(true)
+            return
+        }
+        if (!silent) setLocRefreshing(true)
+        navigator.geolocation.getCurrentPosition(
+            async pos => {
+                const { latitude: lat, longitude: lng } = pos.coords
+                try {
+                    await fetch('/api/crm/hrm/attendance', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'update_location', employee_id: userId, lat, lng }),
+                    })
+                    setLocRefreshedAt(new Date())
+                } catch { /* network — fail quietly */ }
+                finally { setLocRefreshing(false) }
+            },
+            err => {
+                setLocRefreshing(false)
+                if (err.code === err.PERMISSION_DENIED && !silent) setLocDeniedToast(true)
+            },
+            { timeout: 8000, maximumAge: 60_000 }
+        )
+    }, [userId])
+
+    // Auto-refresh on tab focus while clocked in. Avoids the user's pin
+    // showing as "stale" all afternoon just because they were heads-down
+    // in another tab.
+    useEffect(() => {
+        if (!userId || !attendance?.check_in || attendance?.check_out) return
+        const onVis = () => {
+            if (document.visibilityState !== 'visible') return
+            const last = locRefreshedAt?.getTime() ?? 0
+            if (Date.now() - last < 10 * 60_000) return
+            refreshLocation(true)
+        }
+        document.addEventListener('visibilitychange', onVis)
+        onVis()
+        return () => document.removeEventListener('visibilitychange', onVis)
+    }, [userId, attendance?.check_in, attendance?.check_out, locRefreshedAt, refreshLocation])
+
     const handleCheckOut = async () => {
         if (!userId || checking) return
         setChecking(true)
@@ -431,6 +484,14 @@ export default function MyDayPage() {
             if (res.ok) await load(userId)
         } finally { setChecking(false) }
     }
+
+    // Auto-dismiss the geolocation-denied toast after 6s. The toast also
+    // clears manually when the user closes it.
+    useEffect(() => {
+        if (!locDeniedToast) return
+        const id = setTimeout(() => setLocDeniedToast(false), 6000)
+        return () => clearTimeout(id)
+    }, [locDeniedToast])
 
     // Live elapsed timer — ticks every second while clocked in but not out
     useEffect(() => {
@@ -462,6 +523,34 @@ export default function MyDayPage() {
 
     return (
         <div>
+            {/* Geolocation-denied toast — shown when the browser permission
+                is refused. The team map can't show this user otherwise, so
+                surface a clear nudge to fix the permission instead of failing
+                silently. */}
+            {locDeniedToast && (
+                <div style={{
+                    position: 'fixed', top: 16, right: 16, zIndex: 1000,
+                    background: '#1F2937', color: '#fff',
+                    padding: '0.75rem 1rem', borderRadius: 10,
+                    display: 'flex', alignItems: 'flex-start', gap: 10,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+                    maxWidth: 360, fontSize: '0.82rem', lineHeight: 1.4,
+                }}>
+                    <MapPin size={16} style={{ marginTop: 2, color: '#FCA5A5', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, marginBottom: 2 }}>Location blocked</div>
+                        <div style={{ opacity: 0.85 }}>
+                            Your browser denied location access. Click the lock icon in the address bar → allow Location to appear on the team map.
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setLocDeniedToast(false)}
+                        aria-label="Dismiss"
+                        style={{ background: 'transparent', border: 0, color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}
+                    >×</button>
+                </div>
+            )}
+
             {/* ── Check-in Hero (hidden for super_admin) ── */}
             {!isSuperAdmin && (
             <div style={{
@@ -544,14 +633,29 @@ export default function MyDayPage() {
                                 </button>
                             </>
                         ) : !hasCheckedOut ? (
-                            <button
-                                onClick={handleCheckOut}
-                                disabled={checking || locating}
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 1.5rem', borderRadius: '12px', background: 'rgba(239,68,68,0.9)', color: '#fff', border: 'none', cursor: checking ? 'wait' : 'pointer', fontWeight: 700, fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(239,68,68,0.25)', transition: 'all 0.15s' }}
-                            >
-                                {checking || locating ? <RefreshCw size={16} style={{ animation: 'spin 0.7s linear infinite' }} /> : <LogOutIcon size={16} />}
-                                {locating ? 'Getting location…' : checking ? 'Checking out…' : 'Check Out'}
-                            </button>
+                            <>
+                                <button
+                                    onClick={handleCheckOut}
+                                    disabled={checking || locating}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 1.5rem', borderRadius: '12px', background: 'rgba(239,68,68,0.9)', color: '#fff', border: 'none', cursor: checking ? 'wait' : 'pointer', fontWeight: 700, fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(239,68,68,0.25)', transition: 'all 0.15s' }}
+                                >
+                                    {checking || locating ? <RefreshCw size={16} style={{ animation: 'spin 0.7s linear infinite' }} /> : <LogOutIcon size={16} />}
+                                    {locating ? 'Getting location…' : checking ? 'Checking out…' : 'Check Out'}
+                                </button>
+                                <button
+                                    onClick={() => refreshLocation(false)}
+                                    disabled={locRefreshing}
+                                    title="Update your location on the team map"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0.55rem 0.9rem', borderRadius: '10px', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', cursor: locRefreshing ? 'wait' : 'pointer', fontWeight: 600, fontSize: '0.78rem', transition: 'all 0.15s' }}
+                                >
+                                    <MapPin size={14} style={locRefreshing ? { animation: 'spin 0.7s linear infinite' } : undefined} />
+                                    {locRefreshing
+                                        ? 'Refreshing…'
+                                        : locRefreshedAt
+                                            ? `Location · ${locRefreshedAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                                            : 'Refresh location'}
+                                </button>
+                            </>
                         ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.65rem 1.25rem', borderRadius: '12px', background: 'rgba(34,197,94,0.2)', color: '#86efac', fontWeight: 600, fontSize: '0.875rem' }}>
                                 ✓ Day complete — See you tomorrow!

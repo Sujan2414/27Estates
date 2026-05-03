@@ -108,12 +108,31 @@ export async function PATCH(request: NextRequest) {
         if (!employee_id || !action) {
             return NextResponse.json({ error: 'employee_id and action required' }, { status: 400 })
         }
-        if (!['check_in', 'check_out'].includes(action)) {
-            return NextResponse.json({ error: 'action must be check_in or check_out' }, { status: 400 })
+        if (!['check_in', 'check_out', 'update_location'].includes(action)) {
+            return NextResponse.json({ error: 'action must be check_in, check_out, or update_location' }, { status: 400 })
         }
 
         const now = new Date()
         const today = now.toISOString().split('T')[0]
+
+        // Web pins go stale because browsers don't run background tasks the
+        // way mobile does — without a periodic refresh the team map shows a
+        // pin frozen at clock-in time. update_location lets the HRMS page
+        // bump the row whenever the tab becomes visible or the user clicks
+        // refresh.
+        if (action === 'update_location') {
+            if (typeof lat !== 'number' || typeof lng !== 'number' || (lat === 0 && lng === 0)) {
+                return NextResponse.json({ error: 'lat and lng required' }, { status: 400 })
+            }
+            const { error } = await supabase
+                .from('employee_locations')
+                .upsert(
+                    { employee_id, lat, lng, device: 'web', updated_at: now.toISOString() },
+                    { onConflict: 'employee_id' }
+                )
+            if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+            return NextResponse.json({ ok: true, time: now.toISOString() })
+        }
 
         if (action === 'check_in') {
             // Map 'work_from_home' page value → 'wfh' DB value
