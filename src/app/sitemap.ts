@@ -1,133 +1,87 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { projectUrl, propertyUrl } from '@/lib/seo/urls';
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const supabase = createClient(
+const BASE_URL = 'https://www.27estates.com';
+
+function supabase() {
+    return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
-    const baseUrl = 'https://www.27estates.com';
+}
 
-    // Fetch dynamic routes from database
-    const [propertiesRes, projectsRes, blogsRes] = await Promise.all([
-        supabase.from('properties').select('id, updated_at'),
-        supabase.from('projects').select('id, updated_at'),
-        supabase.from('blogs').select('id, updated_at'),
-    ]);
+export async function generateSitemaps(): Promise<{ id: number }[]> {
+    // 0 = static routes, 1 = projects, 2 = properties, 3 = blog
+    return [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }];
+}
 
-    const propertyUrls = (propertiesRes.data || []).map((property) => ({
-        url: `${baseUrl}/properties/${property.id}`,
-        lastModified: new Date(property.updated_at || Date.now()),
+export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
+    if (id === 0) return staticRoutes();
+    if (id === 1) return projectsSitemap();
+    if (id === 2) return propertiesSitemap();
+    if (id === 3) return blogSitemap();
+    return [];
+}
+
+function staticRoutes(): MetadataRoute.Sitemap {
+    const now = new Date();
+    return [
+        { url: BASE_URL, lastModified: now, priority: 1.0, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/properties`, lastModified: now, priority: 0.9, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/properties/search`, lastModified: now, priority: 0.9, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/properties/projects`, lastModified: now, priority: 0.9, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/properties/commercial`, lastModified: now, priority: 0.9, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/properties/warehouse`, lastModified: now, priority: 0.85, changeFrequency: 'weekly' },
+        { url: `${BASE_URL}/bangalore/office-spaces`, lastModified: now, priority: 0.8, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/bangalore/commercial`, lastModified: now, priority: 0.8, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/bangalore/villas`, lastModified: now, priority: 0.8, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/pune/residential`, lastModified: now, priority: 0.8, changeFrequency: 'daily' },
+        { url: `${BASE_URL}/about`, lastModified: now, priority: 0.7, changeFrequency: 'monthly' },
+        { url: `${BASE_URL}/contact`, lastModified: now, priority: 0.7, changeFrequency: 'monthly' },
+        { url: `${BASE_URL}/invest`, lastModified: now, priority: 0.8, changeFrequency: 'weekly' },
+        { url: `${BASE_URL}/blog`, lastModified: now, priority: 0.8, changeFrequency: 'weekly' },
+        { url: `${BASE_URL}/services`, lastModified: now, priority: 0.8, changeFrequency: 'monthly' },
+        { url: `${BASE_URL}/careers`, lastModified: now, priority: 0.6, changeFrequency: 'weekly' },
+        { url: `${BASE_URL}/llms.txt`, lastModified: now, priority: 0.3, changeFrequency: 'monthly' },
+    ];
+}
+
+async function projectsSitemap(): Promise<MetadataRoute.Sitemap> {
+    const { data } = await supabase()
+        .from('projects')
+        .select('id, slug, updated_at');
+    return (data ?? []).map((p: { id: string; slug: string | null; updated_at: string | null }) => ({
+        url: `${BASE_URL}${projectUrl({ id: p.id, slug: p.slug })}`,
+        lastModified: new Date(p.updated_at || Date.now()),
         priority: 0.8,
         changeFrequency: 'weekly' as const,
     }));
+}
 
-    const projectUrls = (projectsRes.data || []).map((project) => ({
-        url: `${baseUrl}/projects/${project.id}`,
-        lastModified: new Date(project.updated_at || Date.now()),
+async function propertiesSitemap(): Promise<MetadataRoute.Sitemap> {
+    const { data } = await supabase()
+        .from('properties')
+        .select('id, slug, updated_at');
+    return (data ?? []).map((p: { id: string; slug: string | null; updated_at: string | null }) => ({
+        url: `${BASE_URL}${propertyUrl({ id: p.id, slug: p.slug })}`,
+        lastModified: new Date(p.updated_at || Date.now()),
         priority: 0.8,
         changeFrequency: 'weekly' as const,
     }));
+}
 
-    const blogUrls = (blogsRes.data || []).map((blog) => ({
-        url: `${baseUrl}/blogs/${blog.id}`,
-        lastModified: new Date(blog.updated_at || Date.now()),
+async function blogSitemap(): Promise<MetadataRoute.Sitemap> {
+    const { data } = await supabase()
+        .from('blogs')
+        .select('slug, updated_at, published_at')
+        .not('published_at', 'is', null);
+    return (data ?? []).map((b: { slug: string; updated_at: string | null; published_at: string | null }) => ({
+        // Blog detail route is /blog/[slug] (singular). Previous sitemap used
+        // /blogs/${id} which 404'd — fixed here.
+        url: `${BASE_URL}/blog/${b.slug}`,
+        lastModified: new Date(b.updated_at || b.published_at || Date.now()),
         priority: 0.7,
         changeFrequency: 'monthly' as const,
     }));
-
-    const staticRoutes: MetadataRoute.Sitemap = [
-        {
-            url: baseUrl,
-            lastModified: new Date(),
-            priority: 1.0,
-            changeFrequency: 'daily',
-        },
-        {
-            url: `${baseUrl}/properties`,
-            lastModified: new Date(),
-            priority: 0.9,
-            changeFrequency: 'daily',
-        },
-        {
-            url: `${baseUrl}/properties/search`,
-            lastModified: new Date(),
-            priority: 0.9,
-            changeFrequency: 'daily',
-        },
-        {
-            url: `${baseUrl}/properties/projects`,
-            lastModified: new Date(),
-            priority: 0.9,
-            changeFrequency: 'daily',
-        },
-        {
-            url: `${baseUrl}/bangalore/office-spaces`,
-            lastModified: new Date(),
-            priority: 0.8,
-            changeFrequency: 'daily',
-        },
-        {
-            url: `${baseUrl}/bangalore/commercial`,
-            lastModified: new Date(),
-            priority: 0.8,
-            changeFrequency: 'daily',
-        },
-        {
-            url: `${baseUrl}/bangalore/villas`,
-            lastModified: new Date(),
-            priority: 0.8,
-            changeFrequency: 'daily',
-        },
-        {
-            url: `${baseUrl}/pune/residential`,
-            lastModified: new Date(),
-            priority: 0.8,
-            changeFrequency: 'daily',
-        },
-        {
-            url: `${baseUrl}/about`,
-            lastModified: new Date(),
-            priority: 0.7,
-            changeFrequency: 'monthly',
-        },
-        {
-            url: `${baseUrl}/contact`,
-            lastModified: new Date(),
-            priority: 0.7,
-            changeFrequency: 'monthly',
-        },
-        {
-            url: `${baseUrl}/invest`,
-            lastModified: new Date(),
-            priority: 0.8,
-            changeFrequency: 'weekly',
-        },
-        {
-            url: `${baseUrl}/blog`,
-            lastModified: new Date(),
-            priority: 0.8,
-            changeFrequency: 'weekly',
-        },
-        {
-            url: `${baseUrl}/services`,
-            lastModified: new Date(),
-            priority: 0.8,
-            changeFrequency: 'monthly',
-        },
-        {
-            url: `${baseUrl}/careers`,
-            lastModified: new Date(),
-            priority: 0.6,
-            changeFrequency: 'weekly',
-        },
-        {
-            url: `${baseUrl}/llms.txt`,
-            lastModified: new Date(),
-            priority: 0.3,
-            changeFrequency: 'monthly',
-        },
-    ];
-
-    return [...staticRoutes, ...propertyUrls, ...projectUrls, ...blogUrls];
 }
