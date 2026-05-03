@@ -116,12 +116,16 @@ export default async function PropertiesLayout({
             <JsonLd data={itemList} />
             <Sidebar />
             <div className={styles.mainContent}>
-                {/* SEO heading — server-rendered, visible to crawlers and users */}
-                <header className="px-4 sm:px-6 lg:px-8 pt-4 pb-2">
-                    <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-gray-900 leading-tight">
-                        Premium Properties for Sale &amp; Rent in Bangalore
-                    </h1>
-                    <p className="mt-2 text-sm sm:text-base text-gray-600 max-w-3xl">
+                {/*
+                  SEO heading + intro — present in HTML for crawlers and screen
+                  readers, visually hidden so the dashboard chrome stays clean.
+                  Uses Tailwind's sr-only utility (clip-path), which Google
+                  treats as legitimate accessibility content. No aria-hidden —
+                  that's the cloaking pattern Google penalizes.
+                */}
+                <header className="sr-only">
+                    <h1>Premium Properties for Sale &amp; Rent in Bangalore</h1>
+                    <p>
                         Curated luxury apartments, villas, plots, commercial space, and warehouses across Whitefield, Sarjapur Road, Koramangala, HSR Layout, and more — listed by 27 Estates, Bangalore&apos;s premium real estate advisory.
                     </p>
                 </header>
