@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import { projectUrl, propertyUrl } from '@/lib/seo/urls';
+import { ALL_AREAS } from '@/data/areas';
+import { ALL_DEVELOPERS } from '@/data/developers';
 
 const BASE_URL = 'https://www.27estates.com';
 
@@ -12,8 +14,8 @@ function supabase() {
 }
 
 export async function generateSitemaps(): Promise<{ id: number }[]> {
-    // 0 = static routes, 1 = projects, 2 = properties, 3 = blog
-    return [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }];
+    // 0 = static, 1 = projects, 2 = properties, 3 = blog, 4 = areas+developers
+    return [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
 }
 
 export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
@@ -21,6 +23,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     if (id === 1) return projectsSitemap();
     if (id === 2) return propertiesSitemap();
     if (id === 3) return blogSitemap();
+    if (id === 4) return areasAndDevelopersSitemap();
     return [];
 }
 
@@ -39,6 +42,9 @@ function staticRoutes(): MetadataRoute.Sitemap {
         { url: `${BASE_URL}/pune/residential`, lastModified: now, priority: 0.8, changeFrequency: 'daily' },
         { url: `${BASE_URL}/about`, lastModified: now, priority: 0.7, changeFrequency: 'monthly' },
         { url: `${BASE_URL}/contact`, lastModified: now, priority: 0.7, changeFrequency: 'monthly' },
+        { url: `${BASE_URL}/areas`, lastModified: now, priority: 0.85, changeFrequency: 'weekly' },
+        { url: `${BASE_URL}/developers`, lastModified: now, priority: 0.85, changeFrequency: 'weekly' },
+        { url: `${BASE_URL}/mortgage-calculator`, lastModified: now, priority: 0.6, changeFrequency: 'monthly' },
         { url: `${BASE_URL}/invest`, lastModified: now, priority: 0.8, changeFrequency: 'weekly' },
         { url: `${BASE_URL}/blog`, lastModified: now, priority: 0.8, changeFrequency: 'weekly' },
         { url: `${BASE_URL}/services`, lastModified: now, priority: 0.8, changeFrequency: 'monthly' },
@@ -84,4 +90,25 @@ async function blogSitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
         changeFrequency: 'monthly' as const,
     }));
+}
+
+function areasAndDevelopersSitemap(): MetadataRoute.Sitemap {
+    const now = new Date();
+    const areaEntries: MetadataRoute.Sitemap = ALL_AREAS
+        .filter((a) => !a.noindex)
+        .map((a) => ({
+            url: `${BASE_URL}/areas/${a.slug}`,
+            lastModified: now,
+            priority: 0.85,
+            changeFrequency: 'weekly' as const,
+        }));
+    const devEntries: MetadataRoute.Sitemap = ALL_DEVELOPERS
+        .filter((d) => !d.noindex)
+        .map((d) => ({
+            url: `${BASE_URL}/developers/${d.slug}`,
+            lastModified: now,
+            priority: 0.85,
+            changeFrequency: 'weekly' as const,
+        }));
+    return [...areaEntries, ...devEntries];
 }
