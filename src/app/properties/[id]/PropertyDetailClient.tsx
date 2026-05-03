@@ -162,6 +162,10 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
 
             setProperty(propertyData);
 
+            // The URL handle could be a slug or a UUID; use the row's actual
+            // UUID for downstream queries (bookmarks, similar properties, etc.)
+            const propertyUuid = propertyData.id;
+
             // Check if bookmarked
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
@@ -169,7 +173,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                     .from('user_bookmarks')
                     .select('id')
                     .eq('user_id', user.id)
-                    .eq('property_id', propertyId)
+                    .eq('property_id', propertyUuid)
                     .single();
                 setIsBookmarked(!!bookmark);
 
@@ -196,7 +200,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                 .from('properties')
                 .select('*')
                 .eq('category', propertyData.category)
-                .neq('id', propertyId)
+                .neq('id', propertyUuid)
                 .limit(3);
             setSimilarProperties(similar || []);
 

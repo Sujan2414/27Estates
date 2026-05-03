@@ -240,6 +240,10 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
 
             setProject(projectData as unknown as Project);
 
+            // The URL handle could be a slug or a UUID; use the row's actual
+            // UUID for downstream queries (bookmarks, similar projects, etc.)
+            const projectUuid = projectData.id;
+
             // Check if bookmarked
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
@@ -247,13 +251,13 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
                     .from('user_bookmarks')
                     .select('id')
                     .eq('user_id', user.id)
-                    .eq('project_id', projectId)
+                    .eq('project_id', projectUuid)
                     .single();
                 setIsBookmarked(!!bookmark);
             } else {
                 // Check guest bookmarks
                 const guestBookmarks = JSON.parse(sessionStorage.getItem('guest_bookmarks') || '[]');
-                setIsBookmarked(guestBookmarks.includes(projectId));
+                setIsBookmarked(guestBookmarks.includes(projectUuid));
             }
 
             // Get developer
@@ -289,7 +293,7 @@ const ProjectDetailPage = ({ params }: ProjectDetailPageProps) => {
             const { data: similar } = await supabase
                 .from('projects')
                 .select('*')
-                .neq('id', projectId)
+                .neq('id', projectUuid)
                 .limit(3);
             setSimilarProjects((similar || []) as unknown as Project[]);
 
