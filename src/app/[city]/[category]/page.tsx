@@ -4,8 +4,13 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import ProjectCard from '@/components/emergent/ProjectCard';
 import PropertyCard from '@/components/emergent/PropertyCard';
+import JsonLd from '@/components/seo/JsonLd';
+import { buildFaqSchema, buildBreadcrumbSchema } from '@/lib/seo/schema';
+import { projectUrl, propertyUrl } from '@/lib/seo/urls';
 import { Building2, Home } from 'lucide-react';
 import Head from 'next/head';
+
+const SITE_URL = 'https://www.27estates.com';
 
 // --- Type Definitions ---
 type Props = {
@@ -102,33 +107,79 @@ export default async function TopLevelCityCategoryPage({ params }: Props) {
     // Determine H1
     const h1Title = `Premium ${formatCategoryLabel(category)} in ${cityLabel}`;
 
-    // Schema generation
-    const faqSchema = {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            {
-                "@type": "Question",
-                "name": `What are the best ${dbCategory.toLowerCase()}s in ${cityLabel}?`,
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": `27 Estates offers a curated selection of premium ${dbCategory.toLowerCase()}s in ${cityLabel}. Browse our extensive catalog of verified properties above.`
-                }
-            },
-            {
-                "@type": "Question",
-                "name": `How can I buy or rent a ${dbCategory.toLowerCase()} in ${cityLabel}?`,
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": `Contact 27 Estates at connect@27estates.com or +91 8095799929. Our expert advisors will guide you through the process of securing a ${dbCategory.toLowerCase()} in ${cityLabel}.`
-                }
-            }
-        ]
-    };
+    const faqSchema = buildFaqSchema([
+        {
+            question: `What are the best ${dbCategory.toLowerCase()}s in ${cityLabel}?`,
+            answer: `27 Estates offers a curated selection of premium ${dbCategory.toLowerCase()}s in ${cityLabel}. Browse our extensive catalog of verified, RERA-compliant properties above.`,
+        },
+        {
+            question: `How can I buy or rent a ${dbCategory.toLowerCase()} in ${cityLabel}?`,
+            answer: `Contact 27 Estates at connect@27estates.com or +91 80957 99929. Our expert advisors will guide you through the process of securing a ${dbCategory.toLowerCase()} in ${cityLabel}.`,
+        },
+        {
+            question: `What is the average price of a ${dbCategory.toLowerCase()} in ${cityLabel}?`,
+            answer: `Prices vary by location, size, and amenities. ${cityLabel} offers ${dbCategory.toLowerCase()}s across a wide price range — contact 27 Estates for a personalised price report based on your budget and preferred micromarket.`,
+        },
+        {
+            question: `Are the ${dbCategory.toLowerCase()}s on 27 Estates RERA approved?`,
+            answer: `27 Estates lists only verified projects. RERA approval status is shown on each project page. We prioritise RERA-compliant ${dbCategory.toLowerCase()}s for buyer protection.`,
+        },
+        {
+            question: `How do I schedule a site visit for a ${dbCategory.toLowerCase()} in ${cityLabel}?`,
+            answer: `Click on any listing to view details, then use the "Schedule Site Visit" or WhatsApp button. Our advisors will arrange a guided tour at your convenience.`,
+        },
+    ]);
+
+    const breadcrumbSchema = buildBreadcrumbSchema([
+        { name: 'Home', url: '/' },
+        { name: cityLabel, url: `/${city}` },
+        { name: formatCategoryLabel(category), url: `/${city}/${category}` },
+    ]);
+
+    type ListingItem = { id: string; slug?: string | null; name: string; image?: string };
+    const projectItems: ListingItem[] = projects.map((p) => ({
+        id: p.id,
+        slug: (p as { slug?: string | null }).slug ?? null,
+        name: p.project_name,
+        image: p.images?.[0],
+    }));
+    const propertyItems: ListingItem[] = properties.map((p) => ({
+        id: p.id,
+        slug: (p as { slug?: string | null }).slug ?? null,
+        name: p.title,
+        image: p.images?.[0],
+    }));
+
+    const itemListSchema = (projectItems.length || propertyItems.length)
+        ? {
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: `${formatCategoryLabel(category)} in ${cityLabel}`,
+            numberOfItems: projectItems.length + propertyItems.length,
+            itemListElement: [
+                ...projectItems.map((p, i) => ({
+                    '@type': 'ListItem',
+                    position: i + 1,
+                    url: `${SITE_URL}${projectUrl({ id: p.id, slug: p.slug })}`,
+                    name: p.name,
+                    ...(p.image ? { image: p.image } : {}),
+                })),
+                ...propertyItems.map((p, i) => ({
+                    '@type': 'ListItem',
+                    position: projectItems.length + i + 1,
+                    url: `${SITE_URL}${propertyUrl({ id: p.id, slug: p.slug })}`,
+                    name: p.name,
+                    ...(p.image ? { image: p.image } : {}),
+                })),
+            ],
+        }
+        : null;
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+            <JsonLd data={faqSchema} />
+            <JsonLd data={breadcrumbSchema} />
+            <JsonLd data={itemListSchema} />
 
             <Navigation />
 

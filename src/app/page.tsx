@@ -31,12 +31,18 @@ export default async function HomePage() {
 
     return (
         <>
-            {/* SEO content — hidden visually, readable by crawlers */}
-            <article
-                style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}
-                aria-hidden="true"
-            >
-                <h1>27 Estates — Premium Real Estate in Bangalore, India</h1>
+            {/*
+              SEO content — visually hidden via Tailwind sr-only (clip-path),
+              still in HTML for crawlers and screen readers. NO aria-hidden
+              (that's the cloaking pattern Google penalizes).
+            */}
+            <article className="sr-only">
+                {/*
+                  The visible H1 is rendered by <Hero> below ("Your Gateway To...").
+                  This block adds keyword-rich H2/H3 content for crawlers and
+                  screen readers without competing with the visible H1.
+                */}
+                <h2>27 Estates — Premium Real Estate in Bangalore, India</h2>
                 <p>
                     27 Estates is a premium real estate advisory and brokerage firm in Bangalore, India.
                     We specialize in luxury apartments, villas, commercial office spaces, plots, and new project launches
