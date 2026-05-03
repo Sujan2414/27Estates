@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Search as SearchIcon, ChevronDown, X, SlidersHorizontal, Warehouse as WarehouseIcon, Search, Snowflake, Truck, Factory, Archive, Package, Map } from "lucide-react";
 import ProjectCard from "@/components/emergent/ProjectCard";
 import { createClient } from "@/lib/supabase/client";
+import { citiesMatch, dedupeCities } from "@/lib/cities";
 import styles from "@/components/emergent/Search.module.css";
 
 interface WarehouseProject {
@@ -132,13 +133,13 @@ const WarehousePage = () => {
 
     const areaOptions = useMemo(() => {
         let base = projects;
-        if (selectedCity) base = projects.filter(p => p.city === selectedCity);
+        if (selectedCity) base = projects.filter(p => citiesMatch(p.city, selectedCity));
         return Array.from(new Set(base.map(p => p.location?.trim()).filter(Boolean))).sort() as string[];
     }, [projects, selectedCity]);
 
     const availablePincodes = useMemo(() => {
         let base = projects;
-        if (selectedCity) base = projects.filter(p => p.city === selectedCity);
+        if (selectedCity) base = projects.filter(p => citiesMatch(p.city, selectedCity));
         return Array.from(new Set(base.map(p => p.pincode?.trim()).filter(Boolean))).sort() as string[];
     }, [projects, selectedCity]);
 
@@ -164,7 +165,7 @@ const WarehousePage = () => {
             .order('created_at', { ascending: false });
 
         if (!error && data) {
-            const uniqueCities = Array.from(new Set(data.map((p: any) => p.city).filter(Boolean))).sort() as string[];
+            const uniqueCities = dedupeCities(data.map((p: any) => p.city)).sort();
             const uniqueDevs = Array.from(new Set(data.map((p: any) => p.developer_name).filter(Boolean))).sort() as string[];
             setCities(uniqueCities);
             setDevelopers(uniqueDevs);
@@ -204,7 +205,7 @@ const WarehousePage = () => {
         result = result.filter(p => (p.listing_type || 'For Rent') === selectedListingType);
         if (selectedSubCategory) result = result.filter(p => p.sub_category === selectedSubCategory);
         if (selectedStatus) result = result.filter(p => p.status === selectedStatus);
-        if (selectedCity) result = result.filter(p => p.city === selectedCity);
+        if (selectedCity) result = result.filter(p => citiesMatch(p.city, selectedCity));
         if (selectedArea) result = result.filter(p => p.location?.includes(selectedArea));
         if (selectedDirection) result = result.filter(p =>
             p.direction?.toLowerCase() === selectedDirection.toLowerCase() ||

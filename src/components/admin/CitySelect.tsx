@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Plus, Search, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { canonicalCity, dedupeCities } from '@/lib/cities';
 
 type Props = {
     value: string;
@@ -53,16 +54,11 @@ export default function CitySelect({
             const all = [
                 ...((pj ?? []).map((r: { city: string | null }) => r.city)),
                 ...((pr ?? []).map((r: { city: string | null }) => r.city)),
-            ]
-                .filter((c): c is string => typeof c === 'string' && c.trim().length > 0)
-                .map((c) => c.trim());
-            // Dedupe case-insensitively, prefer first-seen casing
-            const seen = new Map<string, string>();
-            for (const c of all) {
-                const key = c.toLowerCase();
-                if (!seen.has(key)) seen.set(key, c);
-            }
-            const sorted = Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
+            ];
+            // Dedupe via canonicalCity() so Bangalore / Bengaluru / variants
+            // collapse into a single canonical entry — same logic the public
+            // listings use, so admins and end-users see the same city list.
+            const sorted = dedupeCities(all).sort((a, b) => a.localeCompare(b));
             setCities(sorted);
             setLoading(false);
         })();
@@ -99,12 +95,14 @@ export default function CitySelect({
     const confirmNewCity = () => {
         const trimmed = newCity.trim();
         if (!trimmed) return;
-        // Reuse existing casing if a case-insensitive match exists
-        const existingMatch = cities.find((c) => c.toLowerCase() === trimmed.toLowerCase());
-        const finalValue = existingMatch ?? trimmed;
-        // Push into local list so it shows in this session before refresh
+        // Run through canonicalCity() so 'Bengaluru' / 'bangalore' / 'BLR'
+        // all snap to the canonical 'Bangalore'. New cities outside the
+        // synonym map flow through unchanged.
+        const canonical = canonicalCity(trimmed);
+        const existingMatch = cities.find((c) => c.toLowerCase() === canonical.toLowerCase());
+        const finalValue = existingMatch ?? canonical;
         if (!existingMatch) {
-            setCities((prev) => [...prev, trimmed].sort((a, b) => a.localeCompare(b)));
+            setCities((prev) => [...prev, canonical].sort((a, b) => a.localeCompare(b)));
         }
         selectCity(finalValue);
     };

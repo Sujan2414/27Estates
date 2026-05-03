@@ -6,6 +6,7 @@ import { Search as SearchIcon, Map, List, Building2, Home, Building, TreePine, C
 import LatestPropertyCard from "@/components/emergent/LatestPropertyCard";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { citiesMatch, dedupeCities } from "@/lib/cities";
 import styles from "@/components/emergent/Search.module.css";
 import { motion, AnimatePresence } from "framer-motion";
 import PostPropertyForm from "@/components/dashboard/PostPropertyForm";
@@ -163,7 +164,7 @@ const SearchPage = () => {
     // Derived Logic for Area Options
     const areaOptions = useMemo(() => {
         let propsToFilter = properties;
-        if (selectedCity) propsToFilter = properties.filter(p => p.city === selectedCity);
+        if (selectedCity) propsToFilter = properties.filter(p => citiesMatch(p.city, selectedCity));
         return Array.from(new Set(propsToFilter.map(p => p.location?.trim()).filter(Boolean))).sort() as string[];
     }, [properties, selectedCity]);
 
@@ -176,7 +177,7 @@ const SearchPage = () => {
 
     const availablePincodes = useMemo(() => {
         let base = properties;
-        if (selectedCity) base = properties.filter(p => p.city === selectedCity);
+        if (selectedCity) base = properties.filter(p => citiesMatch(p.city, selectedCity));
         return Array.from(new Set(base.map(p => p.pincode?.trim()).filter(Boolean))).sort() as string[];
     }, [properties, selectedCity]);
 
@@ -228,8 +229,8 @@ const SearchPage = () => {
 
             // Extract unique Cities (Zones) and Areas (Locations)
             if (allProps) {
-                const uniqueCities = Array.from(new Set(allProps.map(p => p.city).filter(Boolean))) as string[];
-                setCities(uniqueCities.sort());
+                const uniqueCities = dedupeCities(allProps.map(p => p.city)).sort();
+                setCities(uniqueCities);
             }
 
             const { data: { user } } = await supabase.auth.getUser();
@@ -287,7 +288,7 @@ const SearchPage = () => {
         }
 
         if (selectedCity) {
-            result = result.filter(p => p.city === selectedCity || p.location.includes(selectedCity));
+            result = result.filter(p => citiesMatch(p.city, selectedCity) || p.location.includes(selectedCity));
         }
 
         if (selectedArea) {

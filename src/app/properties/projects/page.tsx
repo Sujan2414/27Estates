@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import ProjectCard from "@/components/emergent/ProjectCard";
 import PostProjectForm from "@/components/dashboard/PostProjectForm";
 import { createClient } from "@/lib/supabase/client";
+import { canonicalCity, citiesMatch, dedupeCities } from "@/lib/cities";
 import styles from "@/components/emergent/Search.module.css";
 
 const PropertyMap = dynamic(() => import("@/components/emergent/PropertyMap"), {
@@ -164,12 +165,19 @@ const ProjectsSearchPage = () => {
         citySearch.trim() ? cities.filter(c => c.toLowerCase().includes(citySearch.toLowerCase())) : cities,
         [cities, citySearch]
     );
+    // Cities outside the MAIN_CITIES list, narrowed by the search input.
+    // The search-results dropdown only shows these so the main-city tile grid
+    // below it doesn't get duplicated.
+    const filteredOtherCities = useMemo(() =>
+        citySearch.trim() ? otherCities.filter(c => c.toLowerCase().includes(citySearch.toLowerCase())) : otherCities,
+        [otherCities, citySearch]
+    );
 
     // Area options based on selected city
     const areaOptions = useMemo(() => {
         let propsToFilter = projects;
         if (selectedCity) {
-            propsToFilter = projects.filter(p => p.city === selectedCity);
+            propsToFilter = projects.filter(p => citiesMatch(p.city, selectedCity));
         }
         const uniqueAreas = Array.from(new Set(propsToFilter.map(p => p.location).filter(Boolean))) as string[];
         return uniqueAreas.sort();
@@ -182,7 +190,7 @@ const ProjectsSearchPage = () => {
 
     const availablePincodes = useMemo(() => {
         let base = projects;
-        if (selectedCity) base = projects.filter(p => p.city === selectedCity);
+        if (selectedCity) base = projects.filter(p => citiesMatch(p.city, selectedCity));
         return Array.from(new Set(base.map(p => p.pincode?.trim()).filter(Boolean))).sort() as string[];
     }, [projects, selectedCity]);
 
@@ -227,9 +235,11 @@ const ProjectsSearchPage = () => {
             if (error) throw error;
 
             if (allProjects) {
-                const uniqueCities = Array.from(new Set(allProjects.map(p => p.city).filter(Boolean))) as string[];
+                // Dedupe cities through canonicalCity() so Bangalore /
+                // Bengaluru / bangalore collapse into one dropdown entry.
+                const uniqueCities = dedupeCities(allProjects.map(p => p.city)).sort();
                 const uniqueDevelopers = Array.from(new Set(allProjects.map(p => p.developer_name).filter(Boolean))) as string[];
-                setCities(uniqueCities.sort());
+                setCities(uniqueCities);
                 setDevelopers(uniqueDevelopers.sort());
             }
 
@@ -274,7 +284,7 @@ const ProjectsSearchPage = () => {
         }
 
         if (selectedCity) {
-            result = result.filter(p => p.city === selectedCity);
+            result = result.filter(p => citiesMatch(p.city, selectedCity));
         }
 
         if (selectedArea) {
