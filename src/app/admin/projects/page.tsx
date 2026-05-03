@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, Search, FileSpreadsheet, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, FileSpreadsheet, Star, MessageCircleQuestion } from 'lucide-react'
 import BulkUploadModal from '@/components/admin/BulkUploadModal'
 import { proxyUrl } from '@/lib/proxy-url'
 import styles from '../admin.module.css'
@@ -196,12 +196,16 @@ export default function ProjectsPage() {
                                         {project.min_price ? `${project.min_price}${project.max_price ? ` - ${project.max_price}` : ''}` : 'Request for Details'}
                                     </span>
                                     <div className={propertyStyles.actions}>
-                                        <Link href={`/admin/projects/${project.id}/edit`} className={propertyStyles.actionBtn}>
+                                        <Link href={`/admin/projects/${project.id}/edit`} className={propertyStyles.actionBtn} title="Edit project">
                                             <Pencil size={16} />
+                                        </Link>
+                                        <Link href={`/admin/projects/${project.id}/faqs`} className={propertyStyles.actionBtn} title="Edit FAQs (SEO/AEO)">
+                                            <MessageCircleQuestion size={16} />
                                         </Link>
                                         <button
                                             className={`${propertyStyles.actionBtn} ${propertyStyles.deleteBtn}`}
                                             onClick={() => setDeleteId(project.id)}
+                                            title="Delete project"
                                         >
                                             <Trash2 size={16} />
                                         </button>

@@ -125,11 +125,27 @@ function defaultProjectFaqs(project: ProjectFaqInput) {
     ];
 }
 
+type CustomFaq = { question: string; answer: string };
+
+function readCustomFaqs(raw: unknown): CustomFaq[] | null {
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+    const valid = raw.filter(
+        (e): e is CustomFaq =>
+            typeof e === 'object' &&
+            e !== null &&
+            typeof (e as { question?: unknown }).question === 'string' &&
+            typeof (e as { answer?: unknown }).answer === 'string' &&
+            (e as { question: string }).question.trim().length > 0 &&
+            (e as { answer: string }).answer.trim().length > 0,
+    );
+    return valid.length > 0 ? valid : null;
+}
+
 export default async function ProjectLayout({ params, children }: Props) {
     const { id } = await params;
     const { data: project } = await fetchProject(
         id,
-        'id, slug, project_name, description, images, location, city, state, category, sub_category, min_price, max_price, developer_name, status, bhk_options, is_rera_approved, latitude, longitude, possession_date',
+        'id, slug, project_name, description, images, location, city, state, category, sub_category, min_price, max_price, developer_name, status, bhk_options, is_rera_approved, latitude, longitude, possession_date, faqs',
     ) as { data: {
         id: string;
         slug: string | null;
@@ -150,6 +166,7 @@ export default async function ProjectLayout({ params, children }: Props) {
         latitude: number | null;
         longitude: number | null;
         possession_date: string | null;
+        faqs: unknown;
     } | null };
 
     const listingSchema = project
@@ -177,7 +194,11 @@ export default async function ProjectLayout({ params, children }: Props) {
         })
         : null;
 
-    const faqSchema = project ? buildFaqSchema(defaultProjectFaqs(project)) : null;
+    // Prefer custom FAQs from the projects.faqs jsonb column; fall back to
+    // the auto-generated set if none have been authored yet.
+    const customFaqs = project ? readCustomFaqs(project.faqs) : null;
+    const faqs = customFaqs ?? (project ? defaultProjectFaqs(project) : []);
+    const faqSchema = project ? buildFaqSchema(faqs) : null;
     const breadcrumbSchema = project
         ? buildBreadcrumbSchema([
             { name: 'Home', url: '/' },

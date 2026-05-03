@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Pencil, Trash2, Search, FileSpreadsheet, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, FileSpreadsheet, Star, MessageCircleQuestion } from 'lucide-react'
 import BulkUploadModal from '@/components/admin/BulkUploadModal'
 import { proxyUrl } from '@/lib/proxy-url'
 import styles from '../admin.module.css'
@@ -199,12 +199,16 @@ export default function PropertiesPage() {
                                 <div className={propertyStyles.footer}>
                                     <span className={propertyStyles.price}>{formatPrice(property.price, property.price_text)}</span>
                                     <div className={propertyStyles.actions}>
-                                        <Link href={`/admin/properties/${property.id}/edit`} className={propertyStyles.actionBtn}>
+                                        <Link href={`/admin/properties/${property.id}/edit`} className={propertyStyles.actionBtn} title="Edit property">
                                             <Pencil size={16} />
+                                        </Link>
+                                        <Link href={`/admin/properties/${property.id}/faqs`} className={propertyStyles.actionBtn} title="Edit FAQs (SEO/AEO)">
+                                            <MessageCircleQuestion size={16} />
                                         </Link>
                                         <button
                                             className={`${propertyStyles.actionBtn} ${propertyStyles.deleteBtn}`}
                                             onClick={() => setDeleteId(property.id)}
+                                            title="Delete property"
                                         >
                                             <Trash2 size={16} />
                                         </button>

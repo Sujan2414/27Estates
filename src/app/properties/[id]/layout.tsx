@@ -110,11 +110,27 @@ function defaultPropertyFaqs(p: PropertyFaqInput) {
     ];
 }
 
+type CustomFaq = { question: string; answer: string };
+
+function readCustomFaqs(raw: unknown): CustomFaq[] | null {
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+    const valid = raw.filter(
+        (e): e is CustomFaq =>
+            typeof e === 'object' &&
+            e !== null &&
+            typeof (e as { question?: unknown }).question === 'string' &&
+            typeof (e as { answer?: unknown }).answer === 'string' &&
+            (e as { question: string }).question.trim().length > 0 &&
+            (e as { answer: string }).answer.trim().length > 0,
+    );
+    return valid.length > 0 ? valid : null;
+}
+
 export default async function PropertyLayout({ params, children }: Props) {
     const { id } = await params;
     const { data: property } = await fetchProperty(
         id,
-        'id, slug, title, description, images, price, price_text, location, city, state, category, sub_category, bedrooms, bathrooms, sqft, property_type, latitude, longitude, status',
+        'id, slug, title, description, images, price, price_text, location, city, state, category, sub_category, bedrooms, bathrooms, sqft, property_type, latitude, longitude, status, faqs',
     ) as { data: {
         id: string;
         slug: string | null;
@@ -135,6 +151,7 @@ export default async function PropertyLayout({ params, children }: Props) {
         latitude: number | null;
         longitude: number | null;
         status: string | null;
+        faqs: unknown;
     } | null };
 
     const listingSchema = property
@@ -158,7 +175,11 @@ export default async function PropertyLayout({ params, children }: Props) {
         })
         : null;
 
-    const faqSchema = property ? buildFaqSchema(defaultPropertyFaqs(property)) : null;
+    // Prefer custom FAQs from the properties.faqs jsonb column; fall back to
+    // the auto-generated set if none have been authored yet.
+    const customFaqs = property ? readCustomFaqs(property.faqs) : null;
+    const faqs = customFaqs ?? (property ? defaultPropertyFaqs(property) : []);
+    const faqSchema = property ? buildFaqSchema(faqs) : null;
     const breadcrumbSchema = property
         ? buildBreadcrumbSchema([
             { name: 'Home', url: '/' },
