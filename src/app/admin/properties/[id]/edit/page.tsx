@@ -8,6 +8,8 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
+import CitySelect from '@/components/admin/CitySelect'
+import PincodeInput from '@/components/admin/PincodeInput'
 import styles from '../../../admin.module.css'
 import formStyles from '../../form.module.css'
 import { AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from '@/lib/amenities-data'
@@ -141,6 +143,7 @@ export default function EditPropertyPage() {
         state: '',
         pincode: '',
         country: 'India',
+        direction: '',
         lat: '',
         lng: '',
     })
@@ -280,6 +283,7 @@ export default function EditPropertyPage() {
             state: data.state || '',
             pincode: data.pincode || '',
             country: data.country || 'India',
+            direction: data.direction || '',
             lat: data.latitude?.toString() || '',
             lng: data.longitude?.toString() || '',
         })
@@ -451,6 +455,7 @@ export default function EditPropertyPage() {
                 state: address.state || null,
                 pincode: address.pincode || null,
                 country: address.country || null,
+                direction: address.direction || null,
                 latitude: address.lat ? parseFloat(address.lat) : null,
                 longitude: address.lng ? parseFloat(address.lng) : null,
                 bedrooms: parseInt(formData.bedrooms) || 0,
@@ -1057,22 +1062,48 @@ export default function EditPropertyPage() {
 
                     <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>City</label>
-                            <input type="text" name="city" value={address.city} onChange={handleAddressChange} className={formStyles.input} />
+                            <label className={formStyles.label}>Pincode <span style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: 400 }}>(auto-fills city &amp; state)</span></label>
+                            <PincodeInput
+                                value={address.pincode}
+                                onChange={(pincode) => setAddress(prev => ({ ...prev, pincode }))}
+                                onLookup={(d) => setAddress(prev => ({
+                                    ...prev,
+                                    city: prev.city || d.city,
+                                    state: prev.state || d.state,
+                                    area: prev.area || d.area,
+                                    country: prev.country || d.country,
+                                }))}
+                            />
                         </div>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>City</label>
+                            <CitySelect
+                                value={address.city}
+                                onChange={(city) => setAddress(prev => ({ ...prev, city }))}
+                            />
+                        </div>
+                        <div className={formStyles.field}>
+                            <label className={formStyles.label}>Direction</label>
+                            <select name="direction" value={(address as { direction?: string }).direction ?? ''} onChange={(e) => setAddress(prev => ({ ...prev, direction: e.target.value }))} className={formStyles.input}>
+                                <option value="">None</option>
+                                <option value="North">North</option>
+                                <option value="South">South</option>
+                                <option value="East">East</option>
+                                <option value="West">West</option>
+                                <option value="Central">Central</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>State</label>
                             <input type="text" name="state" value={address.state} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>Pincode</label>
-                            <input type="text" name="pincode" value={address.pincode} onChange={handleAddressChange} className={formStyles.input} />
+                            <label className={formStyles.label}>Country</label>
+                            <input type="text" name="country" value={address.country} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
-                    </div>
-
-                    <div className={formStyles.field}>
-                        <label className={formStyles.label}>Country</label>
-                        <input type="text" name="country" value={address.country} onChange={handleAddressChange} className={formStyles.input} />
                     </div>
                 </div>
 

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
 import styles from '../property-wizard.module.css'
 import dynamic from 'next/dynamic'
+import CitySelect from '@/components/admin/CitySelect'
+import PincodeInput from '@/components/admin/PincodeInput'
 
 // Dynamic import — Leaflet touches `window` so SSR has to be off.
 const LocationPicker = dynamic(() => import('@/components/admin/LocationPicker'), {
@@ -25,7 +27,9 @@ export default function PropertyLocationStep({ initialData, onNext, onBack }: St
         flat_no: initialData.flat_no || '', // 'Flat/Office/Unit No.'
         building_name: initialData.building_name || '', // 'Building/Premises'
         city: initialData.city || '',
+        state: initialData.state || '',
         location: initialData.location || '', // 'Locality'
+        direction: initialData.direction || '',
         landmark: initialData.landmark || '',
         pincode: initialData.pincode || '',
         survey_number: initialData.survey_number || '',
@@ -106,23 +110,54 @@ export default function PropertyLocationStep({ initialData, onNext, onBack }: St
 
             <div className={styles.grid2}>
                 <div className={styles.field}>
-                    <label className={styles.label}>City <span>*</span></label>
-                    <input type="text" name="city" value={formData.city} onChange={handleChange} className={styles.input} required />
+                    <label className={styles.label}>Pin Code <span style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: 400 }}>(auto-fills city, state &amp; locality)</span></label>
+                    <PincodeInput
+                        value={formData.pincode}
+                        onChange={(pincode) => setFormData(prev => ({ ...prev, pincode }))}
+                        onLookup={(d) => setFormData(prev => ({
+                            ...prev,
+                            city: prev.city || d.city,
+                            state: prev.state || d.state,
+                            location: prev.location || d.area,
+                        }))}
+                    />
                 </div>
                 <div className={styles.field}>
-                    <label className={styles.label}>Locality <span>*</span></label>
-                    <input type="text" name="location" value={formData.location} onChange={handleChange} className={styles.input} required />
+                    <label className={styles.label}>City <span>*</span></label>
+                    <CitySelect
+                        value={formData.city}
+                        onChange={(city) => setFormData(prev => ({ ...prev, city }))}
+                        required
+                    />
                 </div>
             </div>
 
             <div className={styles.grid2}>
                 <div className={styles.field}>
-                    <label className={styles.label}>Landmark</label>
-                    <input type="text" name="landmark" value={formData.landmark} onChange={handleChange} className={styles.input} />
+                    <label className={styles.label}>Locality <span>*</span></label>
+                    <input type="text" name="location" value={formData.location} onChange={handleChange} className={styles.input} required />
                 </div>
                 <div className={styles.field}>
-                    <label className={styles.label}>Pin Code</label>
-                    <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} className={styles.input} />
+                    <label className={styles.label}>Direction</label>
+                    <select name="direction" value={formData.direction} onChange={(e) => setFormData(prev => ({ ...prev, direction: e.target.value }))} className={styles.input}>
+                        <option value="">None</option>
+                        <option value="North">North</option>
+                        <option value="South">South</option>
+                        <option value="East">East</option>
+                        <option value="West">West</option>
+                        <option value="Central">Central</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className={styles.grid2}>
+                <div className={styles.field}>
+                    <label className={styles.label}>State</label>
+                    <input type="text" name="state" value={formData.state} onChange={handleChange} className={styles.input} />
+                </div>
+                <div className={styles.field}>
+                    <label className={styles.label}>Landmark</label>
+                    <input type="text" name="landmark" value={formData.landmark} onChange={handleChange} className={styles.input} />
                 </div>
             </div>
 

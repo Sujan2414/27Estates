@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import styles from '../../PropertyWizard/property-wizard.module.css'
 import dynamic from 'next/dynamic'
+import CitySelect from '@/components/admin/CitySelect'
+import PincodeInput from '@/components/admin/PincodeInput'
 
 // Dynamic import — Leaflet touches `window` so SSR has to be off.
 const LocationPicker = dynamic(() => import('@/components/admin/LocationPicker'), {
@@ -87,8 +89,25 @@ export default function ProjectStep3Location({ initialData, onNext, onBack }: St
 
             <div className={styles.grid3}>
                 <div className={styles.field}>
+                    <label className={styles.label}>PIN Code <span style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: 400 }}>(auto-fills city &amp; state)</span></label>
+                    <PincodeInput
+                        value={address.pincode}
+                        onChange={(pincode) => setAddress(prev => ({ ...prev, pincode }))}
+                        onLookup={(d) => setAddress(prev => ({
+                            ...prev,
+                            city: prev.city || d.city,
+                            state: prev.state || d.state,
+                            location: prev.location || d.area,
+                            country: prev.country || d.country,
+                        }))}
+                    />
+                </div>
+                <div className={styles.field}>
                     <label className={styles.label}>City</label>
-                    <input type="text" name="city" value={address.city} onChange={handleChange} className={styles.input} placeholder="e.g. Bangalore" />
+                    <CitySelect
+                        value={address.city}
+                        onChange={(city) => setAddress(prev => ({ ...prev, city }))}
+                    />
                 </div>
                 <div className={styles.field}>
                     <label className={styles.label}>Direction</label>
@@ -101,16 +120,12 @@ export default function ProjectStep3Location({ initialData, onNext, onBack }: St
                         <option value="Central">Central</option>
                     </select>
                 </div>
-                <div className={styles.field}>
-                    <label className={styles.label}>State</label>
-                    <input type="text" name="state" value={address.state} onChange={handleChange} className={styles.input} />
-                </div>
             </div>
 
             <div className={styles.grid3}>
                 <div className={styles.field}>
-                    <label className={styles.label}>PIN Code</label>
-                    <input type="text" name="pincode" value={address.pincode} onChange={handleChange} className={styles.input} />
+                    <label className={styles.label}>State</label>
+                    <input type="text" name="state" value={address.state} onChange={handleChange} className={styles.input} />
                 </div>
                 <div className={styles.field}>
                     <label className={styles.label}>Country</label>

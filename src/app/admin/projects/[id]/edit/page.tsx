@@ -10,6 +10,8 @@ import BrochureUpload from '@/components/admin/BrochureUpload'
 import BHKMultiSelect from '@/components/admin/BHKMultiSelect'
 import ImageUpload from '@/components/admin/ImageUpload'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
+import CitySelect from '@/components/admin/CitySelect'
+import PincodeInput from '@/components/admin/PincodeInput'
 import styles from '../../../admin.module.css'
 import formStyles from '../../../properties/form.module.css'
 import { AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from '@/lib/amenities-data'
@@ -1211,8 +1213,25 @@ export default function EditProjectPage() {
 
                     <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
+                            <label className={formStyles.label}>PIN Code <span style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: 400 }}>(auto-fills city &amp; state)</span></label>
+                            <PincodeInput
+                                value={address.pincode}
+                                onChange={(pincode) => setAddress(prev => ({ ...prev, pincode }))}
+                                onLookup={(d) => setAddress(prev => ({
+                                    ...prev,
+                                    city: prev.city || d.city,
+                                    state: prev.state || d.state,
+                                    location: prev.location || d.area,
+                                    country: prev.country || d.country,
+                                }))}
+                            />
+                        </div>
+                        <div className={formStyles.field}>
                             <label className={formStyles.label}>City</label>
-                            <input type="text" name="city" value={address.city} onChange={handleAddressChange} className={formStyles.input} placeholder="e.g. Bangalore" />
+                            <CitySelect
+                                value={address.city}
+                                onChange={(city) => setAddress(prev => ({ ...prev, city }))}
+                            />
                         </div>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Direction</label>
@@ -1225,16 +1244,12 @@ export default function EditProjectPage() {
                                 <option value="Central">Central</option>
                             </select>
                         </div>
-                        <div className={formStyles.field}>
-                            <label className={formStyles.label}>State</label>
-                            <input type="text" name="state" value={address.state} onChange={handleAddressChange} className={formStyles.input} />
-                        </div>
                     </div>
 
                     <div className={formStyles.grid3}>
                         <div className={formStyles.field}>
-                            <label className={formStyles.label}>PIN Code</label>
-                            <input type="text" name="pincode" value={address.pincode} onChange={handleAddressChange} className={formStyles.input} />
+                            <label className={formStyles.label}>State</label>
+                            <input type="text" name="state" value={address.state} onChange={handleAddressChange} className={formStyles.input} />
                         </div>
                         <div className={formStyles.field}>
                             <label className={formStyles.label}>Country</label>
