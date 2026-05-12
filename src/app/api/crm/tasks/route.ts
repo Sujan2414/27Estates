@@ -17,11 +17,15 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// hrm_tasks.status enum is ('todo' | 'in_progress' | 'review' | 'done').
+// 'done' is what we treat as "completed" at the API boundary so the
+// existing web UI (which speaks is_completed:boolean) doesn't have to
+// change.
 function rowToTask(row: any) {
     return {
         ...row,
-        is_completed: row.status === 'completed',
-        completed_at: row.status === 'completed' ? row.updated_at : null,
+        is_completed: row.status === 'done',
+        completed_at: row.status === 'done' ? row.updated_at : null,
     }
 }
 
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
         .order('due_date', { ascending: true })
 
     if (leadId) query = query.eq('lead_id', leadId)
-    if (!showCompleted) query = query.neq('status', 'completed')
+    if (!showCompleted) query = query.neq('status', 'done')
     if (overdue) query = query.lt('due_date', new Date().toISOString())
 
     const { data, error } = await query
@@ -95,7 +99,7 @@ export async function PATCH(request: NextRequest) {
         if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
         const updateData: Record<string, unknown> = {}
-        if (typeof is_completed === 'boolean') updateData.status = is_completed ? 'completed' : 'todo'
+        if (typeof is_completed === 'boolean') updateData.status = is_completed ? 'done' : 'todo'
         if (title !== undefined)       updateData.title = title
         if (description !== undefined) updateData.description = description || null
         if (due_date !== undefined)    updateData.due_date = due_date

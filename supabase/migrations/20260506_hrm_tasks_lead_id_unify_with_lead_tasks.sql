@@ -6,12 +6,13 @@
 -- This migration:
 --   1. Adds a nullable `lead_id` column to `hrm_tasks` so a task can
 --      optionally be attached to a lead.
---   2. Adds a nullable `is_completed` computed alias (we just keep the
---      existing status column and let the web API map is_completed
---      ↔ status='completed'). No column needed — handled in the API.
---   3. Backfills existing `lead_tasks` rows into `hrm_tasks` so historical
---      tasks created from the web don't disappear after the API switches.
---   4. Leaves `lead_tasks` in place (read-only fallback) — drop in a
+--   2. Backfills existing `lead_tasks` rows into `hrm_tasks` so
+--      historical web tasks don't disappear after the API switches.
+--      lead_tasks.assigned_to / created_by are text; hrm_tasks expects
+--      uuid, so they're cast explicitly. is_completed=true maps to
+--      status='done' (the hrm_tasks check constraint enum is
+--      'todo' | 'in_progress' | 'review' | 'done', no 'completed').
+--   3. Leaves `lead_tasks` in place (read-only fallback) — drop in a
 --      follow-up migration once we've verified everything works.
 
 ALTER TABLE hrm_tasks
@@ -19,21 +20,19 @@ ALTER TABLE hrm_tasks
 
 CREATE INDEX IF NOT EXISTS idx_hrm_tasks_lead_id ON hrm_tasks(lead_id);
 
--- Backfill: copy any existing lead_tasks rows into hrm_tasks if we
--- haven't already (idempotent on the unique id constraint).
 INSERT INTO hrm_tasks (id, lead_id, title, description, assigned_to, created_by, status, priority, due_date, created_at, updated_at)
 SELECT
     lt.id,
     lt.lead_id,
     lt.title,
     lt.description,
-    lt.assigned_to,
-    lt.created_by,
-    CASE WHEN lt.is_completed THEN 'completed' ELSE 'todo' END,
+    lt.assigned_to::uuid,
+    lt.created_by::uuid,
+    CASE WHEN lt.is_completed THEN 'done' ELSE 'todo' END,
     COALESCE(lt.priority, 'medium'),
     lt.due_date,
     lt.created_at,
-    COALESCE(lt.updated_at, lt.created_at)
+    lt.created_at
 FROM lead_tasks lt
 WHERE NOT EXISTS (SELECT 1 FROM hrm_tasks ht WHERE ht.id = lt.id);
 

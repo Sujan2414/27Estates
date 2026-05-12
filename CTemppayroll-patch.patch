@@ -1,0 +1,3799 @@
+From 422efd36a94812efba5d92137df9f423fae153ae Mon Sep 17 00:00:00 2001
+From: Sujan S Dandgulkar <sujan.d@ukco.in>
+Date: Wed, 15 Apr 2026 12:55:26 +0530
+Subject: [PATCH 1/3] docs: add design spec for 27 Estates Listings mobile app
+
+Standalone Expo/RN consumer app at D:\Listings mobile version\ sharing
+Supabase backend with the web. Mirrors web /properties mobile nav
+(Home/Browse-sheet/Saved/Agents), lifts brand tokens from globals.css,
+uses Mapbox for search, and ships full parity via 4 milestones.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+---
+ .../2026-04-15-listings-mobile-app-design.md  | 433 ++++++++++++++++++
+ 1 file changed, 433 insertions(+)
+ create mode 100644 docs/superpowers/specs/2026-04-15-listings-mobile-app-design.md
+
+diff --git a/docs/superpowers/specs/2026-04-15-listings-mobile-app-design.md b/docs/superpowers/specs/2026-04-15-listings-mobile-app-design.md
+new file mode 100644
+index 0000000..dc57714
+--- /dev/null
++++ b/docs/superpowers/specs/2026-04-15-listings-mobile-app-design.md
+@@ -0,0 +1,433 @@
++# 27 Estates — Listings Mobile App (Design Spec)
++
++**Date:** 2026-04-15
++**Status:** Design approved, pending implementation plan
++**Project location:** `D:\Listings mobile version\` (new, separate repo)
++**Parent project:** [21-estates-web](../../../) (shares Supabase backend only)
++
++---
++
++## 1. Purpose & scope
++
++A standalone consumer-facing mobile app for iOS and Android that mirrors the properties/listings experience of the 27 Estates web app, optimized for native mobile. Both public buyers and agents use the same app; agent-only features (posting, managing listings) are gated behind login + role check.
++
++**In scope (v1):**
++- Full feature parity with web `/properties` flow — browse, search, detail, bookmarks, inquiries, agent profiles, posting
++- Native Mapbox-based map search
++- Agent posting via multi-step wizard
++- Email/password auth with guest mode
++
++**Out of scope (v1):**
++- Dark mode
++- Push notifications
++- In-app chat with agents
++- EMI calculator
++- Property comparison
++- Saved searches / alerts
++- Universal-link deep linking
++- Analytics (PostHog/Mixpanel)
++- Crash reporting (Sentry) — recommended for post-M2 addition
++
++---
++
++## 2. Project identity
++
++| | |
++|---|---|
++| Directory | `D:\Listings mobile version\` |
++| npm package | `listings-mobile` |
++| Display name (home screen) | **27 Estates** |
++| iOS bundle ID | `com.twentysevenestates.listings` |
++| Android package | `com.twentysevenestates.listings` |
++| Brand assets | Lifted from web: `public/logo.png`, `logo-trimmed.png`, `logo without bg (1).png` |
++| Brand colors | Web's `globals.css` tokens (teal `#183C38`, gold `#BFA270`, warm off-white `#f9f6f3`, near-black `#0E110F`) |
++| Market | India primary (₹ formatting, BHK, RERA badges, pincode) |
++
++---
++
++## 3. Tech stack
++
++- **Expo SDK 54** (matches `mobile/`), RN 0.81, React 19
++- **TypeScript** strict
++- **expo-router v6** file-based routing
++- **@supabase/supabase-js** with `AsyncStorage` session persistence
++- **@rnmapbox/maps** for Mapbox GL
++- **expo-image** for blurhash + caching
++- **react-native-reanimated** 4, **moti**, **@gorhom/bottom-sheet** 5
++- **react-hook-form** + **zod** for forms
++- **@expo/vector-icons** + `react-native-svg` for custom SVG logo
++- **react-native-toast-message** for toasts
++- **Jest + RTL** for tests, **Maestro** for E2E smoke
++
++---
++
++## 4. Architecture
++
++### 4.1 Folder structure
++
++```
++listings-mobile/
++├── app/                        # expo-router routes
++│   ├── _layout.tsx
++│   ├── (auth)/
++│   │   ├── welcome.tsx
++│   │   ├── login.tsx
++│   │   ├── signup.tsx
++│   │   └── forgot-password.tsx
++│   ├── (tabs)/
++│   │   ├── _layout.tsx         # 4-tab bar (Home, Browse-sheet, Saved, Agents)
++│   │   ├── index.tsx           # Home feed
++│   │   ├── bookmarks.tsx
++│   │   └── agents.tsx
++│   ├── category/[type].tsx     # /category/projects | properties | commercial | warehouse
++│   ├── property/[id].tsx
++│   ├── project/[id].tsx
++│   ├── agent/[id].tsx
++│   ├── search.tsx              # Map + list
++│   ├── filters.tsx             # Modal
++│   ├── inquiry/[propertyId].tsx
++│   ├── post/                   # 5-step wizard, agent-only
++│   │   ├── _layout.tsx
++│   │   ├── photos.tsx
++│   │   ├── details.tsx
++│   │   ├── price.tsx
++│   │   ├── amenities.tsx
++│   │   └── review.tsx
++│   ├── me.tsx                  # Profile (opened from Home avatar)
++│   └── settings/
++│       ├── index.tsx
++│       ├── my-listings.tsx
++│       ├── edit-profile.tsx
++│       └── become-agent.tsx
++├── components/
++│   ├── property/               # PropertyCard, HeroCarousel, PriceBlock, StatChips, etc.
++│   ├── filters/                # FilterSheet, Chip, RangeSlider
++│   ├── map/                    # MapView, PriceMarker, MapBottomSheet
++│   ├── agent/                  # AgentCard, AgentHeader
++│   ├── nav/                    # CustomTabBar, BrowseSheet
++│   └── ui/                     # Button, Input, Pill, Skeleton, EmptyState
++├── lib/
++│   ├── supabase.ts
++│   ├── auth.ts
++│   ├── proxy-url.ts            # Ported from web
++│   └── queries/
++│       ├── properties.ts
++│       ├── projects.ts
++│       ├── bookmarks.ts
++│       ├── agents.ts
++│       ├── profiles.ts
++│       └── inquiries.ts
++├── theme/
++│   ├── colors.ts
++│   ├── typography.ts
++│   ├── spacing.ts
++│   ├── radius.ts
++│   ├── shadows.ts
++│   └── motion.ts
++├── types/
++│   └── database.ts             # Generated from Supabase
++├── hooks/
++│   ├── useAuth.ts
++│   ├── useBookmarks.ts
++│   └── useDebounce.ts
++├── assets/                     # Logo, icons, splash, fonts
++├── .env                        # EXPO_PUBLIC_* vars
++├── app.json
++├── eas.json
++├── babel.config.js
++├── tsconfig.json
++└── package.json
++```
++
++### 4.2 Boundaries between units
++
++- **`lib/queries/*`** — every Supabase call lives here. Accepts a client arg (mockable). No UI concerns. Returns `{ data, error }`.
++- **`hooks/*`** — React-level state over queries. Screens import hooks, not queries directly.
++- **`components/*`** — pure presentational; data comes through props.
++- **`app/*`** — screens orchestrate hooks + components. Minimal logic.
++- **`theme/*`** — only place where raw hex/size values live.
++
++---
++
++## 5. Navigation
++
++### 5.1 Bottom tab bar (4 items, ported 1:1 from web's `MobileNav`)
++
++| Tab | Icon | Route / Action |
++|---|---|---|
++| Home | Custom house SVG (same path as web) | `/(tabs)/index` |
++| Browse | `Grid` (lucide) | **Opens a bottom sheet**, not a screen |
++| Saved | `Heart` | `/(tabs)/bookmarks` |
++| Agents | `Users` | `/(tabs)/agents` |
++
++Styling matches [`src/components/emergent/MobileNav.module.css`](../../../src/components/emergent/MobileNav.module.css): white bg, `#ebebeb` top border, inactive `#717171`, active `#183C38`, 10px label, 600 weight.
++
++### 5.2 Browse sheet
++
++2-column grid of 4 category cards (Projects, Properties, Commercial, Warehouse). Tapping a card navigates to `/category/[type]` and closes the sheet. Teal-tinted icon tile on default, full teal on press — mirrors `.browseCategoryCard` web styles.
++
++### 5.3 Profile access
++
++Home-screen sticky header has avatar (top-left). Tap → `/me`. No Profile tab.
++
++### 5.4 Post-Property access
++
++Inside Profile (`/me`) as an "Agent tools" section. Only visible to agents. Buyers see "Become an agent" instead.
++
++---
++
++## 6. Data & auth
++
++### 6.1 Backend
++
++**Shared Supabase project** with the web — same URL, same anon key, same database, same RLS. No new Supabase project, no migrations.
++
++### 6.2 Tables consumed
++
++| Table | Purpose | Key columns |
++|---|---|---|
++| `properties` | Individual listings | `id`, `property_id`, `title`, `images`, `price`, `location`, `bedrooms`, `bathrooms`, `sqft`, `property_type`, `category`, `is_featured`, `agent_id`, `amenities`, `video_url`, `floor_plans`, `created_at` |
++| `projects` | Developer projects | `id`, `project_id`, `project_name`, `images`, `min_price`, `max_price`, `location`, `status`, `section` (`residential`/`commercial`/`warehouse`), `bhk_options`, `possession_date`, `developer_name`, `is_rera_approved`, `display_order` |
++| `user_bookmarks` | Saved items | `user_id` + (`property_id` OR `project_id`) |
++| `agents` | Agent info | `id`, `name`, contact, `photo` |
++| `profiles` | Auth profile | `id` = `auth.uid`, role fields |
++
++### 6.3 Supabase client
++
++Single shared instance (`lib/supabase.ts`) using `AsyncStorage` for session persistence. Pattern mirrors existing `mobile/src/lib/supabase.ts`.
++
++### 6.4 Type generation
++
++`npx supabase gen types typescript --project-id qjesattjnuoogqgiorws > types/database.ts`. Regenerate on schema change. Feeds `Database` generic into client for typed queries.
++
++### 6.5 Auth
++
++- Email + password (primary)
++- Password reset via email link (reuses existing web template)
++- Guest mode: no session; bookmarks in `AsyncStorage`
++- On login, guest bookmarks bulk-inserted into `user_bookmarks`, local key cleared
++- Agent gate: `profile.role === 'agent'` (exact column verified during impl)
++
++### 6.6 Auth-gated actions
++
++Guest can browse everything. Auth required for: bookmark (on first save), contact agent, post property, agent features.
++
++### 6.7 Images
++
++Images flow through `lib/proxy-url.ts` (ported verbatim from web). `expo-image` renders them with blurhash placeholders + native caching.
++
++### 6.8 Inquiries
++
++Write inquiry into Supabase `inquiries` table (create if missing). Trigger email to agent via Supabase edge function using existing `RESEND_API_KEY`. Fallback: hit web's `/api/inquiries` route if present — decided at implementation.
++
++---
++
++## 7. Theme system
++
++### 7.1 Colors (`theme/colors.ts`) — 1:1 with web
++
++```
++primary       #183C38    (deep teal)
++primaryDark   #0E2624    (pressed)
++gold          #BFA270    (luxury accent)
++goldMuted     rgba(191, 162, 112, 0.7)
++background    #f9f6f3    (warm off-white)
++backgroundWarm#FAF9F7
++surface       #FFFFFF
++surfaceAlt    #f8fafc
++textPrimary   #0E110F
++textMuted     #6F6558
++textInverse   #FFFFFF
++border        #ebebeb    (matches web tab bar)
++borderSubtle  #e2e8f0
++success       #10B981
++warning       #F59E0B
++danger        #DC2626
++inactive      #717171    (matches web nav inactive)
++```
++
++### 7.2 Typography
++
++- **Playfair Display** (400, 700) — display/hero
++- **Inter** (400, 500, 600, 700) — UI/body
++
++Sizes: 11 · 13 · 15 · 17 · 20 · 24 · 32 · 40. Loaded via `expo-font`.
++
++### 7.3 Spacing
++
++4-pt grid: 0 · 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48 · 64 · 80.
++
++### 7.4 Radius
++
++`sm:6` (chips) · `md:10` (icon tiles) · `lg:14` (cards) · `xl:20` (sheets) · `2xl:24` (hero) · `full:9999`.
++
++### 7.5 Shadows / elevation
++
++Platform-abstracted (iOS `shadow*` props / Android `elevation`). Three steps (sm/md/lg) plus a `featured` gold glow variant.
++
++### 7.6 Motion
++
++Easing: `out` = `cubic-bezier(0.16, 1, 0.3, 1)`, `inOut` = `cubic-bezier(0.65, 0, 0.35, 1)`. Durations: 200 / 400 / 800ms.
++
++### 7.7 Accessibility
++
++- Tap targets min 44×44 (iOS) / 48×48 (Android)
++- Contrast: `textPrimary` on `background` = 19:1; `primary` on `background` = 10:1; gold used only for decoration
++- Respects system font scaling via native `<Text>`
++- Hit-slop `{ 8, 8, 8, 8 }` on small icons
++
++### 7.8 Dark mode
++
++**Out of scope.** Tokens structured so it can be added later without refactor.
++
++---
++
++## 8. Screens
++
++### 8.1 Home (`app/(tabs)/index.tsx`)
++
++Sticky header (avatar, brand, bell) · tap-only search bar · horizontal section tabs (All/Projects/Properties/Commercial/Warehouse) · Featured carousel (horizontal, 75% card width) · Recent Listings feed (vertical, full-width cards, pull-to-refresh, pagination 20/page).
++
++### 8.2 Property Detail (`app/property/[id].tsx`)
++
++Parallax hero carousel (4:3, swipeable, pagination dots) · transparent→solid header on scroll · back/share/bookmark buttons · Playfair display title · price block · stat chips (BHK/bath/sqft/floors) · expandable description · amenities list · floor plan · Mapbox mini-map · agent card · similar listings rail · sticky bottom CTA ("Contact Agent"). Source: web `PropertyDetailClient.tsx`.
++
++### 8.3 Project Detail (`app/project/[id].tsx`)
++
++Same pattern as Property Detail plus: developer name, BHK options chips, possession date, RERA badge, project status badge.
++
++### 8.4 Search + Map (`app/search.tsx`)
++
++Full-screen Mapbox map · price-bubble markers · collapsible Gorhom bottom sheet (snap 12%/50%/90%) listing properties in view · pan/zoom triggers debounced refetch by bbox · filters button → `/filters` · list/map toggle.
++
++### 8.5 Filters (`app/filters.tsx`)
++
++Modal with: listing type segmented · category chips · price range slider · bedroom selector · location autocomplete · amenity checklist · project status · RERA/featured toggles · sticky "Show N results" button at bottom with live count. State in `FilterContext`, chips visible on Home.
++
++### 8.6 Saved / Bookmarks (`app/(tabs)/bookmarks.tsx`)
++
++Two tabs: Properties / Projects (with counts). Same card component as Home. Guest banner: "Sign in to sync". Empty state with illustration + CTA.
++
++### 8.7 Agents list (`app/(tabs)/agents.tsx`) + detail (`app/agent/[id].tsx`)
++
++List: 2-col grid, avatar + name + rating + listing count, search bar. Detail: hero avatar, name, role, stats, call/WhatsApp buttons, bio, active-listings rail.
++
++### 8.8 Profile (`app/me.tsx`)
++
++Guest: logo + sign in/create/guest CTAs. Logged-in: avatar row · Listings section (saved / inquiries / [agent-only] post / my listings) · Account (edit profile / notifications / become-agent for buyers) · Support · Sign out · version.
++
++### 8.9 Post-a-Property wizard (`app/post/*`)
++
++5 steps: Photos → Details → Price → Location+Amenities → Review. Progress bar top · Back / Continue bottom · auto-save draft to AsyncStorage every 5s · photos use `expo-image-picker` multi-select, compressed client-side (<500KB), uploaded to Supabase storage with blurhash generated locally · Location step uses Mapbox pin-drop for exact coords · Review shows final preview before publish.
++
++### 8.10 Inquiry modal (`app/inquiry/[propertyId].tsx`)
++
++Name + phone + message form → insert into `inquiries` table + trigger email via edge function. Close on success with toast.
++
++### 8.11 Auth (`app/(auth)/*`)
++
++Welcome (logo + intro + sign in/create/guest) · Login (email, pw, forgot link) · Signup (name, email, pw, confirm) · Forgot password (email + confirmation). All brand-styled, teal CTAs.
++
++### 8.12 Category screens (`app/category/[type].tsx`)
++
++Shares layout with Home, pre-filtered:
++- `projects` → `projects` where `section='residential'`
++- `properties` → `properties` only
++- `commercial` → `projects` where `section='commercial'` + commercial-category `properties`
++- `warehouse` → `projects` where `section='warehouse'` + warehouse-category `properties`
++
++---
++
++## 9. Error handling
++
++- Query error → `react-native-toast-message` with actionable message ("Pull to refresh")
++- Auth error → inline on form
++- Offline → top banner "Reconnecting…"
++- Image load fail → fallback to `no-image.svg`
++- Form validation → zod + per-field inline errors
++
++---
++
++## 10. Testing strategy
++
++| Layer | Tool | Covers |
++|---|---|---|
++| Unit | Jest + ts-jest | `lib/queries/*`, helpers (price formatting, filter builders, proxy URL) |
++| Component | RN Testing Library | `PropertyCard` bookmark behavior, `FilterSheet` state, `PostWizard` step transitions, auth forms |
++| E2E smoke | Maestro (YAML) | Launch → browse → open property → bookmark → sign up → saw bookmark synced |
++
++Explicitly not tested: Supabase internals, exact pixel positioning, Mapbox rendering (manual QA).
++
++---
++
++## 11. Dev workflow
++
++```
++npx expo start                        # Metro + QR
++npx expo run:android                  # dev build
++npx expo run:ios                      # dev build (Mac)
++npm test                              # Jest + RTL
++maestro test .maestro/smoke.yaml      # E2E
++npm run typecheck                     # tsc --noEmit
++npm run lint                          # eslint + prettier
++```
++
++Reanimated + Mapbox require a dev build (not Expo Go). Use **EAS Build** for development/preview/production.
++
++---
++
++## 12. Release plan
++
++### M1 — Skeleton
++Project scaffolded · navigation renders (4 tabs + stack) · theme applied · Supabase connects · Home renders mock list · runs on Android sim + iOS sim.
++
++### M2 — Core browse
++Home with real data + section tabs + featured rail + pagination · Property Detail · Browse sheet + category screens · Bookmarks (guest + logged-in sync) · Auth flow. **Ship to TestFlight internal + Play Store internal track.**
++
++### M3 — Search, Agents, Inquiries
++Search screen with Mapbox + markers + bottom sheet · Filters modal · Agents list + detail · Inquiry modal with email notification.
++
++### M4 — Agent features + Polish
++Post-a-property wizard · My Listings · Profile edit, notification settings · Perf pass (image preload, list virtualization, marker clustering) · Accessibility audit · **Submit to App Store + Play Store.**
++
++---
++
++## 13. Known risks & mitigations
++
++| Risk | Mitigation |
++|---|---|
++| Mapbox token not in `.env.local` | Obtain before M3; `EXPO_PUBLIC_MAPBOX_TOKEN` required |
++| RLS gaps for mobile access patterns | Review web RLS during M2; rely on same policies |
++| App Store review (real estate extra scrutiny) | Ensure privacy policy + account-deletion flow shipped by M2 |
++| Image upload size over mobile networks | Client-side compress to <500KB before upload |
++| Mapbox pricing at scale | Monitor map loads; current free tier 50k/mo |
++| Inquiry email deliverability | Use existing web `RESEND_API_KEY` + domain |
++
++---
++
++## 14. Future enhancements (post-v1)
++
++- Dark mode
++- Push notifications (listing alerts, inquiry replies)
++- In-app chat with agents
++- EMI calculator
++- Property comparison (2-up)
++- Saved searches + email/push alerts
++- Universal links (tap web link → opens app to same property)
++- PostHog / Mixpanel analytics
++- Sentry crash reporting
++- OAuth providers (Google, Apple Sign-in)
++- Video walkthroughs / live virtual tours
++
++---
++
++## 15. Decisions explicitly deferred to implementation
++
++1. **`profiles.role` vs separate `agents` table** for role check — verify during M2.
++2. **`inquiries` table schema** — verify or create during M3 with the email-via-edge-function approach.
++3. **Exact Mapbox Studio style URL** — picked during M3 when the map screen is built.
++4. **Exact splash screen dimensions + icon sizes** — generated during M1 from logo source.
++
++---
++
++*Approved by: Sujan S Dandgulkar · 2026-04-15*
+-- 
+2.51.0.windows.1
+
+
+From 99dbf535c0ec1e7e0a075fd15057c18e5bdafa04 Mon Sep 17 00:00:00 2001
+From: Sujan S Dandgulkar <sujan.d@ukco.in>
+Date: Wed, 15 Apr 2026 14:01:58 +0530
+Subject: [PATCH 2/3] docs(plans): add M1 skeleton implementation plan for
+ listings mobile
+
+27 tasks covering scaffold at D:\Listings mobile version\, brand
+assets, theme tokens, Supabase client, Jest setup, navigation shell
+(4-tab bar + Browse sheet), Home with mock data, placeholder screens
+for M2-M4 routes, and verified dev builds on Android (iOS optional).
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+---
+ .../2026-04-15-listings-mobile-m1-skeleton.md | 2737 +++++++++++++++++
+ 1 file changed, 2737 insertions(+)
+ create mode 100644 docs/superpowers/plans/2026-04-15-listings-mobile-m1-skeleton.md
+
+diff --git a/docs/superpowers/plans/2026-04-15-listings-mobile-m1-skeleton.md b/docs/superpowers/plans/2026-04-15-listings-mobile-m1-skeleton.md
+new file mode 100644
+index 0000000..2d56336
+--- /dev/null
++++ b/docs/superpowers/plans/2026-04-15-listings-mobile-m1-skeleton.md
+@@ -0,0 +1,2737 @@
++# 27 Estates Listings Mobile — M1 Skeleton Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Scaffold a new Expo + React Native project at `D:\Listings mobile version\`, wire Supabase + theme + navigation shell, and ship a running dev build that renders a mock Home feed. This is Milestone 1 of 4 from the design spec.
++
++**Architecture:** Greenfield Expo SDK 54 app. File-based routing via expo-router. Shared Supabase backend with the web (same project, anon key). Theme tokens lifted 1:1 from web `globals.css`. Navigation = 4-tab bar ported from web `MobileNav.tsx`.
++
++**Tech Stack:** Expo SDK 54, React Native 0.81, React 19, TypeScript (strict), expo-router v6, @supabase/supabase-js, expo-image, react-native-reanimated, @gorhom/bottom-sheet, @expo/vector-icons, react-native-svg.
++
++**Spec reference:** `docs/superpowers/specs/2026-04-15-listings-mobile-app-design.md`
++
++**What's in scope for M1:**
++- Project scaffolding at `D:\Listings mobile version\`
++- Brand assets copied from web (logo, colors)
++- Theme tokens (colors, typography, spacing, radius, shadows, motion)
++- Supabase client with AsyncStorage session persistence
++- Type generation from Supabase schema
++- `proxy-url.ts` ported verbatim from web
++- Basic UI primitives (Button, Pill, Skeleton, EmptyState)
++- 4-tab navigation shell with Browse bottom sheet
++- Placeholder screens for Home (with mock data rendering), Bookmarks, Agents, Me, property detail, category screens, auth screens
++- Running dev build on Android emulator; iOS simulator if Mac available
++- Jest + RTL wired; one smoke test covering price-format helper
++
++**Explicitly NOT in M1:** Real Supabase data in screens (mocks only), property detail full layout, search/map, filters, post wizard, agent detail, inquiries, bookmarks logic, auth flows. Those come in M2+.
++
++---
++
++## File structure (created in this plan)
++
++```
++D:\Listings mobile version\
++├── app/
++│   ├── _layout.tsx              # Root stack + SafeAreaProvider
++│   ├── (auth)/
++│   │   ├── _layout.tsx
++│   │   ├── welcome.tsx          # Placeholder
++│   │   ├── login.tsx            # Placeholder
++│   │   ├── signup.tsx           # Placeholder
++│   │   └── forgot-password.tsx  # Placeholder
++│   ├── (tabs)/
++│   │   ├── _layout.tsx          # 4-tab custom bar + Browse sheet
++│   │   ├── index.tsx            # Home with mock feed
++│   │   ├── bookmarks.tsx        # Placeholder
++│   │   └── agents.tsx           # Placeholder
++│   ├── category/[type].tsx      # Placeholder
++│   ├── property/[id].tsx        # Placeholder
++│   ├── project/[id].tsx         # Placeholder
++│   ├── agent/[id].tsx           # Placeholder
++│   ├── me.tsx                   # Placeholder (guest state only)
++│   ├── search.tsx               # Placeholder
++│   └── filters.tsx              # Placeholder modal
++├── assets/
++│   ├── icon.png                 # App icon (1024x1024)
++│   ├── adaptive-icon.png        # Android adaptive icon
++│   ├── splash.png               # Splash image
++│   ├── favicon.png              # Web favicon
++│   └── images/
++│       ├── logo.png             # Copied from web public/
++│       ├── logo-trimmed.png     # Copied from web public/
++│       └── no-image.svg         # Copied from web public/
++├── components/
++│   ├── nav/
++│   │   ├── CustomTabBar.tsx     # 4-tab bar, web MobileNav parity
++│   │   ├── BrowseSheet.tsx      # 2-col category grid sheet
++│   │   └── HomeIcon.tsx         # Custom house SVG (same path as web)
++│   ├── property/
++│   │   └── PropertyCard.tsx     # Airbnb-style card
++│   └── ui/
++│       ├── Button.tsx
++│       ├── Pill.tsx
++│       ├── Skeleton.tsx
++│       └── EmptyState.tsx
++├── hooks/
++│   └── useMockProperties.ts     # Returns hard-coded mock list for M1
++├── lib/
++│   ├── supabase.ts              # Client singleton
++│   ├── proxy-url.ts             # Ported from web
++│   └── format.ts                # formatPrice, formatSqft helpers
++├── theme/
++│   ├── colors.ts
++│   ├── typography.ts
++│   ├── spacing.ts
++│   ├── radius.ts
++│   ├── shadows.ts
++│   ├── motion.ts
++│   └── index.ts                 # Barrel export
++├── types/
++│   └── database.ts              # Generated from Supabase (committed)
++├── __tests__/
++│   └── lib/
++│       └── format.test.ts
++├── app.json                     # Expo config
++├── eas.json                     # EAS build profiles
++├── babel.config.js
++├── metro.config.js
++├── tsconfig.json
++├── jest.config.js
++├── jest.setup.ts
++├── .env                         # Local env (gitignored)
++├── .env.example                 # Committed template
++├── .gitignore
++├── package.json
++└── README.md
++```
++
++---
++
++## Task 1: Create Expo project at D drive
++
++**Files:**
++- Create: `D:\Listings mobile version\` (whole project)
++
++- [ ] **Step 1: Verify D drive is accessible and target dir doesn't exist**
++
++Run (from any shell location):
++```bash
++ls "/d/" | head
++ls "/d/Listings mobile version" 2>/dev/null && echo "EXISTS — ABORT" || echo "OK to create"
++```
++
++Expected: "OK to create". If "EXISTS — ABORT", stop and ask user.
++
++- [ ] **Step 2: Scaffold Expo project with TypeScript template**
++
++Run:
++```bash
++cd /d/
++npx --yes create-expo-app@latest "Listings mobile version" --template blank-typescript --no-install
++```
++
++Expected: new directory `D:\Listings mobile version\` with `app/`, `package.json`, `App.tsx`, etc.
++
++- [ ] **Step 3: Rename internal package name (npm names can't have spaces)**
++
++Edit `D:\Listings mobile version\package.json` — change `"name"` to `"listings-mobile"`.
++
++- [ ] **Step 4: Initialize git**
++
++Run:
++```bash
++cd "/d/Listings mobile version"
++git init
++git add .
++git commit -m "chore: scaffold expo project via create-expo-app"
++```
++
++Expected: initial commit succeeds.
++
++- [ ] **Step 5: Delete App.tsx (we use expo-router file-based instead)**
++
++Run:
++```bash
++cd "/d/Listings mobile version"
++rm App.tsx
++```
++
++---
++
++## Task 2: Install core dependencies
++
++**Files:**
++- Modify: `D:\Listings mobile version\package.json`
++
++- [ ] **Step 1: Install expo-router + nav deps**
++
++Run:
++```bash
++cd "/d/Listings mobile version"
++npx expo install expo-router react-native-screens react-native-safe-area-context expo-linking expo-constants expo-status-bar
++```
++
++Expected: installs without errors.
++
++- [ ] **Step 2: Install Supabase + storage**
++
++Run:
++```bash
++npx expo install @supabase/supabase-js @react-native-async-storage/async-storage react-native-url-polyfill
++```
++
++- [ ] **Step 3: Install UI/animation libraries**
++
++Run:
++```bash
++npx expo install react-native-reanimated react-native-gesture-handler @gorhom/bottom-sheet expo-linear-gradient expo-blur expo-haptics expo-image
++```
++
++- [ ] **Step 4: Install icons, SVG, toasts, fonts**
++
++Run:
++```bash
++npx expo install @expo/vector-icons react-native-svg expo-font react-native-toast-message
++```
++
++- [ ] **Step 5: Install dev dependencies for testing**
++
++Run:
++```bash
++npm install --save-dev jest jest-expo @testing-library/react-native @testing-library/jest-native ts-jest @types/jest
++```
++
++- [ ] **Step 6: Commit**
++
++```bash
++git add package.json package-lock.json
++git commit -m "deps: add expo-router, supabase, ui, testing libs"
++```
++
++---
++
++## Task 3: Configure expo-router entry + TypeScript strict
++
++**Files:**
++- Modify: `D:\Listings mobile version\package.json`
++- Modify: `D:\Listings mobile version\tsconfig.json`
++- Create: `D:\Listings mobile version\babel.config.js`
++- Create: `D:\Listings mobile version\metro.config.js`
++
++- [ ] **Step 1: Set main entry to expo-router**
++
++Edit `package.json` — change `"main"` to `"expo-router/entry"`.
++
++- [ ] **Step 2: Enable strict TypeScript + path alias**
++
++Overwrite `tsconfig.json` with:
++
++```json
++{
++  "extends": "expo/tsconfig.base",
++  "compilerOptions": {
++    "strict": true,
++    "baseUrl": ".",
++    "paths": {
++      "@/*": ["./*"]
++    }
++  },
++  "include": [
++    "**/*.ts",
++    "**/*.tsx",
++    ".expo/types/**/*.ts",
++    "expo-env.d.ts"
++  ]
++}
++```
++
++- [ ] **Step 3: Create babel config with reanimated plugin**
++
++Write `babel.config.js`:
++
++```js
++module.exports = function (api) {
++  api.cache(true);
++  return {
++    presets: ['babel-preset-expo'],
++    plugins: [
++      'react-native-reanimated/plugin', // MUST be last
++    ],
++  };
++};
++```
++
++- [ ] **Step 4: Create metro config**
++
++Write `metro.config.js`:
++
++```js
++const { getDefaultConfig } = require('expo/metro-config');
++
++const config = getDefaultConfig(__dirname);
++
++module.exports = config;
++```
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add package.json tsconfig.json babel.config.js metro.config.js
++git commit -m "chore: configure expo-router, ts strict, reanimated plugin"
++```
++
++---
++
++## Task 4: Configure app.json with 27 Estates identity
++
++**Files:**
++- Modify: `D:\Listings mobile version\app.json`
++
++- [ ] **Step 1: Overwrite app.json with brand config**
++
++```json
++{
++  "expo": {
++    "name": "27 Estates",
++    "slug": "listings-mobile",
++    "version": "1.0.0",
++    "orientation": "portrait",
++    "icon": "./assets/icon.png",
++    "scheme": "listings-mobile",
++    "userInterfaceStyle": "light",
++    "splash": {
++      "image": "./assets/splash.png",
++      "resizeMode": "contain",
++      "backgroundColor": "#f9f6f3"
++    },
++    "newArchEnabled": true,
++    "ios": {
++      "supportsTablet": true,
++      "bundleIdentifier": "com.twentysevenestates.listings"
++    },
++    "android": {
++      "adaptiveIcon": {
++        "foregroundImage": "./assets/adaptive-icon.png",
++        "backgroundColor": "#f9f6f3"
++      },
++      "package": "com.twentysevenestates.listings",
++      "edgeToEdgeEnabled": true
++    },
++    "web": {
++      "favicon": "./assets/favicon.png",
++      "bundler": "metro"
++    },
++    "plugins": [
++      "expo-router",
++      "expo-font",
++      [
++        "expo-splash-screen",
++        {
++          "image": "./assets/splash.png",
++          "imageWidth": 240,
++          "resizeMode": "contain",
++          "backgroundColor": "#f9f6f3"
++        }
++      ]
++    ],
++    "experiments": {
++      "typedRoutes": true
++    }
++  }
++}
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add app.json
++git commit -m "chore: set app identity — 27 Estates bundle ids, splash bg"
++```
++
++---
++
++## Task 5: Copy brand assets from web
++
++**Files:**
++- Create: `D:\Listings mobile version\assets\images\logo.png`
++- Create: `D:\Listings mobile version\assets\images\logo-trimmed.png`
++- Create: `D:\Listings mobile version\assets\images\no-image.svg`
++
++- [ ] **Step 1: Copy logo files from web project**
++
++Run:
++```bash
++cd "/d/Listings mobile version"
++mkdir -p assets/images
++cp "/c/Users/SujanDandgulkar/OneDrive - UK&CO/21 estates/21-estates-web/public/logo.png" assets/images/logo.png
++cp "/c/Users/SujanDandgulkar/OneDrive - UK&CO/21 estates/21-estates-web/public/logo-trimmed.png" assets/images/logo-trimmed.png
++cp "/c/Users/SujanDandgulkar/OneDrive - UK&CO/21 estates/21-estates-web/public/no-image.svg" assets/images/no-image.svg
++```
++
++- [ ] **Step 2: Copy logo to use as splash + icon stand-in**
++
++For M1 we use the trimmed logo as-is for `icon.png`, `adaptive-icon.png`, `splash.png`, `favicon.png`. Proper icons can be regenerated later using Expo's `eas-icon` or a tool like https://icon.kitchen/.
++
++```bash
++cp assets/images/logo-trimmed.png assets/icon.png
++cp assets/images/logo-trimmed.png assets/adaptive-icon.png
++cp assets/images/logo-trimmed.png assets/splash.png
++cp assets/images/logo-trimmed.png assets/favicon.png
++```
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add assets/
++git commit -m "chore: copy brand assets (logo, no-image) from web"
++```
++
++---
++
++## Task 6: Theme tokens — colors
++
++**Files:**
++- Create: `D:\Listings mobile version\theme\colors.ts`
++
++- [ ] **Step 1: Write colors.ts (1:1 with web globals.css)**
++
++```ts
++export const colors = {
++  // Brand
++  primary:        '#183C38',
++  primaryDark:    '#0E2624',
++  gold:           '#BFA270',
++  goldMuted:      'rgba(191, 162, 112, 0.7)',
++
++  // Backgrounds
++  background:     '#f9f6f3',
++  backgroundWarm: '#FAF9F7',
++  surface:        '#FFFFFF',
++  surfaceAlt:     '#f8fafc',
++
++  // Text
++  textPrimary:    '#0E110F',
++  textSecondary:  '#0E110F',
++  textMuted:      '#6F6558',
++  textInverse:    '#FFFFFF',
++
++  // Borders
++  border:         '#ebebeb',
++  borderSubtle:   '#e2e8f0',
++  borderStrong:   '#BFA270',
++
++  // Feedback
++  success:        '#10B981',
++  warning:        '#F59E0B',
++  danger:         '#DC2626',
++  info:           '#183C38',
++
++  // Navigation
++  inactive:       '#717171',
++} as const;
++
++export type ColorKey = keyof typeof colors;
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add theme/colors.ts
++git commit -m "feat(theme): add brand colors from web globals.css"
++```
++
++---
++
++## Task 7: Theme tokens — typography, spacing, radius, shadows, motion
++
++**Files:**
++- Create: `D:\Listings mobile version\theme\typography.ts`
++- Create: `D:\Listings mobile version\theme\spacing.ts`
++- Create: `D:\Listings mobile version\theme\radius.ts`
++- Create: `D:\Listings mobile version\theme\shadows.ts`
++- Create: `D:\Listings mobile version\theme\motion.ts`
++- Create: `D:\Listings mobile version\theme\index.ts`
++
++- [ ] **Step 1: Write typography.ts**
++
++```ts
++export const typography = {
++  fontFamily: {
++    display: 'PlayfairDisplay',
++    body:    'Inter',
++  },
++  size: {
++    xs:   11,
++    sm:   13,
++    base: 15,
++    md:   17,
++    lg:   20,
++    xl:   24,
++    '2xl':32,
++    '3xl':40,
++  },
++  weight: {
++    regular:  '400' as const,
++    medium:   '500' as const,
++    semibold: '600' as const,
++    bold:     '700' as const,
++  },
++  lineHeight: {
++    tight:   1.1,
++    snug:    1.3,
++    normal:  1.5,
++    relaxed: 1.7,
++  },
++  letterSpacing: {
++    tight:   -0.3,
++    normal:  0,
++    wide:    0.5,
++    widest:  1.5,
++  },
++} as const;
++```
++
++- [ ] **Step 2: Write spacing.ts**
++
++```ts
++export const spacing = {
++  0:  0,
++  1:  4,
++  2:  8,
++  3:  12,
++  4:  16,
++  5:  20,
++  6:  24,
++  8:  32,
++  10: 40,
++  12: 48,
++  16: 64,
++  20: 80,
++} as const;
++
++export type SpacingKey = keyof typeof spacing;
++```
++
++- [ ] **Step 3: Write radius.ts**
++
++```ts
++export const radius = {
++  none:  0,
++  sm:    6,
++  md:    10,
++  lg:    14,
++  xl:    20,
++  '2xl': 24,
++  full:  9999,
++} as const;
++```
++
++- [ ] **Step 4: Write shadows.ts**
++
++```ts
++import { Platform } from 'react-native';
++
++export const shadows = {
++  none: Platform.select({ ios: {}, android: { elevation: 0 } }),
++  sm: Platform.select({
++    ios: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
++    android: { elevation: 2 },
++  }),
++  md: Platform.select({
++    ios: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
++    android: { elevation: 4 },
++  }),
++  lg: Platform.select({
++    ios: { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
++    android: { elevation: 8 },
++  }),
++  featured: Platform.select({
++    ios: { shadowColor: '#BFA270', shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
++    android: { elevation: 10 },
++  }),
++};
++```
++
++- [ ] **Step 5: Write motion.ts**
++
++```ts
++import { Easing } from 'react-native-reanimated';
++
++export const motion = {
++  easing: {
++    out:   Easing.bezier(0.16, 1, 0.3, 1),
++    inOut: Easing.bezier(0.65, 0, 0.35, 1),
++  },
++  duration: {
++    fast:   200,
++    medium: 400,
++    slow:   800,
++  },
++} as const;
++```
++
++- [ ] **Step 6: Write barrel index.ts**
++
++```ts
++export { colors } from './colors';
++export { typography } from './typography';
++export { spacing } from './spacing';
++export { radius } from './radius';
++export { shadows } from './shadows';
++export { motion } from './motion';
++```
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add theme/
++git commit -m "feat(theme): add typography, spacing, radius, shadows, motion tokens"
++```
++
++---
++
++## Task 8: Supabase client
++
++**Files:**
++- Create: `D:\Listings mobile version\lib\supabase.ts`
++- Create: `D:\Listings mobile version\.env.example`
++- Create: `D:\Listings mobile version\.env`
++- Modify: `D:\Listings mobile version\.gitignore`
++
++- [ ] **Step 1: Write .env.example (committed template)**
++
++```bash
++EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
++EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
++EXPO_PUBLIC_MAPBOX_TOKEN=pk.your-mapbox-token
++```
++
++- [ ] **Step 2: Write .env with real values (from web .env.local, same project)**
++
++```bash
++EXPO_PUBLIC_SUPABASE_URL=https://qjesattjnuoogqgiorws.supabase.co
++EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqZXNhdHRqbnVvb2dxZ2lvcndzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MjY1NjMsImV4cCI6MjA4OTIwMjU2M30.JciFclzoPNFQ7L2JeK2hmPQD185f59KX-2UyqPSq-Y8
++EXPO_PUBLIC_MAPBOX_TOKEN=
++```
++
++> **Note on Mapbox:** leave blank for M1; M3 requires it. Will be flagged as a follow-up task at the end of this plan.
++
++- [ ] **Step 3: Update .gitignore to exclude .env**
++
++Append to `.gitignore`:
++```
++# Local env
++.env
++.env.local
++```
++
++- [ ] **Step 4: Create stub types/database.ts so the import resolves**
++
++Task 9 will overwrite this with real generated types, but we need the import to resolve now.
++
++```bash
++mkdir -p types
++```
++
++Write `types/database.ts`:
++
++```ts
++// Stub — regenerated from Supabase schema in Task 9.
++export type Database = {
++  public: {
++    Tables: Record<string, {
++      Row: Record<string, unknown>;
++      Insert: Record<string, unknown>;
++      Update: Record<string, unknown>;
++    }>;
++    Views: Record<string, never>;
++    Functions: Record<string, never>;
++    Enums: Record<string, never>;
++  };
++};
++```
++
++- [ ] **Step 5: Write lib/supabase.ts**
++
++```ts
++import 'react-native-url-polyfill/auto';
++import AsyncStorage from '@react-native-async-storage/async-storage';
++import { createClient } from '@supabase/supabase-js';
++import type { Database } from '@/types/database';
++
++const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
++const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
++
++if (!supabaseUrl || !supabaseAnonKey) {
++  throw new Error(
++    'Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY in .env'
++  );
++}
++
++export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
++  auth: {
++    storage: AsyncStorage,
++    autoRefreshToken: true,
++    persistSession: true,
++    detectSessionInUrl: false,
++  },
++});
++```
++
++- [ ] **Step 6: Commit**
++
++```bash
++git add .env.example .gitignore lib/supabase.ts types/database.ts
++git commit -m "feat(lib): add supabase client with AsyncStorage session"
++```
++
++---
++
++## Task 9: Generate Supabase database types
++
++**Files:**
++- Create: `D:\Listings mobile version\types\database.ts`
++
++- [ ] **Step 1: Install supabase CLI if not already**
++
++Run:
++```bash
++cd "/d/Listings mobile version"
++npm install --save-dev supabase
++```
++
++- [ ] **Step 2: Log in to Supabase (one-time interactive)**
++
++Run:
++```bash
++npx supabase login
++```
++
++Follow the browser prompt using the account that owns the `qjesattjnuoogqgiorws` project.
++
++- [ ] **Step 3: Generate types**
++
++Run:
++```bash
++mkdir -p types
++npx supabase gen types typescript --project-id qjesattjnuoogqgiorws > types/database.ts
++```
++
++Expected: `types/database.ts` populated with `export type Database = { ... }` containing `properties`, `projects`, `user_bookmarks`, `agents`, `profiles` table definitions.
++
++**If this fails** with "access denied": the current Supabase login lacks access. Ask user for the correct Supabase account OR, as a temporary fallback, write a minimal hand-rolled `Database` type with just the columns needed for M1:
++
++```ts
++export type Database = {
++  public: {
++    Tables: {
++      properties: {
++        Row: {
++          id: string;
++          property_id: string | null;
++          title: string;
++          images: string[];
++          price: number;
++          location: string;
++          bedrooms: number;
++          bathrooms: number;
++          sqft: number;
++          is_featured: boolean;
++          created_at: string;
++        };
++        Insert: Record<string, unknown>;
++        Update: Record<string, unknown>;
++      };
++    };
++    Views: Record<string, never>;
++    Functions: Record<string, never>;
++    Enums: Record<string, never>;
++  };
++};
++```
++
++- [ ] **Step 4: Commit types**
++
++```bash
++git add types/database.ts
++git commit -m "feat(types): generate Supabase database types"
++```
++
++---
++
++## Task 10: Port proxy-url.ts from web
++
++**Files:**
++- Create: `D:\Listings mobile version\lib\proxy-url.ts`
++
++- [ ] **Step 1: Read web's proxy-url.ts**
++
++Read `C:\Users\SujanDandgulkar\OneDrive - UK&CO\21 estates\21-estates-web\src\lib\proxy-url.ts` and port its contents verbatim to `D:\Listings mobile version\lib\proxy-url.ts`. If it depends on web-specific APIs (e.g. `next/image`), strip those while keeping the URL-rewriting logic intact. If the function is purely a URL string transform, copy as-is.
++
++- [ ] **Step 2: Verify the port compiles**
++
++Run:
++```bash
++cd "/d/Listings mobile version"
++npx tsc --noEmit
++```
++
++Expected: no errors from `lib/proxy-url.ts`.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add lib/proxy-url.ts
++git commit -m "feat(lib): port proxy-url from web"
++```
++
++---
++
++## Task 11: Formatting helpers + tests (first Jest setup)
++
++**Files:**
++- Create: `D:\Listings mobile version\lib\format.ts`
++- Create: `D:\Listings mobile version\jest.config.js`
++- Create: `D:\Listings mobile version\jest.setup.ts`
++- Create: `D:\Listings mobile version\__tests__\lib\format.test.ts`
++- Modify: `D:\Listings mobile version\package.json` (add scripts)
++
++- [ ] **Step 1: Write Jest config**
++
++`jest.config.js`:
++```js
++module.exports = {
++  preset: 'jest-expo',
++  setupFilesAfterEach: ['<rootDir>/jest.setup.ts'],
++  transformIgnorePatterns: [
++    'node_modules/(?!((jest-)?react-native|@react-native|expo(nent)?|@expo(nent)?/.*|react-native-svg|@gorhom|react-native-reanimated))'
++  ],
++  moduleNameMapper: {
++    '^@/(.*)$': '<rootDir>/$1'
++  },
++  testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx']
++};
++```
++
++- [ ] **Step 2: Write jest.setup.ts**
++
++```ts
++import '@testing-library/jest-native/extend-expect';
++```
++
++- [ ] **Step 3: Write the failing test first**
++
++`__tests__/lib/format.test.ts`:
++
++```ts
++import { formatPrice, formatSqft } from '@/lib/format';
++
++describe('formatPrice', () => {
++  it('formats crores with 1 decimal', () => {
++    expect(formatPrice(12500000)).toBe('₹1.25 Cr');
++  });
++
++  it('formats lakhs when under 1 crore', () => {
++    expect(formatPrice(5000000)).toBe('₹50 L');
++  });
++
++  it('handles zero', () => {
++    expect(formatPrice(0)).toBe('Price on request');
++  });
++
++  it('handles null/undefined', () => {
++    expect(formatPrice(null as unknown as number)).toBe('Price on request');
++  });
++});
++
++describe('formatSqft', () => {
++  it('formats with comma separator', () => {
++    expect(formatSqft(1450)).toBe('1,450 sqft');
++  });
++
++  it('handles zero', () => {
++    expect(formatSqft(0)).toBe('—');
++  });
++});
++```
++
++- [ ] **Step 4: Add test scripts to package.json**
++
++Add under `"scripts"`:
++```json
++"test": "jest",
++"test:watch": "jest --watch",
++"typecheck": "tsc --noEmit"
++```
++
++- [ ] **Step 5: Run tests — expect failure**
++
++```bash
++npm test
++```
++
++Expected: FAIL ("cannot find module @/lib/format").
++
++- [ ] **Step 6: Write format.ts minimal implementation**
++
++`lib/format.ts`:
++```ts
++export function formatPrice(value: number | null | undefined): string {
++  if (!value || value <= 0) return 'Price on request';
++  if (value >= 10_000_000) {
++    return `₹${(value / 10_000_000).toFixed(2).replace(/\.?0+$/, '')} Cr`;
++  }
++  return `₹${Math.round(value / 100_000)} L`;
++}
++
++export function formatSqft(value: number | null | undefined): string {
++  if (!value || value <= 0) return '—';
++  return `${value.toLocaleString('en-IN')} sqft`;
++}
++```
++
++- [ ] **Step 7: Re-run tests — expect pass**
++
++```bash
++npm test
++```
++
++Expected: all 6 tests PASS.
++
++If crore formatting fails due to decimal trim: the regex `/\.?0+$/` should handle "1.25" → "1.25" (no change), "1.00" → "1", "1.20" → "1.2". Verify the actual test expectation — adjust regex if the test output is "₹1.25 Cr" (leave "1.25" alone, strip trailing only for whole numbers).
++
++- [ ] **Step 8: Commit**
++
++```bash
++git add jest.config.js jest.setup.ts package.json lib/format.ts __tests__/
++git commit -m "feat(lib): add formatPrice/formatSqft with tests"
++```
++
++---
++
++## Task 12: UI primitives — Button, Pill, Skeleton, EmptyState
++
++**Files:**
++- Create: `D:\Listings mobile version\components\ui\Button.tsx`
++- Create: `D:\Listings mobile version\components\ui\Pill.tsx`
++- Create: `D:\Listings mobile version\components\ui\Skeleton.tsx`
++- Create: `D:\Listings mobile version\components\ui\EmptyState.tsx`
++
++- [ ] **Step 1: Write Button.tsx**
++
++```tsx
++import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
++import * as Haptics from 'expo-haptics';
++import { colors, spacing, radius, typography } from '@/theme';
++
++type Variant = 'primary' | 'secondary' | 'ghost';
++
++interface ButtonProps {
++  label: string;
++  onPress: () => void;
++  variant?: Variant;
++  loading?: boolean;
++  disabled?: boolean;
++  style?: ViewStyle;
++}
++
++export function Button({
++  label, onPress, variant = 'primary', loading, disabled, style,
++}: ButtonProps) {
++  const isDisabled = disabled || loading;
++
++  const handlePress = () => {
++    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
++    onPress();
++  };
++
++  return (
++    <Pressable
++      onPress={handlePress}
++      disabled={isDisabled}
++      style={({ pressed }) => [
++        s.base,
++        s[variant],
++        isDisabled && s.disabled,
++        pressed && !isDisabled && s.pressed,
++        style,
++      ]}
++    >
++      {loading ? (
++        <ActivityIndicator color={variant === 'primary' ? colors.textInverse : colors.primary} />
++      ) : (
++        <Text style={[s.labelBase, s[`${variant}Label`]]}>{label}</Text>
++      )}
++    </Pressable>
++  );
++}
++
++const s = StyleSheet.create({
++  base: {
++    height: 52,
++    borderRadius: radius.md,
++    alignItems: 'center',
++    justifyContent: 'center',
++    paddingHorizontal: spacing[5],
++  },
++  primary:   { backgroundColor: colors.primary },
++  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
++  ghost:     { backgroundColor: 'transparent' },
++  pressed:   { opacity: 0.85, transform: [{ scale: 0.98 }] },
++  disabled:  { opacity: 0.5 },
++  labelBase: { fontFamily: typography.fontFamily.body, fontSize: typography.size.base, fontWeight: typography.weight.semibold },
++  primaryLabel:   { color: colors.textInverse },
++  secondaryLabel: { color: colors.textPrimary },
++  ghostLabel:     { color: colors.primary },
++});
++```
++
++- [ ] **Step 2: Write Pill.tsx**
++
++```tsx
++import { Pressable, Text, StyleSheet, ViewStyle } from 'react-native';
++import { colors, spacing, radius, typography } from '@/theme';
++
++interface PillProps {
++  label: string;
++  active?: boolean;
++  onPress?: () => void;
++  style?: ViewStyle;
++}
++
++export function Pill({ label, active, onPress, style }: PillProps) {
++  return (
++    <Pressable
++      onPress={onPress}
++      style={({ pressed }) => [
++        s.base,
++        active && s.active,
++        pressed && s.pressed,
++        style,
++      ]}
++    >
++      <Text style={[s.label, active && s.activeLabel]}>{label}</Text>
++    </Pressable>
++  );
++}
++
++const s = StyleSheet.create({
++  base: {
++    height: 36,
++    paddingHorizontal: spacing[4],
++    borderRadius: radius.full,
++    backgroundColor: colors.surface,
++    borderWidth: 1,
++    borderColor: colors.border,
++    alignItems: 'center',
++    justifyContent: 'center',
++  },
++  active: {
++    backgroundColor: colors.primary,
++    borderColor: colors.primary,
++  },
++  pressed: { opacity: 0.8 },
++  label: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.sm,
++    fontWeight: typography.weight.semibold,
++    color: colors.textPrimary,
++  },
++  activeLabel: { color: colors.textInverse },
++});
++```
++
++- [ ] **Step 3: Write Skeleton.tsx**
++
++```tsx
++import { View, StyleSheet, ViewStyle } from 'react-native';
++import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming } from 'react-native-reanimated';
++import { useEffect } from 'react';
++import { colors, radius } from '@/theme';
++
++interface SkeletonProps {
++  width?: number | `${number}%`;
++  height?: number;
++  style?: ViewStyle;
++}
++
++export function Skeleton({ width = '100%', height = 16, style }: SkeletonProps) {
++  const opacity = useSharedValue(0.4);
++
++  useEffect(() => {
++    opacity.value = withRepeat(withTiming(0.9, { duration: 900 }), -1, true);
++  }, [opacity]);
++
++  const animated = useAnimatedStyle(() => ({ opacity: opacity.value }));
++
++  return (
++    <Animated.View
++      style={[s.base, { width, height }, animated, style]}
++    />
++  );
++}
++
++const s = StyleSheet.create({
++  base: {
++    backgroundColor: colors.borderSubtle,
++    borderRadius: radius.sm,
++  },
++});
++```
++
++- [ ] **Step 4: Write EmptyState.tsx**
++
++```tsx
++import { View, Text, StyleSheet } from 'react-native';
++import { colors, spacing, typography } from '@/theme';
++
++interface EmptyStateProps {
++  title: string;
++  description?: string;
++  action?: React.ReactNode;
++}
++
++export function EmptyState({ title, description, action }: EmptyStateProps) {
++  return (
++    <View style={s.container}>
++      <Text style={s.title}>{title}</Text>
++      {description && <Text style={s.desc}>{description}</Text>}
++      {action && <View style={s.action}>{action}</View>}
++    </View>
++  );
++}
++
++const s = StyleSheet.create({
++  container: {
++    flex: 1,
++    alignItems: 'center',
++    justifyContent: 'center',
++    padding: spacing[8],
++    gap: spacing[3],
++  },
++  title: {
++    fontFamily: typography.fontFamily.display,
++    fontSize: typography.size.lg,
++    color: colors.textPrimary,
++  },
++  desc: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.base,
++    color: colors.textMuted,
++    textAlign: 'center',
++  },
++  action: { marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add components/ui/
++git commit -m "feat(ui): add Button, Pill, Skeleton, EmptyState primitives"
++```
++
++---
++
++## Task 13: Custom HomeIcon (SVG lifted from web MobileNav)
++
++**Files:**
++- Create: `D:\Listings mobile version\components\nav\HomeIcon.tsx`
++
++- [ ] **Step 1: Write HomeIcon using same SVG path as web**
++
++Source: `src/components/emergent/MobileNav.tsx:10-15`.
++
++```tsx
++import Svg, { Path, Polyline } from 'react-native-svg';
++
++interface HomeIconProps {
++  size?: number;
++  color?: string;
++}
++
++export function HomeIcon({ size = 20, color = '#000' }: HomeIconProps) {
++  return (
++    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
++      <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
++      <Polyline points="9 22 9 12 15 12 15 22" />
++    </Svg>
++  );
++}
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add components/nav/HomeIcon.tsx
++git commit -m "feat(nav): add HomeIcon svg lifted from web MobileNav"
++```
++
++---
++
++## Task 14: Browse bottom sheet
++
++**Files:**
++- Create: `D:\Listings mobile version\components\nav\BrowseSheet.tsx`
++
++- [ ] **Step 1: Write BrowseSheet.tsx**
++
++```tsx
++import { forwardRef, useMemo, useCallback } from 'react';
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
++import { useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, radius, typography } from '@/theme';
++
++const CATEGORIES = [
++  { id: 'projects',   icon: 'business-outline',  label: 'Projects',   desc: 'New launches & upcoming' },
++  { id: 'properties', icon: 'home-outline',      label: 'Properties', desc: 'Apartments, villas & more' },
++  { id: 'commercial', icon: 'briefcase-outline', label: 'Commercial', desc: 'Offices, retail & co-working' },
++  { id: 'warehouse',  icon: 'cube-outline',      label: 'Warehouse',  desc: 'Storage & industrial spaces' },
++] as const;
++
++export const BrowseSheet = forwardRef<BottomSheet>((_, ref) => {
++  const router = useRouter();
++  const snapPoints = useMemo(() => ['45%'], []);
++
++  const handleCategory = useCallback((id: string) => {
++    if (ref && typeof ref !== 'function' && ref.current) ref.current.close();
++    router.push(`/category/${id}` as any);
++  }, [router, ref]);
++
++  return (
++    <BottomSheet
++      ref={ref}
++      index={-1}
++      snapPoints={snapPoints}
++      enablePanDownToClose
++      backgroundStyle={s.sheetBg}
++      handleIndicatorStyle={s.handle}
++    >
++      <BottomSheetView style={s.content}>
++        <Text style={s.title}>Browse</Text>
++        <View style={s.grid}>
++          {CATEGORIES.map(cat => (
++            <Pressable
++              key={cat.id}
++              style={({ pressed }) => [s.card, pressed && s.cardPressed]}
++              onPress={() => handleCategory(cat.id)}
++            >
++              {({ pressed }) => (
++                <>
++                  <View style={[s.iconTile, pressed && s.iconTilePressed]}>
++                    <Ionicons name={cat.icon as any} size={22} color={pressed ? colors.textInverse : colors.primary} />
++                  </View>
++                  <Text style={[s.cardLabel, pressed && s.cardLabelPressed]}>{cat.label}</Text>
++                  <Text style={[s.cardDesc, pressed && s.cardDescPressed]}>{cat.desc}</Text>
++                </>
++              )}
++            </Pressable>
++          ))}
++        </View>
++      </BottomSheetView>
++    </BottomSheet>
++  );
++});
++
++BrowseSheet.displayName = 'BrowseSheet';
++
++const s = StyleSheet.create({
++  sheetBg: { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
++  handle:  { backgroundColor: colors.border, width: 40 },
++  content: { padding: spacing[5] },
++  title: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.md,
++    fontWeight: typography.weight.bold,
++    color: colors.textPrimary,
++    marginBottom: spacing[5],
++  },
++  grid: {
++    flexDirection: 'row',
++    flexWrap: 'wrap',
++    gap: spacing[3],
++  },
++  card: {
++    flexBasis: '48%',
++    flexGrow: 1,
++    padding: spacing[4],
++    backgroundColor: colors.surfaceAlt,
++    borderWidth: 1,
++    borderColor: colors.borderSubtle,
++    borderRadius: radius.lg,
++    gap: 4,
++  },
++  cardPressed: { backgroundColor: colors.primary, borderColor: colors.primary },
++  iconTile: {
++    width: 40,
++    height: 40,
++    backgroundColor: 'rgba(24, 60, 56, 0.08)',
++    borderRadius: radius.md,
++    alignItems: 'center',
++    justifyContent: 'center',
++    marginBottom: 4,
++  },
++  iconTilePressed: { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
++  cardLabel: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.base,
++    fontWeight: typography.weight.bold,
++    color: colors.textPrimary,
++  },
++  cardLabelPressed: { color: colors.textInverse },
++  cardDesc: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.sm,
++    color: colors.textMuted,
++    lineHeight: typography.size.sm * typography.lineHeight.snug,
++  },
++  cardDescPressed: { color: 'rgba(255, 255, 255, 0.7)' },
++});
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add components/nav/BrowseSheet.tsx
++git commit -m "feat(nav): add Browse bottom sheet (web MobileNav parity)"
++```
++
++---
++
++## Task 15: Custom 4-tab bar
++
++**Files:**
++- Create: `D:\Listings mobile version\components\nav\CustomTabBar.tsx`
++
++- [ ] **Step 1: Write CustomTabBar.tsx**
++
++```tsx
++import { useRef } from 'react';
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import BottomSheet from '@gorhom/bottom-sheet';
++import { Ionicons } from '@expo/vector-icons';
++import { HomeIcon } from './HomeIcon';
++import { BrowseSheet } from './BrowseSheet';
++import { colors, spacing, typography } from '@/theme';
++
++type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
++
++// Real tab screens (3 of 4 slots — Browse is a sheet, not a route)
++const TABS: { name: string; label: string; icon: 'home' | IoniconsName }[] = [
++  { name: 'index',     label: 'Home',   icon: 'home' },
++  { name: 'bookmarks', label: 'Saved',  icon: 'heart-outline' },
++  { name: 'agents',    label: 'Agents', icon: 'people-outline' },
++];
++
++export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
++  const insets = useSafeAreaInsets();
++  const sheetRef = useRef<BottomSheet>(null);
++
++  const openBrowse = () => sheetRef.current?.expand();
++
++  return (
++    <>
++      <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
++        {/* Home */}
++        <TabButton
++          active={isActive(state, 'index')}
++          label="Home"
++          onPress={() => navigation.navigate('index' as never)}
++          iconComponent={
++            <HomeIcon
++              size={20}
++              color={isActive(state, 'index') ? colors.primary : colors.inactive}
++            />
++          }
++        />
++
++        {/* Browse (sheet trigger) */}
++        <TabButton
++          active={false}
++          label="Browse"
++          onPress={openBrowse}
++          iconComponent={
++            <Ionicons name="grid-outline" size={20} color={colors.inactive} />
++          }
++        />
++
++        {/* Saved */}
++        <TabButton
++          active={isActive(state, 'bookmarks')}
++          label="Saved"
++          onPress={() => navigation.navigate('bookmarks' as never)}
++          iconComponent={
++            <Ionicons
++              name={isActive(state, 'bookmarks') ? 'heart' : 'heart-outline'}
++              size={20}
++              color={isActive(state, 'bookmarks') ? colors.primary : colors.inactive}
++            />
++          }
++        />
++
++        {/* Agents */}
++        <TabButton
++          active={isActive(state, 'agents')}
++          label="Agents"
++          onPress={() => navigation.navigate('agents' as never)}
++          iconComponent={
++            <Ionicons
++              name={isActive(state, 'agents') ? 'people' : 'people-outline'}
++              size={20}
++              color={isActive(state, 'agents') ? colors.primary : colors.inactive}
++            />
++          }
++        />
++      </View>
++
++      <BrowseSheet ref={sheetRef} />
++    </>
++  );
++}
++
++function isActive(state: BottomTabBarProps['state'], name: string) {
++  return state.routes[state.index]?.name === name;
++}
++
++function TabButton({
++  active, label, onPress, iconComponent,
++}: {
++  active: boolean;
++  label: string;
++  onPress: () => void;
++  iconComponent: React.ReactNode;
++}) {
++  return (
++    <Pressable
++      style={s.tab}
++      onPress={onPress}
++      accessibilityRole="button"
++      accessibilityState={active ? { selected: true } : {}}
++      accessibilityLabel={label}
++    >
++      <View style={s.iconWrap}>{iconComponent}</View>
++      <Text style={[s.label, active && s.labelActive]}>{label}</Text>
++    </Pressable>
++  );
++}
++
++const s = StyleSheet.create({
++  bar: {
++    flexDirection: 'row',
++    backgroundColor: colors.surface,
++    borderTopWidth: 1,
++    borderTopColor: colors.border,
++    paddingHorizontal: spacing[2],
++    paddingTop: spacing[2],
++    alignItems: 'center',
++  },
++  tab: {
++    flex: 1,
++    alignItems: 'center',
++    justifyContent: 'center',
++    gap: 4,
++    paddingVertical: spacing[1],
++  },
++  iconWrap: { height: 22, alignItems: 'center', justifyContent: 'center' },
++  label: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.xs,
++    fontWeight: typography.weight.semibold,
++    letterSpacing: typography.letterSpacing.wide,
++    color: colors.inactive,
++  },
++  labelActive: { color: colors.primary },
++});
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add components/nav/CustomTabBar.tsx
++git commit -m "feat(nav): add custom 4-tab bar with Browse sheet trigger"
++```
++
++---
++
++## Task 16: Root layout (expo-router _layout.tsx)
++
++**Files:**
++- Create: `D:\Listings mobile version\app\_layout.tsx`
++
++- [ ] **Step 1: Write root _layout.tsx**
++
++```tsx
++import 'react-native-gesture-handler';
++import { Stack } from 'expo-router';
++import { GestureHandlerRootView } from 'react-native-gesture-handler';
++import { SafeAreaProvider } from 'react-native-safe-area-context';
++import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
++import { StatusBar } from 'expo-status-bar';
++import Toast from 'react-native-toast-message';
++import { colors } from '@/theme';
++
++export default function RootLayout() {
++  return (
++    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
++      <SafeAreaProvider>
++        <BottomSheetModalProvider>
++          <StatusBar style="dark" />
++          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
++            <Stack.Screen name="(tabs)" />
++            <Stack.Screen name="(auth)" />
++            <Stack.Screen name="property/[id]" options={{ presentation: 'card' }} />
++            <Stack.Screen name="project/[id]" options={{ presentation: 'card' }} />
++            <Stack.Screen name="agent/[id]" options={{ presentation: 'card' }} />
++            <Stack.Screen name="category/[type]" options={{ presentation: 'card' }} />
++            <Stack.Screen name="search" options={{ presentation: 'card' }} />
++            <Stack.Screen name="filters" options={{ presentation: 'modal' }} />
++            <Stack.Screen name="me" options={{ presentation: 'card' }} />
++          </Stack>
++          <Toast />
++        </BottomSheetModalProvider>
++      </SafeAreaProvider>
++    </GestureHandlerRootView>
++  );
++}
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add app/_layout.tsx
++git commit -m "feat(app): add root layout with stack navigator"
++```
++
++---
++
++## Task 17: Tabs layout with custom bar
++
++**Files:**
++- Create: `D:\Listings mobile version\app\(tabs)\_layout.tsx`
++
++- [ ] **Step 1: Write tabs layout**
++
++```tsx
++import { Tabs } from 'expo-router';
++import { CustomTabBar } from '@/components/nav/CustomTabBar';
++
++export default function TabsLayout() {
++  return (
++    <Tabs
++      tabBar={props => <CustomTabBar {...props} />}
++      screenOptions={{ headerShown: false }}
++    >
++      <Tabs.Screen name="index" options={{ title: 'Home' }} />
++      <Tabs.Screen name="bookmarks" options={{ title: 'Saved' }} />
++      <Tabs.Screen name="agents" options={{ title: 'Agents' }} />
++    </Tabs>
++  );
++}
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add "app/(tabs)/_layout.tsx"
++git commit -m "feat(app): add tabs layout with custom bar"
++```
++
++---
++
++## Task 18: Mock properties hook
++
++**Files:**
++- Create: `D:\Listings mobile version\hooks\useMockProperties.ts`
++
++- [ ] **Step 1: Write mock data hook**
++
++```ts
++export interface MockProperty {
++  id: string;
++  title: string;
++  location: string;
++  price: number;
++  bedrooms: number;
++  bathrooms: number;
++  sqft: number;
++  image: string;
++  isFeatured: boolean;
++}
++
++const MOCK: MockProperty[] = [
++  { id: '1', title: '3BHK Luxury Apartment', location: 'Indiranagar, Bangalore', price: 12500000, bedrooms: 3, bathrooms: 2, sqft: 1450, image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800', isFeatured: true },
++  { id: '2', title: 'Modern Villa',          location: 'Sarjapur, Bangalore',    price: 25000000, bedrooms: 4, bathrooms: 3, sqft: 2800, image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800', isFeatured: true },
++  { id: '3', title: '2BHK Apartment',         location: 'Koramangala, Bangalore', price:  8500000, bedrooms: 2, bathrooms: 2, sqft: 1150, image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800', isFeatured: false },
++  { id: '4', title: 'Penthouse',              location: 'Whitefield, Bangalore',  price: 35000000, bedrooms: 4, bathrooms: 4, sqft: 3200, image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800', isFeatured: true },
++  { id: '5', title: 'Plot',                   location: 'Devanahalli, Bangalore', price:  6000000, bedrooms: 0, bathrooms: 0, sqft: 2400, image: 'https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=800', isFeatured: false },
++];
++
++export function useMockProperties() {
++  return { data: MOCK, loading: false };
++}
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add hooks/useMockProperties.ts
++git commit -m "feat(hooks): add useMockProperties for M1 scaffolding"
++```
++
++---
++
++## Task 19: PropertyCard component
++
++**Files:**
++- Create: `D:\Listings mobile version\components\property\PropertyCard.tsx`
++
++- [ ] **Step 1: Write PropertyCard**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { Image } from 'expo-image';
++import { Ionicons } from '@expo/vector-icons';
++import { useRouter } from 'expo-router';
++import { colors, spacing, radius, typography, shadows } from '@/theme';
++import { formatPrice, formatSqft } from '@/lib/format';
++import type { MockProperty } from '@/hooks/useMockProperties';
++
++const BLURHASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
++
++interface Props {
++  property: MockProperty;
++  isBookmarked?: boolean;
++  onBookmarkToggle?: () => void;
++}
++
++export function PropertyCard({ property, isBookmarked, onBookmarkToggle }: Props) {
++  const router = useRouter();
++
++  return (
++    <Pressable
++      onPress={() => router.push(`/property/${property.id}` as any)}
++      style={({ pressed }) => [s.card, pressed && s.pressed]}
++    >
++      <View style={s.imageWrap}>
++        <Image
++          source={{ uri: property.image }}
++          style={s.image}
++          placeholder={BLURHASH}
++          transition={200}
++          contentFit="cover"
++        />
++        {property.isFeatured && (
++          <View style={s.featuredBadge}>
++            <Text style={s.featuredText}>★ Featured</Text>
++          </View>
++        )}
++        <Pressable
++          onPress={(e) => { e.stopPropagation(); onBookmarkToggle?.(); }}
++          hitSlop={8}
++          style={s.bookmarkBtn}
++        >
++          <Ionicons
++            name={isBookmarked ? 'heart' : 'heart-outline'}
++            size={22}
++            color={isBookmarked ? colors.danger : colors.textInverse}
++          />
++        </Pressable>
++      </View>
++
++      <View style={s.body}>
++        <Text style={s.title} numberOfLines={1}>{property.title}</Text>
++        <Text style={s.location} numberOfLines={1}>{property.location}</Text>
++        <View style={s.meta}>
++          <Text style={s.price}>{formatPrice(property.price)}</Text>
++          <Text style={s.dot}> · </Text>
++          <Text style={s.stats}>{formatSqft(property.sqft)}</Text>
++          {property.bedrooms > 0 && (
++            <>
++              <Text style={s.dot}> · </Text>
++              <Text style={s.stats}>{property.bedrooms} BHK</Text>
++            </>
++          )}
++        </View>
++      </View>
++    </Pressable>
++  );
++}
++
++const s = StyleSheet.create({
++  card: {
++    backgroundColor: colors.surface,
++    borderRadius: radius.lg,
++    overflow: 'hidden',
++    marginBottom: spacing[4],
++    ...(shadows.sm as object),
++  },
++  pressed: { opacity: 0.95 },
++  imageWrap: { position: 'relative', width: '100%', aspectRatio: 16 / 10 },
++  image: { width: '100%', height: '100%' },
++  featuredBadge: {
++    position: 'absolute',
++    top: spacing[3],
++    left: spacing[3],
++    backgroundColor: colors.gold,
++    paddingHorizontal: spacing[2],
++    paddingVertical: 4,
++    borderRadius: radius.sm,
++  },
++  featuredText: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.xs,
++    fontWeight: typography.weight.bold,
++    color: colors.textInverse,
++    letterSpacing: typography.letterSpacing.wide,
++  },
++  bookmarkBtn: {
++    position: 'absolute',
++    top: spacing[3],
++    right: spacing[3],
++    width: 36, height: 36,
++    borderRadius: radius.full,
++    backgroundColor: 'rgba(0, 0, 0, 0.35)',
++    alignItems: 'center', justifyContent: 'center',
++  },
++  body: { padding: spacing[4], gap: 2 },
++  title: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.md,
++    fontWeight: typography.weight.semibold,
++    color: colors.textPrimary,
++  },
++  location: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.sm,
++    color: colors.textMuted,
++  },
++  meta: { flexDirection: 'row', alignItems: 'center', marginTop: spacing[1], flexWrap: 'wrap' },
++  price: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.md,
++    fontWeight: typography.weight.bold,
++    color: colors.primary,
++  },
++  dot: { color: colors.textMuted },
++  stats: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.sm,
++    color: colors.textMuted,
++  },
++});
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add components/property/PropertyCard.tsx
++git commit -m "feat(property): add PropertyCard component"
++```
++
++---
++
++## Task 20: Home screen with mock data
++
++**Files:**
++- Create: `D:\Listings mobile version\app\(tabs)\index.tsx`
++
++- [ ] **Step 1: Write Home screen**
++
++```tsx
++import { FlatList, Text, View, StyleSheet, Pressable, ScrollView } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { Ionicons } from '@expo/vector-icons';
++import { Image } from 'expo-image';
++import { useRouter } from 'expo-router';
++import { useState } from 'react';
++import { PropertyCard } from '@/components/property/PropertyCard';
++import { Pill } from '@/components/ui/Pill';
++import { useMockProperties } from '@/hooks/useMockProperties';
++import { colors, spacing, typography } from '@/theme';
++
++const SECTIONS = ['All', 'Projects', 'Properties', 'Commercial', 'Warehouse'] as const;
++type Section = typeof SECTIONS[number];
++
++export default function Home() {
++  const insets = useSafeAreaInsets();
++  const router = useRouter();
++  const { data } = useMockProperties();
++  const [section, setSection] = useState<Section>('All');
++
++  const featured = data.filter(p => p.isFeatured);
++
++  return (
++    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
++      <View style={s.header}>
++        <Pressable onPress={() => router.push('/me' as any)} style={s.avatarBtn} hitSlop={8}>
++          <Ionicons name="person-circle-outline" size={32} color={colors.primary} />
++        </Pressable>
++        <Text style={s.brand}>27 Estates</Text>
++        <Pressable hitSlop={8}>
++          <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
++        </Pressable>
++      </View>
++
++      <Pressable onPress={() => router.push('/search' as any)} style={s.searchBar} hitSlop={4}>
++        <Ionicons name="search" size={18} color={colors.textMuted} />
++        <Text style={s.searchPlaceholder}>Search location, project...</Text>
++      </Pressable>
++
++      <ScrollView
++        horizontal
++        showsHorizontalScrollIndicator={false}
++        contentContainerStyle={s.sectionTabsRow}
++      >
++        {SECTIONS.map(sec => (
++          <Pill key={sec} label={sec} active={section === sec} onPress={() => setSection(sec)} />
++        ))}
++      </ScrollView>
++
++      <FlatList
++        data={data}
++        keyExtractor={(item) => item.id}
++        renderItem={({ item }) => <PropertyCard property={item} />}
++        contentContainerStyle={s.list}
++        ListHeaderComponent={
++          <View>
++            <SectionHeader title="Featured" />
++            <FlatList
++              data={featured}
++              keyExtractor={(item) => item.id}
++              horizontal
++              showsHorizontalScrollIndicator={false}
++              contentContainerStyle={s.featuredRail}
++              renderItem={({ item }) => (
++                <View style={{ width: 280, marginRight: spacing[3] }}>
++                  <PropertyCard property={item} />
++                </View>
++              )}
++            />
++            <SectionHeader title="Recent Listings" />
++          </View>
++        }
++      />
++    </View>
++  );
++}
++
++function SectionHeader({ title }: { title: string }) {
++  return (
++    <View style={s.sectionHeader}>
++      <Text style={s.sectionTitle}>{title}</Text>
++    </View>
++  );
++}
++
++const s = StyleSheet.create({
++  header: {
++    flexDirection: 'row',
++    alignItems: 'center',
++    justifyContent: 'space-between',
++    paddingHorizontal: spacing[4],
++    paddingVertical: spacing[3],
++  },
++  avatarBtn: { padding: 2 },
++  brand: {
++    fontFamily: typography.fontFamily.display,
++    fontSize: typography.size.lg,
++    color: colors.textPrimary,
++  },
++  searchBar: {
++    marginHorizontal: spacing[4],
++    marginBottom: spacing[3],
++    flexDirection: 'row',
++    alignItems: 'center',
++    gap: spacing[2],
++    paddingHorizontal: spacing[4],
++    height: 48,
++    backgroundColor: colors.surface,
++    borderRadius: 999,
++    borderWidth: 1,
++    borderColor: colors.border,
++  },
++  searchPlaceholder: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.base,
++    color: colors.textMuted,
++    flex: 1,
++  },
++  sectionTabsRow: {
++    paddingHorizontal: spacing[4],
++    gap: spacing[2],
++    paddingBottom: spacing[3],
++  },
++  list: { paddingHorizontal: spacing[4], paddingBottom: 100 },
++  sectionHeader: {
++    flexDirection: 'row',
++    justifyContent: 'space-between',
++    alignItems: 'baseline',
++    marginBottom: spacing[3],
++    marginTop: spacing[4],
++  },
++  sectionTitle: {
++    fontFamily: typography.fontFamily.display,
++    fontSize: typography.size.lg,
++    color: colors.textPrimary,
++  },
++  featuredRail: { paddingRight: spacing[4] },
++});
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add "app/(tabs)/index.tsx"
++git commit -m "feat(screens): add Home with mock feed + section tabs"
++```
++
++---
++
++## Task 21: Placeholder screens
++
++**Files:**
++- Create: `D:\Listings mobile version\app\(tabs)\bookmarks.tsx`
++- Create: `D:\Listings mobile version\app\(tabs)\agents.tsx`
++- Create: `D:\Listings mobile version\app\property\[id].tsx`
++- Create: `D:\Listings mobile version\app\project\[id].tsx`
++- Create: `D:\Listings mobile version\app\agent\[id].tsx`
++- Create: `D:\Listings mobile version\app\category\[type].tsx`
++- Create: `D:\Listings mobile version\app\search.tsx`
++- Create: `D:\Listings mobile version\app\filters.tsx`
++- Create: `D:\Listings mobile version\app\me.tsx`
++
++- [ ] **Step 1: Write reusable placeholder template**
++
++Each placeholder uses the same structure. For `bookmarks.tsx`:
++
++```tsx
++import { View, Text, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { EmptyState } from '@/components/ui/EmptyState';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Bookmarks() {
++  const insets = useSafeAreaInsets();
++  return (
++    <View style={[s.container, { paddingTop: insets.top + spacing[4] }]}>
++      <Text style={s.title}>Saved</Text>
++      <EmptyState
++        title="Nothing saved yet"
++        description="Tap the heart on a listing to save it. (Bookmarks arrive in M2.)"
++      />
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing[4] },
++  title: {
++    fontFamily: typography.fontFamily.display,
++    fontSize: typography.size.xl,
++    color: colors.textPrimary,
++    marginBottom: spacing[4],
++  },
++});
++```
++
++- [ ] **Step 2: Write agents.tsx (same pattern)**
++
++Replace title with "Our Agents", description with "Agent listings coming in M3."
++
++- [ ] **Step 3: Write me.tsx (guest state)**
++
++```tsx
++import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { Image } from 'expo-image';
++import { useRouter } from 'expo-router';
++import { Button } from '@/components/ui/Button';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Me() {
++  const insets = useSafeAreaInsets();
++  const router = useRouter();
++  return (
++    <ScrollView style={[s.container, { paddingTop: insets.top }]} contentContainerStyle={s.content}>
++      <Image source={require('@/assets/images/logo-trimmed.png')} style={s.logo} contentFit="contain" />
++      <Text style={s.title}>Sign in to 27 Estates</Text>
++      <Text style={s.desc}>Browse premium properties, save your favorites, and connect with our agents.</Text>
++      <View style={s.actions}>
++        <Button label="Sign in" onPress={() => router.push('/(auth)/login' as any)} />
++        <Button label="Create account" onPress={() => router.push('/(auth)/signup' as any)} variant="secondary" />
++        <Pressable onPress={() => router.back()} style={s.guestLink}>
++          <Text style={s.guestText}>Continue as guest</Text>
++        </Pressable>
++      </View>
++    </ScrollView>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  content: { padding: spacing[6], alignItems: 'center' },
++  logo: { width: 120, height: 120, marginVertical: spacing[8] },
++  title: {
++    fontFamily: typography.fontFamily.display,
++    fontSize: typography.size.xl,
++    color: colors.textPrimary,
++    marginBottom: spacing[3],
++    textAlign: 'center',
++  },
++  desc: {
++    fontFamily: typography.fontFamily.body,
++    fontSize: typography.size.base,
++    color: colors.textMuted,
++    textAlign: 'center',
++    marginBottom: spacing[8],
++    lineHeight: typography.size.base * typography.lineHeight.relaxed,
++  },
++  actions: { width: '100%', gap: spacing[3] },
++  guestLink: { padding: spacing[3], alignItems: 'center' },
++  guestText: { color: colors.primary, fontFamily: typography.fontFamily.body, fontSize: typography.size.base, fontWeight: typography.weight.semibold },
++});
++```
++
++- [ ] **Step 4: Write property/[id].tsx placeholder**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useLocalSearchParams, useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function PropertyDetail() {
++  const insets = useSafeAreaInsets();
++  const { id } = useLocalSearchParams<{ id: string }>();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Property detail</Text>
++        <Text style={s.meta}>ID: {id}</Text>
++        <Text style={s.note}>Full hero carousel, stats, agent card and sticky CTA arrive in M2.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  meta: { fontFamily: typography.fontFamily.body, fontSize: typography.size.base, color: colors.textMuted },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 5: Write project/[id].tsx**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useLocalSearchParams, useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function ProjectDetail() {
++  const insets = useSafeAreaInsets();
++  const { id } = useLocalSearchParams<{ id: string }>();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Project detail</Text>
++        <Text style={s.meta}>ID: {id}</Text>
++        <Text style={s.note}>Project layout arrives in M2.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  meta: { fontFamily: typography.fontFamily.body, fontSize: typography.size.base, color: colors.textMuted },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 6: Write agent/[id].tsx**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useLocalSearchParams, useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function AgentDetail() {
++  const insets = useSafeAreaInsets();
++  const { id } = useLocalSearchParams<{ id: string }>();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Agent profile</Text>
++        <Text style={s.meta}>ID: {id}</Text>
++        <Text style={s.note}>Agent profile layout arrives in M3.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  meta: { fontFamily: typography.fontFamily.body, fontSize: typography.size.base, color: colors.textMuted },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 7: Write category/[type].tsx**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useLocalSearchParams, useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Category() {
++  const insets = useSafeAreaInsets();
++  const { type } = useLocalSearchParams<{ type: string }>();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Category: {type}</Text>
++        <Text style={s.note}>Filtered listings for this category arrive in M2.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary, textTransform: 'capitalize' },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 8: Write search.tsx**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Search() {
++  const insets = useSafeAreaInsets();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Search + Map</Text>
++        <Text style={s.note}>Mapbox-powered search arrives in M3.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 9: Write filters.tsx (modal)**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Filters() {
++  const insets = useSafeAreaInsets();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="close" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Filters</Text>
++        <Text style={s.note}>Filter UI arrives in M3.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 10: Write app/(auth)/_layout.tsx**
++
++```tsx
++import { Stack } from 'expo-router';
++
++export default function AuthLayout() {
++  return <Stack screenOptions={{ headerShown: false }} />;
++}
++```
++
++- [ ] **Step 11: Write app/(auth)/welcome.tsx**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Welcome() {
++  const insets = useSafeAreaInsets();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Welcome</Text>
++        <Text style={s.note}>Auth UI arrives in M2.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 12: Write app/(auth)/login.tsx**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Login() {
++  const insets = useSafeAreaInsets();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Sign in</Text>
++        <Text style={s.note}>Auth UI arrives in M2.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 13: Write app/(auth)/signup.tsx**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Signup() {
++  const insets = useSafeAreaInsets();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Create account</Text>
++        <Text style={s.note}>Auth UI arrives in M2.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 14: Write app/(auth)/forgot-password.tsx**
++
++```tsx
++import { View, Text, Pressable, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { useRouter } from 'expo-router';
++import { Ionicons } from '@expo/vector-icons';
++import { colors, spacing, typography } from '@/theme';
++
++export default function ForgotPassword() {
++  const insets = useSafeAreaInsets();
++  const router = useRouter();
++  return (
++    <View style={[s.container, { paddingTop: insets.top }]}>
++      <Pressable onPress={() => router.back()} style={s.back} hitSlop={8}>
++        <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
++      </Pressable>
++      <View style={s.body}>
++        <Text style={s.title}>Forgot password</Text>
++        <Text style={s.note}>Auth UI arrives in M2.</Text>
++      </View>
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background },
++  back: { padding: spacing[4] },
++  body: { padding: spacing[5], gap: spacing[3] },
++  title: { fontFamily: typography.fontFamily.display, fontSize: typography.size.xl, color: colors.textPrimary },
++  note: { fontFamily: typography.fontFamily.body, fontSize: typography.size.sm, color: colors.textMuted, marginTop: spacing[4] },
++});
++```
++
++- [ ] **Step 15: Write app/(tabs)/agents.tsx**
++
++```tsx
++import { View, Text, StyleSheet } from 'react-native';
++import { useSafeAreaInsets } from 'react-native-safe-area-context';
++import { EmptyState } from '@/components/ui/EmptyState';
++import { colors, spacing, typography } from '@/theme';
++
++export default function Agents() {
++  const insets = useSafeAreaInsets();
++  return (
++    <View style={[s.container, { paddingTop: insets.top + spacing[4] }]}>
++      <Text style={s.title}>Our Agents</Text>
++      <EmptyState
++        title="Agents coming soon"
++        description="The agent directory arrives in M3."
++      />
++    </View>
++  );
++}
++const s = StyleSheet.create({
++  container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: spacing[4] },
++  title: {
++    fontFamily: typography.fontFamily.display,
++    fontSize: typography.size.xl,
++    color: colors.textPrimary,
++    marginBottom: spacing[4],
++  },
++});
++```
++
++- [ ] **Step 16: Commit all placeholders**
++
++```bash
++git add "app/(tabs)/bookmarks.tsx" "app/(tabs)/agents.tsx" "app/(auth)/" app/property/ app/project/ app/agent/ app/category/ app/search.tsx app/filters.tsx app/me.tsx
++git commit -m "feat(screens): add placeholder screens for M1 navigation shell"
++```
++
++---
++
++## Task 22: Load fonts (Playfair + Inter)
++
++**Files:**
++- Modify: `D:\Listings mobile version\app\_layout.tsx`
++
++- [ ] **Step 1: Install fonts via expo-font**
++
++Download Playfair Display and Inter .ttf files from Google Fonts and place them in `D:\Listings mobile version\assets\fonts\`. Required weights:
++- PlayfairDisplay-Regular.ttf, PlayfairDisplay-Bold.ttf
++- Inter-Regular.ttf, Inter-Medium.ttf, Inter-SemiBold.ttf, Inter-Bold.ttf
++
++Run:
++```bash
++cd "/d/Listings mobile version"
++mkdir -p assets/fonts
++# Download each file via curl or manually place them.
++# Example (repeat for each):
++curl -o assets/fonts/Inter-Regular.ttf https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.ttf
++```
++
++> **If curl from Google Fonts fails** (common on Windows with cert issues), download manually from https://fonts.google.com/specimen/Inter and https://fonts.google.com/specimen/Playfair+Display, place into `assets/fonts/`.
++
++- [ ] **Step 2: Wire font loader into _layout.tsx**
++
++Modify `app/_layout.tsx` to block render until fonts load:
++
++```tsx
++import 'react-native-gesture-handler';
++import { Stack } from 'expo-router';
++import { GestureHandlerRootView } from 'react-native-gesture-handler';
++import { SafeAreaProvider } from 'react-native-safe-area-context';
++import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
++import { StatusBar } from 'expo-status-bar';
++import Toast from 'react-native-toast-message';
++import { useFonts } from 'expo-font';
++import * as SplashScreen from 'expo-splash-screen';
++import { useEffect } from 'react';
++import { colors } from '@/theme';
++
++SplashScreen.preventAutoHideAsync();
++
++export default function RootLayout() {
++  const [loaded, error] = useFonts({
++    PlayfairDisplay:           require('@/assets/fonts/PlayfairDisplay-Regular.ttf'),
++    'PlayfairDisplay-Bold':    require('@/assets/fonts/PlayfairDisplay-Bold.ttf'),
++    Inter:                     require('@/assets/fonts/Inter-Regular.ttf'),
++    'Inter-Medium':            require('@/assets/fonts/Inter-Medium.ttf'),
++    'Inter-SemiBold':          require('@/assets/fonts/Inter-SemiBold.ttf'),
++    'Inter-Bold':              require('@/assets/fonts/Inter-Bold.ttf'),
++  });
++
++  useEffect(() => {
++    if (loaded || error) SplashScreen.hideAsync();
++  }, [loaded, error]);
++
++  if (!loaded && !error) return null;
++
++  return (
++    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
++      <SafeAreaProvider>
++        <BottomSheetModalProvider>
++          <StatusBar style="dark" />
++          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
++            <Stack.Screen name="(tabs)" />
++            <Stack.Screen name="(auth)" />
++            <Stack.Screen name="property/[id]" options={{ presentation: 'card' }} />
++            <Stack.Screen name="project/[id]" options={{ presentation: 'card' }} />
++            <Stack.Screen name="agent/[id]" options={{ presentation: 'card' }} />
++            <Stack.Screen name="category/[type]" options={{ presentation: 'card' }} />
++            <Stack.Screen name="search" options={{ presentation: 'card' }} />
++            <Stack.Screen name="filters" options={{ presentation: 'modal' }} />
++            <Stack.Screen name="me" options={{ presentation: 'card' }} />
++          </Stack>
++          <Toast />
++        </BottomSheetModalProvider>
++      </SafeAreaProvider>
++    </GestureHandlerRootView>
++  );
++}
++```
++
++> **Weight mapping caveat:** React Native's `fontWeight` prop does not automatically pick the right Inter variant. We use family names like `Inter-SemiBold` explicitly. Since our `typography.ts` currently uses `weight` as numeric strings, post-M1 we'll refactor to family-weight pairs. For M1, weight differences may look identical until we refine.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add assets/fonts/ app/_layout.tsx
++git commit -m "feat(fonts): load Playfair + Inter via expo-font"
++```
++
++---
++
++## Task 23: EAS build config + first dev build
++
++**Files:**
++- Create: `D:\Listings mobile version\eas.json`
++
++- [ ] **Step 1: Install EAS CLI globally (one-time)**
++
++```bash
++npm install -g eas-cli
++```
++
++- [ ] **Step 2: Write eas.json**
++
++```json
++{
++  "cli": { "version": ">= 5.0.0" },
++  "build": {
++    "development": {
++      "developmentClient": true,
++      "distribution": "internal",
++      "android": { "buildType": "apk" }
++    },
++    "preview": {
++      "distribution": "internal",
++      "android": { "buildType": "apk" }
++    },
++    "production": {
++      "autoIncrement": true
++    }
++  }
++}
++```
++
++- [ ] **Step 3: Log in to Expo**
++
++```bash
++cd "/d/Listings mobile version"
++eas login
++```
++
++- [ ] **Step 4: Configure project**
++
++```bash
++eas build:configure
++```
++
++Accept defaults. This writes the EAS project id back into `app.json`.
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add eas.json app.json
++git commit -m "chore(eas): add build profiles and expo project id"
++```
++
++---
++
++## Task 24: Run dev build on Android emulator
++
++**Files:** none (runtime verification)
++
++- [ ] **Step 1: Start Metro bundler**
++
++```bash
++cd "/d/Listings mobile version"
++npx expo start
++```
++
++In another terminal, make sure an Android emulator is running (via Android Studio → AVD Manager → launch a device, e.g. Pixel 7 API 34).
++
++- [ ] **Step 2: Press `a` in the Metro terminal to open on Android**
++
++Expected: app builds, installs on the emulator, opens to Home screen showing:
++- Header with avatar + "27 Estates" + bell
++- Search bar
++- 5 horizontal section Pills (All / Projects / Properties / Commercial / Warehouse)
++- "Featured" rail with 3 horizontal property cards
++- "Recent Listings" vertical list (5 cards)
++- 4-tab bottom bar (Home / Browse / Saved / Agents)
++
++- [ ] **Step 3: Verify tab navigation works**
++
++Tap each tab:
++- Home → current screen stays
++- Browse → sheet rises from bottom with 4 category cards
++- Saved → placeholder screen with EmptyState
++- Agents → placeholder screen
++
++Tap Home avatar → `/me` placeholder opens. Back button returns to Home.
++
++Tap a property card → property detail placeholder opens with property ID shown.
++
++- [ ] **Step 4: Capture a screenshot**
++
++Use emulator screenshot tool, save to `docs/superpowers/plans/screenshots/m1-home-android.png` (create dir if needed).
++
++- [ ] **Step 5: Commit screenshot**
++
++```bash
++mkdir -p docs/superpowers/plans/screenshots
++# After saving image:
++git add docs/superpowers/plans/screenshots/m1-home-android.png
++git commit -m "docs: add M1 home screenshot (android)"
++```
++
++---
++
++## Task 25: Run dev build on iOS simulator (Mac only)
++
++**Files:** none
++
++> **Skip this task if no Mac is available.** Android-only dev is fine through M1 — iOS verification can happen during M2 on a Mac or via EAS cloud build.
++
++- [ ] **Step 1: Ensure Xcode + iOS simulator installed**
++
++Run:
++```bash
++xcode-select --install
++xcrun simctl list devices
++```
++
++- [ ] **Step 2: Launch on iOS**
++
++Back in Metro bundler terminal, press `i`.
++
++Expected: same Home screen behavior as Android. Verify bottom sheet opens with rounded top corners (radius.xl = 20).
++
++- [ ] **Step 3: Capture screenshot + commit**
++
++Save to `docs/superpowers/plans/screenshots/m1-home-ios.png`.
++
++```bash
++git add docs/superpowers/plans/screenshots/m1-home-ios.png
++git commit -m "docs: add M1 home screenshot (ios)"
++```
++
++---
++
++## Task 26: Write README for new project
++
++**Files:**
++- Create: `D:\Listings mobile version\README.md`
++
++- [ ] **Step 1: Write README**
++
++```markdown
++# 27 Estates — Listings Mobile
++
++Standalone Expo + React Native app for iOS and Android. Shares Supabase backend with the 27 Estates web (`qjesattjnuoogqgiorws`).
++
++## Quick start
++
++```bash
++npm install
++cp .env.example .env
++# Fill in EXPO_PUBLIC_MAPBOX_TOKEN (M3+) — Supabase values already in .env
++npx expo start
++```
++
++- Press `a` for Android emulator
++- Press `i` for iOS simulator (Mac only)
++
++## Project structure
++
++See `docs/` in the parent web repo: `docs/superpowers/specs/2026-04-15-listings-mobile-app-design.md`.
++
++## Commands
++
++- `npm test` — Jest unit tests
++- `npm run typecheck` — TypeScript strict check
++- `npx expo start` — dev server
++- `eas build --profile development --platform android` — cloud dev build
++
++## Milestones
++
++- **M1 (done):** Scaffolding, theme, navigation shell, Home with mock data
++- **M2:** Core browse flow — real Supabase data, property detail, bookmarks, auth
++- **M3:** Search + Mapbox + filters + agents + inquiries
++- **M4:** Agent post wizard + my listings + polish + store submission
++
++## Brand
++
++- Primary teal: `#183C38`
++- Gold accent: `#BFA270`
++- Background warm: `#f9f6f3`
++- Display font: Playfair Display
++- Body font: Inter
++
++Copied 1:1 from web `globals.css`.
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add README.md
++git commit -m "docs: add project README"
++```
++
++---
++
++## Task 27: Final verification + parent-repo cross-reference
++
++**Files:**
++- Modify (optional): `C:\Users\SujanDandgulkar\OneDrive - UK&CO\21 estates\21-estates-web\docs\superpowers\plans\2026-04-15-listings-mobile-m1-skeleton.md` — add DONE marker at top
++
++- [ ] **Step 1: Run typecheck**
++
++```bash
++cd "/d/Listings mobile version"
++npm run typecheck
++```
++
++Expected: no errors.
++
++- [ ] **Step 2: Run tests**
++
++```bash
++npm test
++```
++
++Expected: all tests pass (format tests from Task 11).
++
++- [ ] **Step 3: Verify dev build still works**
++
++Run `npx expo start` and press `a` (or `i`). Confirm Home still renders correctly.
++
++- [ ] **Step 4: Verify commits are clean**
++
++```bash
++git log --oneline
++git status
++```
++
++Expected: clean working tree, linear commit history covering all tasks.
++
++- [ ] **Step 5: Add DONE marker to plan file (in parent web repo)**
++
++At the top of the plan file (`C:\Users\SujanDandgulkar\OneDrive - UK&CO\21 estates\21-estates-web\docs\superpowers\plans\2026-04-15-listings-mobile-m1-skeleton.md`), add under the Goal line:
++
++```markdown
++**Status:** ✅ M1 complete on 2026-MM-DD. Ready to plan M2.
++```
++
++- [ ] **Step 6: Commit plan status update in parent web repo**
++
++```bash
++cd "/c/Users/SujanDandgulkar/OneDrive - UK&CO/21 estates/21-estates-web"
++git add docs/superpowers/plans/2026-04-15-listings-mobile-m1-skeleton.md
++git commit -m "docs: mark listings-mobile M1 plan complete"
++```
++
++---
++
++## Follow-up items (not part of M1 execution, tracked here)
++
++- [ ] Obtain Mapbox access token and add to `.env` before M3 kickoff
++- [ ] Generate proper app icons + splash (1024x1024 source, run through https://icon.kitchen or `expo-icon-utils`) — currently using logo-trimmed as placeholder
++- [ ] Decide on Sentry crash reporting before M2 ships to TestFlight
++- [ ] Write M2 plan covering: real Supabase queries in `lib/queries/*`, Property Detail full layout, auth flow, bookmarks logic with guest→login sync
+-- 
+2.51.0.windows.1
+
+
+From a3850de7c31260366d15c1c23bcc3b3828723366 Mon Sep 17 00:00:00 2001
+From: Sujan S Dandgulkar <sujan.d@ukco.in>
+Date: Tue, 28 Apr 2026 15:59:06 +0530
+Subject: [PATCH 3/3] feat(hrms): add Payroll Control page for super admin
+
+- /crm/hrm/payroll: month selector, employee list, create/edit modal
+  with all earnings + deduction fields; auto-calculates gross/net live
+- /api/crm/hrm/payroll: GET (by month) + POST (upsert) + PATCH (approve/reject)
+- /crm/hrm: add Payroll Control card to HRM overview stats grid
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+---
+ src/app/api/crm/hrm/payroll/route.ts | 129 +++++++++
+ src/app/crm/hrm/page.tsx             |   1 +
+ src/app/crm/hrm/payroll/page.tsx     | 401 +++++++++++++++++++++++++++
+ 3 files changed, 531 insertions(+)
+ create mode 100644 src/app/api/crm/hrm/payroll/route.ts
+ create mode 100644 src/app/crm/hrm/payroll/page.tsx
+
+diff --git a/src/app/api/crm/hrm/payroll/route.ts b/src/app/api/crm/hrm/payroll/route.ts
+new file mode 100644
+index 0000000..1841de5
+--- /dev/null
++++ b/src/app/api/crm/hrm/payroll/route.ts
+@@ -0,0 +1,129 @@
++export const dynamic = 'force-dynamic'
++
++import { NextRequest, NextResponse } from 'next/server'
++import { createClient } from '@supabase/supabase-js'
++
++const supabase = createClient(
++    process.env.NEXT_PUBLIC_SUPABASE_URL!,
++    process.env.SUPABASE_SERVICE_ROLE_KEY!
++)
++
++// GET /api/crm/hrm/payroll?month=2025-04
++export async function GET(request: NextRequest) {
++    const { searchParams } = new URL(request.url)
++    const month = searchParams.get('month') || ''
++
++    try {
++        const [{ data: payrolls, error }, { data: employees }] = await Promise.all([
++            month
++                ? supabase.from('hrm_payroll').select('*').eq('month', month).order('employee_name')
++                : supabase.from('hrm_payroll').select('*').order('month', { ascending: false }).limit(200),
++            supabase.from('profiles').select('id, full_name, role').neq('role', 'super_admin').order('full_name'),
++        ])
++
++        if (error) {
++            if (error.code === '42P01') return NextResponse.json({ payrolls: [], employees: [], tableExists: false })
++            return NextResponse.json({ error: error.message }, { status: 500 })
++        }
++
++        return NextResponse.json({ payrolls: payrolls || [], employees: employees || [] })
++    } catch (e: any) {
++        return NextResponse.json({ error: e.message }, { status: 500 })
++    }
++}
++
++// POST /api/crm/hrm/payroll — upsert a payroll record
++export async function POST(request: NextRequest) {
++    try {
++        const body = await request.json()
++        const {
++            id, employee_id, employee_name, designation, month,
++            basic_salary, hra, conveyance, special_allowance, travel_allowance,
++            medical_allowance, bonus, pf_deduction, tax, professional_tax,
++            lop_deduction, deductions, total_working_days, days_present,
++            paid_leaves, unpaid_leaves, notes,
++        } = body
++
++        const gross_salary =
++            (Number(basic_salary) || 0) + (Number(hra) || 0) + (Number(conveyance) || 0) +
++            (Number(special_allowance) || 0) + (Number(travel_allowance) || 0) +
++            (Number(medical_allowance) || 0) + (Number(bonus) || 0)
++
++        const total_deductions =
++            (Number(pf_deduction) || 0) + (Number(tax) || 0) + (Number(professional_tax) || 0) +
++            (Number(lop_deduction) || 0) + (Number(deductions) || 0)
++
++        const net_salary = gross_salary - total_deductions
++
++        const payload = {
++            employee_id, employee_name, designation, month,
++            basic_salary: Number(basic_salary) || 0,
++            hra: Number(hra) || 0,
++            conveyance: Number(conveyance) || 0,
++            special_allowance: Number(special_allowance) || 0,
++            travel_allowance: Number(travel_allowance) || 0,
++            medical_allowance: Number(medical_allowance) || 0,
++            bonus: Number(bonus) || 0,
++            gross_salary,
++            pf_deduction: Number(pf_deduction) || 0,
++            tax: Number(tax) || 0,
++            professional_tax: Number(professional_tax) || 0,
++            lop_deduction: Number(lop_deduction) || 0,
++            deductions: Number(deductions) || 0,
++            total_deductions,
++            net_salary,
++            total_working_days: Number(total_working_days) || 0,
++            days_present: Number(days_present) || 0,
++            paid_leaves: Number(paid_leaves) || 0,
++            unpaid_leaves: Number(unpaid_leaves) || 0,
++            notes: notes || null,
++            status: 'pending',
++            updated_at: new Date().toISOString(),
++        }
++
++        let result
++        if (id) {
++            // Update existing (preserve status unless explicitly changing)
++            const { data, error } = await supabase
++                .from('hrm_payroll')
++                .update({ ...payload, status: body.status || 'pending' })
++                .eq('id', id)
++                .select()
++                .single()
++            if (error) return NextResponse.json({ error: error.message }, { status: 500 })
++            result = data
++        } else {
++            const { data, error } = await supabase
++                .from('hrm_payroll')
++                .insert({ ...payload, created_at: new Date().toISOString() })
++                .select()
++                .single()
++            if (error) return NextResponse.json({ error: error.message }, { status: 500 })
++            result = data
++        }
++
++        return NextResponse.json({ payroll: result })
++    } catch (e: any) {
++        return NextResponse.json({ error: e.message }, { status: 500 })
++    }
++}
++
++// PATCH /api/crm/hrm/payroll — approve or reject
++export async function PATCH(request: NextRequest) {
++    try {
++        const { id, status, approved_by } = await request.json()
++        if (!id || !status) return NextResponse.json({ error: 'id and status required' }, { status: 400 })
++
++        const { data, error } = await supabase
++            .from('hrm_payroll')
++            .update({ status, approved_by: approved_by || null, approved_at: new Date().toISOString() })
++            .eq('id', id)
++            .select()
++            .single()
++
++        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
++        return NextResponse.json({ payroll: data })
++    } catch (e: any) {
++        return NextResponse.json({ error: e.message }, { status: 500 })
++    }
++}
+diff --git a/src/app/crm/hrm/page.tsx b/src/app/crm/hrm/page.tsx
+index c3db4b8..6304708 100644
+--- a/src/app/crm/hrm/page.tsx
++++ b/src/app/crm/hrm/page.tsx
+@@ -117,6 +117,7 @@ export default function HRMOverviewPage() {
+                     { label: 'Present Today', value: todayAttendance.present + todayAttendance.wfh, color: '#22c55e', icon: Clock, href: '/crm/hrm/attendance' },
+                     { label: 'Pending Leaves', value: pendingLeaves, color: '#f59e0b', icon: Calendar, href: '/crm/hrm/leaves' },
+                     { label: 'Open Tasks', value: openTasks, color: '#8b5cf6', icon: ClipboardList, href: '/crm/hrm/tasks' },
++                    { label: 'Payroll Control', value: 'Manage →', color: '#16a34a', icon: TrendingUp, href: '/crm/hrm/payroll' },
+                 ].map(s => (
+                     <Link key={s.label} href={s.href} style={{ textDecoration: 'none' }}>
+                         <div className={styles.statCard} style={{ cursor: 'pointer', transition: 'border-color 0.15s' }}>
+diff --git a/src/app/crm/hrm/payroll/page.tsx b/src/app/crm/hrm/payroll/page.tsx
+new file mode 100644
+index 0000000..db0a504
+--- /dev/null
++++ b/src/app/crm/hrm/payroll/page.tsx
+@@ -0,0 +1,401 @@
++'use client'
++
++import { useState, useEffect, useCallback } from 'react'
++import Link from 'next/link'
++import {
++    ArrowLeft, ChevronLeft, ChevronRight, Plus, Check, X,
++    Download, Users, DollarSign, Clock, FileText,
++} from 'lucide-react'
++import { useCRMUser, isSuperAdmin } from '../../crm-context'
++import styles from '../../crm.module.css'
++import { format, addMonths, subMonths } from 'date-fns'
++
++interface Employee { id: string; full_name: string; role: string }
++interface PayrollRecord {
++    id: string; employee_id: string; employee_name: string; designation: string
++    month: string; basic_salary: number; hra: number; conveyance: number
++    special_allowance: number; travel_allowance: number; medical_allowance: number
++    bonus: number; gross_salary: number; pf_deduction: number; tax: number
++    professional_tax: number; lop_deduction: number; deductions: number
++    total_deductions: number; net_salary: number
++    total_working_days: number; days_present: number; paid_leaves: number; unpaid_leaves: number
++    status: string; notes?: string
++}
++
++const EMPTY_FORM = {
++    basic_salary: '', hra: '', conveyance: '', special_allowance: '', travel_allowance: '',
++    medical_allowance: '', bonus: '', pf_deduction: '', tax: '', professional_tax: '',
++    lop_deduction: '', deductions: '', total_working_days: '', days_present: '',
++    paid_leaves: '', unpaid_leaves: '', notes: '',
++}
++
++const n = (v: string) => Number(v) || 0
++const fmt = (v: number) =>
++    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v)
++
++const STATUS_PILL: Record<string, { bg: string; color: string; label: string }> = {
++    pending:  { bg: '#FEF3C710', color: '#D97706', label: 'Pending' },
++    approved: { bg: '#ECFDF510', color: '#16A34A', label: 'Approved' },
++    rejected: { bg: '#FEF2F210', color: '#DC2626', label: 'Rejected' },
++}
++
++export default function PayrollControlPage() {
++    const crmUser = useCRMUser()
++    const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'))
++    const [employees, setEmployees] = useState<Employee[]>([])
++    const [payrolls, setPayrolls] = useState<PayrollRecord[]>([])
++    const [loading, setLoading] = useState(true)
++    const [saving, setSaving] = useState(false)
++    const [modalEmp, setModalEmp] = useState<Employee | null>(null)
++    const [form, setForm] = useState<typeof EMPTY_FORM>(EMPTY_FORM)
++    const [editId, setEditId] = useState<string | null>(null)
++    const [editStatus, setEditStatus] = useState<string>('pending')
++    const [toast, setToast] = useState('')
++
++    const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
++
++    const load = useCallback(async () => {
++        setLoading(true)
++        const res = await fetch(`/api/crm/hrm/payroll?month=${month}`)
++        if (res.ok) {
++            const d = await res.json()
++            setEmployees(d.employees || [])
++            setPayrolls(d.payrolls || [])
++        }
++        setLoading(false)
++    }, [month])
++
++    useEffect(() => { load() }, [load])
++
++    if (!isSuperAdmin(crmUser)) {
++        return (
++            <div className={styles.pageContent}>
++                <div className={styles.emptyState}>Super admin access required to manage payroll.</div>
++            </div>
++        )
++    }
++
++    const openModal = (emp: Employee) => {
++        const existing = payrolls.find(p => p.employee_id === emp.id)
++        if (existing) {
++            setForm({
++                basic_salary: String(existing.basic_salary || ''),
++                hra: String(existing.hra || ''),
++                conveyance: String(existing.conveyance || ''),
++                special_allowance: String(existing.special_allowance || ''),
++                travel_allowance: String(existing.travel_allowance || ''),
++                medical_allowance: String(existing.medical_allowance || ''),
++                bonus: String(existing.bonus || ''),
++                pf_deduction: String(existing.pf_deduction || ''),
++                tax: String(existing.tax || ''),
++                professional_tax: String(existing.professional_tax || ''),
++                lop_deduction: String(existing.lop_deduction || ''),
++                deductions: String(existing.deductions || ''),
++                total_working_days: String(existing.total_working_days || ''),
++                days_present: String(existing.days_present || ''),
++                paid_leaves: String(existing.paid_leaves || ''),
++                unpaid_leaves: String(existing.unpaid_leaves || ''),
++                notes: existing.notes || '',
++            })
++            setEditId(existing.id)
++            setEditStatus(existing.status)
++        } else {
++            setForm(EMPTY_FORM)
++            setEditId(null)
++            setEditStatus('pending')
++        }
++        setModalEmp(emp)
++    }
++
++    const gross = n(form.basic_salary) + n(form.hra) + n(form.conveyance) +
++        n(form.special_allowance) + n(form.travel_allowance) + n(form.medical_allowance) + n(form.bonus)
++    const totalDed = n(form.pf_deduction) + n(form.tax) + n(form.professional_tax) +
++        n(form.lop_deduction) + n(form.deductions)
++    const net = gross - totalDed
++
++    const handleSave = async () => {
++        if (!modalEmp) return
++        setSaving(true)
++        const body = {
++            id: editId,
++            employee_id: modalEmp.id,
++            employee_name: modalEmp.full_name,
++            designation: modalEmp.role,
++            month,
++            ...Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v === '' ? 0 : v])),
++        }
++        const res = await fetch('/api/crm/hrm/payroll', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
++        setSaving(false)
++        if (res.ok) { showToast('Saved'); setModalEmp(null); load() }
++        else { const d = await res.json(); showToast(d.error || 'Save failed') }
++    }
++
++    const handleApproveReject = async (id: string, status: 'approved' | 'rejected') => {
++        const res = await fetch('/api/crm/hrm/payroll', {
++            method: 'PATCH',
++            headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({ id, status, approved_by: crmUser?.id }),
++        })
++        if (res.ok) { showToast(status === 'approved' ? 'Approved' : 'Rejected'); load() }
++    }
++
++    const pendingCount = payrolls.filter(p => p.status === 'pending').length
++    const approvedCount = payrolls.filter(p => p.status === 'approved').length
++    const totalPayout = payrolls.filter(p => p.status === 'approved').reduce((s, p) => s + p.net_salary, 0)
++
++    const navigateMonth = (dir: -1 | 1) => {
++        const d = new Date(month + '-01')
++        setMonth(format(dir === 1 ? addMonths(d, 1) : subMonths(d, 1), 'yyyy-MM'))
++    }
++
++    const fmtMonth = (m: string) => {
++        try { return format(new Date(m + '-01'), 'MMMM yyyy') } catch { return m }
++    }
++
++    return (
++        <div className={styles.pageContent}>
++            {/* Header */}
++            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
++                <Link href="/crm/hrm" style={{ display: 'flex', alignItems: 'center', color: 'var(--crm-text-faint)', textDecoration: 'none' }}>
++                    <ArrowLeft size={16} />
++                </Link>
++                <div>
++                    <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--crm-text-primary)', margin: 0 }}>Payroll Control</h1>
++                    <p style={{ fontSize: '0.8125rem', color: 'var(--crm-text-faint)', margin: 0 }}>Create and approve employee payroll · super admin only</p>
++                </div>
++            </div>
++
++            {/* Month Selector */}
++            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
++                <button onClick={() => navigateMonth(-1)} style={btnIconStyle}>
++                    <ChevronLeft size={16} />
++                </button>
++                <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--crm-text-primary)', minWidth: '10rem', textAlign: 'center' }}>
++                    {fmtMonth(month)}
++                </span>
++                <button onClick={() => navigateMonth(1)} style={btnIconStyle}>
++                    <ChevronRight size={16} />
++                </button>
++            </div>
++
++            {/* Summary chips */}
++            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
++                <SummaryChip icon={<Users size={14} />} label="Employees" value={employees.length} color="#6366F1" />
++                <SummaryChip icon={<Clock size={14} />} label="Pending" value={pendingCount} color="#D97706" />
++                <SummaryChip icon={<Check size={14} />} label="Approved" value={approvedCount} color="#16A34A" />
++                <SummaryChip icon={<DollarSign size={14} />} label="Total Payout" value={fmt(totalPayout)} color="#183C38" />
++            </div>
++
++            {/* Employee list */}
++            {loading ? (
++                <div className={styles.emptyState}>Loading payroll data…</div>
++            ) : (
++                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
++                    {employees.map(emp => {
++                        const pr = payrolls.find(p => p.employee_id === emp.id)
++                        const pill = STATUS_PILL[pr?.status || 'none']
++                        const initials = emp.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
++                        return (
++                            <div key={emp.id} className={styles.card} style={{ padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
++                                <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#183C38', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
++                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#fff' }}>{initials}</span>
++                                </div>
++                                <div style={{ flex: 1, minWidth: 0 }}>
++                                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--crm-text-primary)' }}>{emp.full_name}</div>
++                                    <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', textTransform: 'capitalize' }}>{emp.role.replace('_', ' ')}</div>
++                                </div>
++                                {pr ? (
++                                    <>
++                                        <div style={{ textAlign: 'right', marginRight: '0.75rem' }}>
++                                            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>{fmt(pr.net_salary)}</div>
++                                            <div style={{ fontSize: '0.7rem', color: 'var(--crm-text-faint)' }}>net salary</div>
++                                        </div>
++                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 100, backgroundColor: pill?.bg, color: pill?.color, border: `1px solid ${pill?.color}30` }}>
++                                            {pill?.label || pr.status}
++                                        </span>
++                                        {pr.status === 'pending' && (
++                                            <div style={{ display: 'flex', gap: '0.375rem', marginLeft: '0.25rem' }}>
++                                                <button onClick={() => handleApproveReject(pr.id, 'approved')} style={{ ...actionBtnStyle, borderColor: '#16A34A', color: '#16A34A' }} title="Approve">
++                                                    <Check size={14} />
++                                                </button>
++                                                <button onClick={() => handleApproveReject(pr.id, 'rejected')} style={{ ...actionBtnStyle, borderColor: '#DC2626', color: '#DC2626' }} title="Reject">
++                                                    <X size={14} />
++                                                </button>
++                                            </div>
++                                        )}
++                                        <button onClick={() => openModal(emp)} style={{ ...actionBtnStyle, marginLeft: '0.25rem' }} title="Edit">
++                                            <FileText size={14} />
++                                        </button>
++                                    </>
++                                ) : (
++                                    <button onClick={() => openModal(emp)} className={styles.btnPrimary} style={{ fontSize: '0.75rem', padding: '0.375rem 0.875rem', gap: '0.375rem', display: 'flex', alignItems: 'center' }}>
++                                        <Plus size={13} /> Add
++                                    </button>
++                                )}
++                            </div>
++                        )
++                    })}
++                    {employees.length === 0 && (
++                        <div className={styles.emptyState}>No employees found.</div>
++                    )}
++                </div>
++            )}
++
++            {/* Toast */}
++            {toast && (
++                <div style={{ position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#1a1a1a', color: '#fff', padding: '0.625rem 1.25rem', borderRadius: 8, fontSize: '0.8125rem', fontWeight: 500, zIndex: 9999, boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}>
++                    {toast}
++                </div>
++            )}
++
++            {/* Payroll Modal */}
++            {modalEmp && (
++                <div className={styles.modal} onClick={() => setModalEmp(null)}>
++                    <div className={styles.modalContent} style={{ maxWidth: 600, maxHeight: '90vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
++                        {/* Modal Header */}
++                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
++                            <div>
++                                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>{modalEmp.full_name}</div>
++                                <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-faint)', textTransform: 'capitalize' }}>{modalEmp.role.replace('_', ' ')} · {fmtMonth(month)}</div>
++                            </div>
++                            <button onClick={() => setModalEmp(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--crm-text-faint)', padding: 4 }}>
++                                <X size={18} />
++                            </button>
++                        </div>
++
++                        {/* Attendance */}
++                        <SectionLabel>Attendance</SectionLabel>
++                        <div style={gridStyle}>
++                            <Field label="Working Days" value={form.total_working_days} onChange={v => setForm(f => ({ ...f, total_working_days: v }))} />
++                            <Field label="Days Present"  value={form.days_present}       onChange={v => setForm(f => ({ ...f, days_present: v }))} />
++                            <Field label="Paid Leaves"   value={form.paid_leaves}         onChange={v => setForm(f => ({ ...f, paid_leaves: v }))} />
++                            <Field label="Unpaid (LOP)"  value={form.unpaid_leaves}       onChange={v => setForm(f => ({ ...f, unpaid_leaves: v }))} />
++                        </div>
++
++                        {/* Earnings */}
++                        <SectionLabel>Earnings</SectionLabel>
++                        <div style={gridStyle}>
++                            <Field label="Basic Salary"       value={form.basic_salary}       onChange={v => setForm(f => ({ ...f, basic_salary: v }))} />
++                            <Field label="HRA"                value={form.hra}                 onChange={v => setForm(f => ({ ...f, hra: v }))} />
++                            <Field label="Conveyance"         value={form.conveyance}          onChange={v => setForm(f => ({ ...f, conveyance: v }))} />
++                            <Field label="Special Allowance"  value={form.special_allowance}   onChange={v => setForm(f => ({ ...f, special_allowance: v }))} />
++                            <Field label="Travel Allowance"   value={form.travel_allowance}    onChange={v => setForm(f => ({ ...f, travel_allowance: v }))} />
++                            <Field label="Medical Allowance"  value={form.medical_allowance}   onChange={v => setForm(f => ({ ...f, medical_allowance: v }))} />
++                            <Field label="Bonus"              value={form.bonus}               onChange={v => setForm(f => ({ ...f, bonus: v }))} />
++                        </div>
++                        <CalcRow label="Gross Salary" value={gross} highlight />
++
++                        {/* Deductions */}
++                        <SectionLabel>Deductions</SectionLabel>
++                        <div style={gridStyle}>
++                            <Field label="Provident Fund (PF)" value={form.pf_deduction}       onChange={v => setForm(f => ({ ...f, pf_deduction: v }))} />
++                            <Field label="Income Tax (TDS)"    value={form.tax}                 onChange={v => setForm(f => ({ ...f, tax: v }))} />
++                            <Field label="Professional Tax"    value={form.professional_tax}    onChange={v => setForm(f => ({ ...f, professional_tax: v }))} />
++                            <Field label="LOP Deduction"       value={form.lop_deduction}       onChange={v => setForm(f => ({ ...f, lop_deduction: v }))} />
++                            <Field label="Other Deductions"    value={form.deductions}          onChange={v => setForm(f => ({ ...f, deductions: v }))} />
++                        </div>
++                        <CalcRow label="Total Deductions" value={totalDed} />
++
++                        {/* Net */}
++                        <div style={{ backgroundColor: '#183C38', borderRadius: 10, padding: '0.875rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '1rem 0' }}>
++                            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>Net Salary (Take Home)</span>
++                            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>{fmt(net)}</span>
++                        </div>
++
++                        {/* Notes */}
++                        <div className={styles.formGroup}>
++                            <label className={styles.formLabel}>Notes (optional)</label>
++                            <input
++                                className={styles.formInput}
++                                value={form.notes}
++                                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
++                                placeholder="e.g. includes annual bonus"
++                            />
++                        </div>
++
++                        {/* Actions */}
++                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
++                            <button onClick={() => setModalEmp(null)} className={styles.btnSecondary} style={{ flex: 1 }}>Cancel</button>
++                            <button onClick={handleSave} className={styles.btnPrimary} style={{ flex: 2 }} disabled={saving}>
++                                {saving ? 'Saving…' : editId ? 'Update Payroll' : 'Create Payroll'}
++                            </button>
++                        </div>
++                        {editId && editStatus === 'pending' && (
++                            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.625rem' }}>
++                                <button
++                                    onClick={() => { handleApproveReject(editId, 'rejected'); setModalEmp(null) }}
++                                    style={{ flex: 1, padding: '0.5rem', borderRadius: 8, border: '1.5px solid #DC2626', color: '#DC2626', background: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.8125rem' }}
++                                >
++                                    Reject
++                                </button>
++                                <button
++                                    onClick={() => { handleApproveReject(editId, 'approved'); setModalEmp(null) }}
++                                    style={{ flex: 1, padding: '0.5rem', borderRadius: 8, border: 'none', backgroundColor: '#16A34A', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '0.8125rem' }}
++                                >
++                                    Approve
++                                </button>
++                            </div>
++                        )}
++                    </div>
++                </div>
++            )}
++        </div>
++    )
++}
++
++/* ── Sub-components ── */
++function SectionLabel({ children }: { children: React.ReactNode }) {
++    return <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--crm-text-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '1rem 0 0.5rem' }}>{children}</div>
++}
++
++function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
++    return (
++        <div className={styles.formGroup} style={{ margin: 0 }}>
++            <label className={styles.formLabel} style={{ marginBottom: 3 }}>{label}</label>
++            <input
++                type="number"
++                min="0"
++                className={styles.formInput}
++                style={{ padding: '0.4rem 0.625rem' }}
++                value={value}
++                onChange={e => onChange(e.target.value)}
++                placeholder="0"
++            />
++        </div>
++    )
++}
++
++function CalcRow({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
++    return (
++        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', backgroundColor: highlight ? '#183C3812' : '#F3F4F6', borderRadius: 8, marginTop: '0.5rem' }}>
++            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: highlight ? '#183C38' : 'var(--crm-text-secondary)' }}>{label}</span>
++            <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: highlight ? '#183C38' : 'var(--crm-text-primary)' }}>{fmt(value)}</span>
++        </div>
++    )
++}
++
++function SummaryChip({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string | number; color: string }) {
++    return (
++        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', backgroundColor: 'var(--crm-surface)', border: '1px solid var(--crm-border-subtle)', borderRadius: 10 }}>
++            <span style={{ color }}>{icon}</span>
++            <div>
++                <div style={{ fontSize: '0.65rem', color: 'var(--crm-text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
++                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--crm-text-primary)' }}>{value}</div>
++            </div>
++        </div>
++    )
++}
++
++const gridStyle: React.CSSProperties = {
++    display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.625rem',
++}
++const btnIconStyle: React.CSSProperties = {
++    width: 32, height: 32, borderRadius: 8, border: '1px solid var(--crm-border-subtle)',
++    backgroundColor: 'var(--crm-surface)', cursor: 'pointer', display: 'flex',
++    alignItems: 'center', justifyContent: 'center', color: 'var(--crm-text-secondary)',
++}
++const actionBtnStyle: React.CSSProperties = {
++    width: 30, height: 30, borderRadius: 6, border: '1.5px solid var(--crm-border-subtle)',
++    backgroundColor: 'transparent', cursor: 'pointer', display: 'flex',
++    alignItems: 'center', justifyContent: 'center', color: 'var(--crm-text-faint)',
++}
+-- 
+2.51.0.windows.1
+

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Plus, Search, X } from 'lucide-react';
+import { ChevronDown, Plus, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { canonicalCity, dedupeCities } from '@/lib/cities';
 
@@ -14,33 +14,33 @@ type Props = {
     name?: string;
 };
 
-// Fetches DISTINCT non-empty cities from projects + properties tables and
-// presents them as a searchable dropdown. Admins can also type a new city
-// (the "Add new" option). New cities flow into the next dropdown load
-// because they get persisted on the row that's being saved.
+// Search-as-you-type combobox for city selection.
 //
-// This eliminates the Bangalore-vs-Bengaluru typo class of bugs going
-// forward — admins pick from the actual list of cities already in use.
-//
-// Existing inconsistent data is NOT auto-normalised by this component. To
-// canonicalise old rows (e.g., merge "Bengaluru" into "Bangalore"), run a
-// one-off SQL update in Supabase.
+// On mount, fetches DISTINCT non-null cities from projects + properties tables
+// (deduped via canonicalCity so Bangalore/Bengaluru/blr collapse to one
+// "Bangalore" entry). The input is editable: typing both filters the dropdown
+// AND captures a "new city" candidate that becomes available via the
+// "+ Add ..." pill at the bottom of the list. Confirming a new city pushes
+// it into the local list so it shows immediately without a refresh; persistence
+// happens automatically when the form saves the row.
 export default function CitySelect({
     value,
     onChange,
     className,
-    placeholder = 'Select or add a city',
+    placeholder = 'Type or pick a city',
     required = false,
     name = 'city',
 }: Props) {
     const supabase = useMemo(() => createClient(), []);
-    const [open, setOpen] = useState(false);
     const [cities, setCities] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
-    const [addingNew, setAddingNew] = useState(false);
-    const [newCity, setNewCity] = useState('');
+    const [open, setOpen] = useState(false);
+    // `query` is what's currently in the input. When the dropdown is closed
+    // we display the saved `value` instead (so the user sees the selected
+    // city when not actively searching).
+    const [query, setQuery] = useState('');
     const wrapRef = useRef<HTMLDivElement | null>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -55,9 +55,6 @@ export default function CitySelect({
                 ...((pj ?? []).map((r: { city: string | null }) => r.city)),
                 ...((pr ?? []).map((r: { city: string | null }) => r.city)),
             ];
-            // Dedupe via canonicalCity() so Bangalore / Bengaluru / variants
-            // collapse into a single canonical entry — same logic the public
-            // listings use, so admins and end-users see the same city list.
             const sorted = dedupeCities(all).sort((a, b) => a.localeCompare(b));
             setCities(sorted);
             setLoading(false);
@@ -69,9 +66,7 @@ export default function CitySelect({
         const handleClickOutside = (e: MouseEvent) => {
             if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
                 setOpen(false);
-                setAddingNew(false);
-                setNewCity('');
-                setSearch('');
+                setQuery('');
             }
         };
         if (open) document.addEventListener('mousedown', handleClickOutside);
@@ -79,61 +74,116 @@ export default function CitySelect({
     }, [open]);
 
     const filtered = useMemo(() => {
-        const q = search.trim().toLowerCase();
+        const q = query.trim().toLowerCase();
         if (!q) return cities;
         return cities.filter((c) => c.toLowerCase().includes(q));
-    }, [cities, search]);
+    }, [cities, query]);
+
+    // Whether the current query matches an existing canonical entry. If not
+    // and the query is non-empty, the "Add this as a new city" affordance shows.
+    const queryMatchesExisting = useMemo(() => {
+        const q = query.trim();
+        if (!q) return true;
+        const canonical = canonicalCity(q).toLowerCase();
+        return cities.some((c) => c.toLowerCase() === canonical);
+    }, [cities, query]);
 
     const selectCity = (c: string) => {
         onChange(c);
         setOpen(false);
-        setSearch('');
-        setAddingNew(false);
-        setNewCity('');
+        setQuery('');
+        inputRef.current?.blur();
     };
 
     const confirmNewCity = () => {
-        const trimmed = newCity.trim();
+        const trimmed = query.trim();
         if (!trimmed) return;
-        // Run through canonicalCity() so 'Bengaluru' / 'bangalore' / 'BLR'
-        // all snap to the canonical 'Bangalore'. New cities outside the
-        // synonym map flow through unchanged.
         const canonical = canonicalCity(trimmed);
         const existingMatch = cities.find((c) => c.toLowerCase() === canonical.toLowerCase());
-        const finalValue = existingMatch ?? canonical;
-        if (!existingMatch) {
-            setCities((prev) => [...prev, canonical].sort((a, b) => a.localeCompare(b)));
+        if (existingMatch) {
+            selectCity(existingMatch);
+            return;
         }
-        selectCity(finalValue);
+        // Push into local list so it shows immediately. The row save will
+        // persist it to the database; next dropdown load picks it up via the
+        // DISTINCT query.
+        setCities((prev) => [...prev, canonical].sort((a, b) => a.localeCompare(b)));
+        selectCity(canonical);
+    };
+
+    // Show the live query while typing; otherwise the saved value
+    const displayValue = open ? query : value;
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setOpen(true);
+            return;
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            setOpen(false);
+            setQuery('');
+            inputRef.current?.blur();
+            return;
+        }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            // Pick the first match if there is one; otherwise treat as new
+            if (filtered.length > 0) {
+                selectCity(filtered[0]);
+            } else if (query.trim()) {
+                confirmNewCity();
+            }
+        }
     };
 
     return (
         <div ref={wrapRef} style={{ position: 'relative', width: '100%' }} className={className}>
-            {/* Hidden input keeps form-data submission compatible (e.g. FormData with field 'city') */}
             <input type="hidden" name={name} value={value} required={required} />
 
-            <button
-                type="button"
-                onClick={() => setOpen((o) => !o)}
-                style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.5rem 0.75rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: 6,
-                    background: '#fff',
-                    fontSize: '0.9375rem',
-                    cursor: 'pointer',
-                    color: value ? '#111827' : '#9ca3af',
-                    fontFamily: 'inherit',
-                    textAlign: 'left',
-                }}
-            >
-                <span>{value || placeholder}</span>
-                <ChevronDown size={16} style={{ flexShrink: 0, color: '#6b7280' }} />
-            </button>
+            <div style={{ position: 'relative' }}>
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={displayValue}
+                    placeholder={placeholder}
+                    onFocus={() => setOpen(true)}
+                    onChange={(e) => {
+                        setQuery(e.target.value);
+                        if (!open) setOpen(true);
+                    }}
+                    onKeyDown={handleKeyDown}
+                    autoComplete="off"
+                    style={{
+                        width: '100%',
+                        padding: '0.5rem 2.25rem 0.5rem 0.75rem',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 6,
+                        background: '#fff',
+                        fontSize: '0.9375rem',
+                        fontFamily: 'inherit',
+                        color: '#111827',
+                    }}
+                />
+                <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {value && !open && (
+                        <button
+                            type="button"
+                            onClick={() => onChange('')}
+                            title="Clear"
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 2 }}
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
+                    <ChevronDown
+                        size={16}
+                        style={{ color: '#6b7280', cursor: 'pointer' }}
+                        onClick={() => { setOpen((o) => !o); inputRef.current?.focus(); }}
+                    />
+                </div>
+            </div>
 
             {open && (
                 <div
@@ -147,106 +197,48 @@ export default function CitySelect({
                         borderRadius: 6,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                         zIndex: 20,
-                        maxHeight: 320,
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
+                        maxHeight: 280,
+                        overflowY: 'auto',
                     }}
                 >
-                    {!addingNew && (
-                        <div style={{ padding: '0.5rem', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Search size={14} style={{ color: '#9ca3af', flexShrink: 0, marginLeft: 4 }} />
-                            <input
-                                type="text"
-                                autoFocus
-                                placeholder="Search cities…"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                style={{ flex: 1, border: 'none', outline: 'none', fontSize: '0.875rem', padding: '0.25rem' }}
-                            />
-                        </div>
-                    )}
-
-                    {addingNew ? (
-                        <div style={{ padding: '0.75rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#374151', marginBottom: 4 }}>
-                                Add a new city
-                            </label>
-                            <input
-                                type="text"
-                                autoFocus
-                                value={newCity}
-                                onChange={(e) => setNewCity(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') { e.preventDefault(); confirmNewCity(); }
-                                    if (e.key === 'Escape') { setAddingNew(false); setNewCity(''); }
+                    {loading ? (
+                        <div style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#9ca3af' }}>Loading cities…</div>
+                    ) : filtered.length > 0 ? (
+                        filtered.map((c) => (
+                            <button
+                                key={c}
+                                type="button"
+                                onMouseDown={(e) => { e.preventDefault(); selectCity(c); }}
+                                style={{
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: '0.5rem 0.875rem',
+                                    border: 'none',
+                                    background: c === value ? '#f3f4f6' : '#fff',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem',
+                                    color: '#111827',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
                                 }}
-                                placeholder="e.g. Mysore"
-                                style={{ width: '100%', padding: '0.4rem 0.625rem', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: '0.875rem' }}
-                            />
-                            <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
-                                <button
-                                    type="button"
-                                    onClick={confirmNewCity}
-                                    disabled={!newCity.trim()}
-                                    style={{ padding: '0.375rem 0.75rem', background: '#183C38', color: '#fff', border: 'none', borderRadius: 4, fontSize: '0.8125rem', cursor: newCity.trim() ? 'pointer' : 'not-allowed', opacity: newCity.trim() ? 1 : 0.5 }}
-                                >
-                                    Add &amp; Select
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => { setAddingNew(false); setNewCity(''); }}
-                                    style={{ padding: '0.375rem 0.75rem', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 4, fontSize: '0.8125rem', cursor: 'pointer' }}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: 8 }}>
-                                Tip: if the city already exists with different casing, it will reuse the existing entry to keep data consistent.
-                            </p>
-                        </div>
+                                onMouseEnter={(e) => (e.currentTarget.style.background = '#f9fafb')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = c === value ? '#f3f4f6' : '#fff')}
+                            >
+                                <span>{c}</span>
+                                {c === value && <span style={{ fontSize: '0.6875rem', color: '#16a34a' }}>Selected</span>}
+                            </button>
+                        ))
                     ) : (
-                        <div style={{ overflowY: 'auto', flex: 1 }}>
-                            {loading ? (
-                                <div style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#9ca3af' }}>Loading cities…</div>
-                            ) : filtered.length === 0 ? (
-                                <div style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#9ca3af' }}>
-                                    No matching cities. Use &ldquo;Add new&rdquo; below.
-                                </div>
-                            ) : (
-                                filtered.map((c) => (
-                                    <button
-                                        key={c}
-                                        type="button"
-                                        onClick={() => selectCity(c)}
-                                        style={{
-                                            width: '100%',
-                                            textAlign: 'left',
-                                            padding: '0.5rem 0.875rem',
-                                            border: 'none',
-                                            background: c === value ? '#f3f4f6' : '#fff',
-                                            cursor: 'pointer',
-                                            fontSize: '0.875rem',
-                                            color: '#111827',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                        }}
-                                        onMouseEnter={(e) => (e.currentTarget.style.background = '#f9fafb')}
-                                        onMouseLeave={(e) => (e.currentTarget.style.background = c === value ? '#f3f4f6' : '#fff')}
-                                    >
-                                        <span>{c}</span>
-                                        {c === value && <span style={{ fontSize: '0.6875rem', color: '#16a34a' }}>Selected</span>}
-                                    </button>
-                                ))
-                            )}
+                        <div style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', color: '#9ca3af' }}>
+                            No matching cities.
                         </div>
                     )}
 
-                    {!addingNew && (
+                    {query.trim() && !queryMatchesExisting && (
                         <button
                             type="button"
-                            onClick={() => setAddingNew(true)}
+                            onMouseDown={(e) => { e.preventDefault(); confirmNewCity(); }}
                             style={{
                                 width: '100%',
                                 display: 'flex',
@@ -262,31 +254,10 @@ export default function CitySelect({
                                 cursor: 'pointer',
                             }}
                         >
-                            <Plus size={14} /> Add a new city
+                            <Plus size={14} /> Add &ldquo;{canonicalCity(query.trim())}&rdquo; as a new city
                         </button>
                     )}
                 </div>
-            )}
-
-            {value && (
-                <button
-                    type="button"
-                    onClick={() => onChange('')}
-                    title="Clear"
-                    style={{
-                        position: 'absolute',
-                        right: 32,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#9ca3af',
-                        padding: 2,
-                    }}
-                >
-                    <X size={14} />
-                </button>
             )}
         </div>
     );

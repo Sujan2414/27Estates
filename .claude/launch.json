@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Next.js Web App",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/Users/SujanDandgulkar/OneDrive - UK&CO/21 estates/21-estates-web/node_modules/next/dist/bin/next", "dev", "--webpack"],
+      "port": 3000
+    },
+    {
+      "name": "Expo Mobile App",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/@expo/cli/build/bin/cli", "start", "--port", "8082"],
+      "port": 8082
+    },
+    {
+      "name": "Expo Mobile (Android Dev Build)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/@expo/cli/build/bin/cli", "run:android", "--port", "8082"],
+      "port": 8082
+    },
+    {
+      "name": "Expo Mobile Web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "8081"],
+      "port": 8081,
+      "cwd": "C:/21estates-build/mobile"
+    }
+  ]
+}
