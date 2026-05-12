@@ -188,13 +188,51 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ record: data, action: 'checked_in', time: now.toISOString() })
         }
 
-        // check_out: fetch existing record to compute hours_worked
+        // check_out: fetch existing record to compute hours_worked and to
+        // check whether this was an office day (geofence applies) or WFH
+        // (no geofence — user is already remote by design).
         const { data: existing } = await supabase
             .from('hrm_attendance')
-            .select('check_in')
+            .select('check_in, work_mode')
             .eq('employee_id', employee_id)
             .eq('date', today)
             .single()
+
+        // Geofence enforcement on check_out for office-mode attendance.
+        // Mirrors the mobile guard so users can't clock out from anywhere
+        // they want — they must be inside the office, or apply for
+        // regularisation if they forgot to clock out before leaving.
+        const isWfhDay = existing?.work_mode === 'wfh' || existing?.work_mode === 'work_from_home'
+        if (!isWfhDay) {
+            if (typeof lat !== 'number' || typeof lng !== 'number') {
+                return NextResponse.json({
+                    error: 'Location required for clock-out',
+                    code: 'location_required',
+                }, { status: 400 })
+            }
+            const { data: ws } = await supabase
+                .from('hrm_work_settings')
+                .select('office_lat, office_lng, geofence_radius_m')
+                .limit(1)
+                .maybeSingle()
+            const officeLat = (ws?.office_lat as number | null) ?? 12.979843300685605
+            const officeLng = (ws?.office_lng as number | null) ?? 77.6066007348556
+            const radius = (ws?.geofence_radius_m as number | null) ?? 100
+            const toRad = (d: number) => (d * Math.PI) / 180
+            const dLat = toRad(officeLat - lat)
+            const dLon = toRad(officeLng - lng)
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(toRad(lat)) * Math.cos(toRad(officeLat)) * Math.sin(dLon / 2) ** 2
+            const dist = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            if (dist > radius) {
+                return NextResponse.json({
+                    error: `You're ${Math.round(dist)}m from the office (allowed: ${radius}m). Return to the office to clock out, or apply for regularisation.`,
+                    code: 'outside_geofence',
+                    distance_m: Math.round(dist),
+                    radius_m: radius,
+                }, { status: 403 })
+            }
+        }
 
         let hoursWorked: number | null = null
         if (existing?.check_in) {
