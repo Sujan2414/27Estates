@@ -19,13 +19,9 @@
   justify-content: center;
   position: relative;
   padding: 0;
-  /* Tight gap between emblem and text — matches the master
-     `/logo without bg (1).png` layout where the text sits directly
-     below the building emblem. */
-  gap: 4px;
 }
 
-/* Split Containers — overflow:hidden gives us the up/down reveal mask. */
+/* Split Containers — overflow:hidden masks the slide-in animation. */
 .splitTop,
 .splitBottom {
   overflow: hidden;
@@ -42,53 +38,59 @@
 }
 
 /* TOP SECTION — emblem.
-   Up.png is 1024x1024 with the emblem occupying ~y=100..650 (roughly
-   30%..65% of the height). object-fit:cover + object-position centred
-   at ~37% vertically crops the whitespace and shows just the emblem
-   at proper proportional size relative to the text below. */
+   Up.png is 1024x1024 with the emblem at roughly y=100..650 (~35-65%
+   of the file). The top 100px and bottom 374px of the file are
+   whitespace which we need to mask away — otherwise either the emblem
+   looks small (object-fit:cover over the full square) or there's a
+   huge gap between emblem and text.
+   Strategy: render Image at its natural 360x360, push it up via
+   margin-top by -35px (the scaled offset of the emblem's top edge),
+   and clip splitTop to exactly the emblem's displayed height. */
 .splitTop {
-  height: 220px;
-  align-items: center;
+  height: 194px;
 }
 
 .imageUp {
-  width: 220px;
-  height: 220px;
-  object-fit: cover;
-  object-position: 50% 37%;
+  width: 360px;
+  height: 360px;
+  object-fit: contain;
+  margin-top: -35px;
 }
 
 /* BOTTOM SECTION — text "27 ESTATES / OWN THE EXTRAORDINARY".
-   Down.png is 466x145 (~3.2:1) — no whitespace, just render at a
-   height that visually balances the emblem. */
+   Down.png is 466x145 — no whitespace, render tightly under the
+   emblem with a small visual breathing space. */
 .splitBottom {
-  height: 64px;
-  align-items: center;
+  height: 60px;
+  align-items: flex-start;
+  margin-top: 8px;
 }
 
 .imageDown {
   width: auto;
-  height: 56px;
+  height: 60px;
   object-fit: contain;
 }
 
 /* Tablet */
 @media (max-width: 768px) {
   .splitTop {
-    height: 180px;
+    height: 151px;
   }
 
   .imageUp {
-    width: 180px;
-    height: 180px;
+    width: 280px;
+    height: 280px;
+    margin-top: -27px;
   }
 
   .splitBottom {
-    height: 52px;
+    height: 48px;
+    margin-top: 6px;
   }
 
   .imageDown {
-    height: 46px;
+    height: 48px;
   }
 }
 
@@ -99,19 +101,21 @@
   }
 
   .splitTop {
-    height: 140px;
+    height: 119px;
   }
 
   .imageUp {
-    width: 140px;
-    height: 140px;
+    width: 220px;
+    height: 220px;
+    margin-top: -21px;
   }
 
   .splitBottom {
-    height: 40px;
+    height: 38px;
+    margin-top: 5px;
   }
 
   .imageDown {
-    height: 36px;
+    height: 38px;
   }
 }

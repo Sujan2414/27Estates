@@ -58,8 +58,8 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
                                 <Image
                                     src="/Up.png"
                                     alt="27 Estates Mark"
-                                    width={300}
-                                    height={300}
+                                    width={400}
+                                    height={400}
                                     className={styles.imageUp}
                                     priority
                                 />
