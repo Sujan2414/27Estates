@@ -1144,6 +1144,17 @@ export default function LeadDetailPage() {
                             </div>
                             {showAddVisit && (
                                 <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--crm-elevated)', borderRadius: '0.5rem', border: '1px solid var(--crm-border)' }}>
+                                    {/* Client info — visit is being scheduled from this lead's
+                                        detail page, so name + phone are already known. Show as
+                                        read-only context so the agent confirms who the visit is
+                                        for before scheduling. */}
+                                    <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.625rem', backgroundColor: 'var(--crm-bg)', borderRadius: '0.375rem', border: '1px solid var(--crm-border)' }}>
+                                        <div style={{ fontSize: '0.6875rem', color: 'var(--crm-text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
+                                            Client
+                                        </div>
+                                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--crm-text-primary)' }}>{lead?.name || '—'}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--crm-text-secondary)', marginTop: '2px' }}>{lead?.phone || 'No phone on file'}</div>
+                                    </div>
                                     <div style={{ marginBottom: '0.5rem' }}>
                                         <label className={styles.formLabel}>Listing *</label>
                                         <PropertySearchInput
