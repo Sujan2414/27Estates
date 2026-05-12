@@ -5,7 +5,7 @@ import ProjectCard from "@/components/emergent/ProjectCard";
 import { Heart, MapPin } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { proxyUrl } from "@/lib/proxy-url";
+import { transformUrl } from "@/lib/proxy-url";
 import styles from "@/components/emergent/Bookmarks.module.css";
 import { Database } from '@/lib/supabase/types';
 
@@ -35,7 +35,9 @@ const PropertyBookmarkCard = ({ property, onBookmarkChange }: { property: Proper
     const supabase = createClient();
     const [bookmarked, setBookmarked] = useState(true);
     const [loading, setLoading] = useState(false);
-    const image = property.images?.[0] ? proxyUrl(property.images[0]) : '/no-image.svg';
+    const image = property.images?.[0]
+        ? transformUrl(property.images[0], { width: 600, height: 400, resize: 'cover', quality: 72 })
+        : '/no-image.svg';
 
     const handleBookmark = async (e: React.MouseEvent) => {
         e.preventDefault();

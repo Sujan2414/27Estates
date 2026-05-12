@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { MapPin, Building2, Heart } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { proxyUrl } from '@/lib/proxy-url';
+import { transformUrl } from '@/lib/proxy-url';
 import styles from './ProjectCard.module.css';
 
 interface ProjectCardProps {
@@ -108,7 +108,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {/* Image */}
                 <div className={styles.imageContainer}>
                     <img
-                        src={image ? proxyUrl(image) : '/no-image.svg'}
+                        src={image ? transformUrl(image, { width: 600, height: 400, resize: 'cover', quality: 72 }) : '/no-image.svg'}
                         alt={project_name}
                         className={styles.image}
                         onError={(e) => { e.currentTarget.src = '/no-image.svg'; }}

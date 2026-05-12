@@ -13,7 +13,7 @@ import { FaWhatsapp, FaXTwitter } from "react-icons/fa6";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import VideoPlayer from "@/components/VideoPlayer";
-import { proxyUrl, proxyUrls } from "@/lib/proxy-url";
+import { proxyUrl, proxyUrls, transformUrl, transformUrls } from "@/lib/proxy-url";
 import styles from "@/components/emergent/PropertyDetail.module.css";
 import ImageGalleryModal from "@/components/emergent/ImageGalleryModal";
 import { AMENITY_ICON_MAP, AMENITIES_BY_CATEGORY, AMENITY_CATEGORIES, flattenAmenities } from "@/lib/amenities-data";
@@ -279,8 +279,14 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
         );
     }
 
-    // Prepare images
+    // Prepare images — pull two sized variants from Supabase's image
+    // renderer. `displayImages` is shown at ~1200-1600px wide in the
+    // hero gallery so we ask for 1600 (retina-ready). The full-screen
+    // gallery modal uses the original via `fullSizeImages`.
     const displayImages = property.images && property.images.length > 0
+        ? transformUrls(property.images, { width: 1600, quality: 78 })
+        : ['/placeholder-property.jpg'];
+    const fullSizeImages = property.images && property.images.length > 0
         ? proxyUrls(property.images)
         : ['/placeholder-property.jpg'];
 
@@ -324,7 +330,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                         <ImageGalleryModal
                             isOpen={isGalleryOpen}
                             onClose={() => setIsGalleryOpen(false)}
-                            images={displayImages}
+                            images={fullSizeImages}
                             initialIndex={initialGalleryIndex}
                         />
                     </div>
@@ -461,7 +467,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                             <div className={styles.agentAvatar}>
                                 {agent.image ? (
                                     <img
-                                        src={proxyUrl(agent.image)}
+                                        src={transformUrl(agent.image, { width: 200, height: 200, resize: 'cover', quality: 80 })}
                                         alt={agent.name}
                                         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'flex'; }}
                                     />
@@ -756,7 +762,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                         </div>
 
                         <div className={styles.floorPlanImage}>
-                            <img src={proxyUrl(property.floor_plans[activeFloorPlan].image)} alt={property.floor_plans[activeFloorPlan].name} />
+                            <img src={transformUrl(property.floor_plans[activeFloorPlan].image, { width: 1400, quality: 78 })} alt={property.floor_plans[activeFloorPlan].name} />
                         </div>
                     </div>
                 )}
@@ -803,7 +809,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {similarProperties.map((p) => {
-                            const thumb = p.images?.[0] ? proxyUrl(p.images[0]) : null;
+                            const thumb = p.images?.[0] ? transformUrl(p.images[0], { width: 400, height: 300, resize: 'cover', quality: 70 }) : null;
                             const pPrice = p.price_text || (p.price > 0 ? formatIndianRupee(p.price) : 'Price on Request');
                             return (
                                 <a
@@ -902,7 +908,7 @@ const PropertyDetailPage = ({ params }: PropertyDetailPageProps) => {
                         <div className={styles.modalHeader}>
                             <div className={styles.agentImageWrapper}>
                                 {agent?.image ? (
-                                    <img src={proxyUrl(agent.image)} alt={agent.name} className={styles.modalAgentImg} />
+                                    <img src={transformUrl(agent.image, { width: 240, height: 240, resize: 'cover', quality: 80 })} alt={agent.name} className={styles.modalAgentImg} />
                                 ) : (
                                     <UserCircle size={64} color="#94a3b8" strokeWidth={1} />
                                 )}
