@@ -58,8 +58,8 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
                                 <Image
                                     src="/Up.png"
                                     alt="27 Estates Mark"
-                                    width={200}
-                                    height={200}
+                                    width={300}
+                                    height={300}
                                     className={styles.imageUp}
                                     priority
                                 />
@@ -83,8 +83,8 @@ const Preloader: React.FC<PreloaderProps> = ({ onComplete }) => {
                                 <Image
                                     src="/Down.png"
                                     alt="27 Estates Text"
-                                    width={180}
-                                    height={50}
+                                    width={260}
+                                    height={80}
                                     className={styles.imageDown}
                                     priority
                                 />

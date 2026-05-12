@@ -19,9 +19,13 @@
   justify-content: center;
   position: relative;
   padding: 0;
+  /* Tight gap between emblem and text — matches the master
+     `/logo without bg (1).png` layout where the text sits directly
+     below the building emblem. */
+  gap: 4px;
 }
 
-/* Split Containers */
+/* Split Containers — overflow:hidden gives us the up/down reveal mask. */
 .splitTop,
 .splitBottom {
   overflow: hidden;
@@ -37,50 +41,54 @@
   justify-content: center;
 }
 
-/* TOP SECTION */
+/* TOP SECTION — emblem.
+   Up.png is 1024x1024 with the emblem occupying ~y=100..650 (roughly
+   30%..65% of the height). object-fit:cover + object-position centred
+   at ~37% vertically crops the whitespace and shows just the emblem
+   at proper proportional size relative to the text below. */
 .splitTop {
-  height: 150px;
-  align-items: flex-end;
-  margin-bottom: -25px;
+  height: 220px;
+  align-items: center;
 }
 
 .imageUp {
-  width: auto;
-  height: 160px;
-  object-fit: contain;
+  width: 220px;
+  height: 220px;
+  object-fit: cover;
+  object-position: 50% 37%;
 }
 
-/* BOTTOM SECTION */
+/* BOTTOM SECTION — text "27 ESTATES / OWN THE EXTRAORDINARY".
+   Down.png is 466x145 (~3.2:1) — no whitespace, just render at a
+   height that visually balances the emblem. */
 .splitBottom {
-  height: 100px;
-  align-items: flex-start;
-  margin-top: -25px;
+  height: 64px;
+  align-items: center;
 }
 
 .imageDown {
   width: auto;
-  height: 40px;
+  height: 56px;
   object-fit: contain;
 }
 
 /* Tablet */
 @media (max-width: 768px) {
   .splitTop {
-    height: 130px;
-    margin-bottom: -20px;
+    height: 180px;
   }
 
   .imageUp {
-    height: 130px;
+    width: 180px;
+    height: 180px;
   }
 
   .splitBottom {
-    height: 80px;
-    margin-top: -20px;
+    height: 52px;
   }
 
   .imageDown {
-    height: 35px;
+    height: 46px;
   }
 }
 
@@ -91,20 +99,19 @@
   }
 
   .splitTop {
-    height: 100px;
-    margin-bottom: -15px;
+    height: 140px;
   }
 
   .imageUp {
-    height: 100px;
+    width: 140px;
+    height: 140px;
   }
 
   .splitBottom {
-    height: 60px;
-    margin-top: -15px;
+    height: 40px;
   }
 
   .imageDown {
-    height: 30px;
+    height: 36px;
   }
 }
