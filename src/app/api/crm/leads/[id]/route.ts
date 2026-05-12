@@ -21,7 +21,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
             .eq('id', id)
             .single(),
         supabase.from('lead_activities').select('*').eq('lead_id', id).order('created_at', { ascending: false }).limit(50),
-        supabase.from('lead_tasks').select('*, creator:created_by (id, full_name)').eq('lead_id', id).order('due_date', { ascending: true })
+        // Read from hrm_tasks (now the single source of truth for both
+        // web CRM lead-detail tasks and mobile Workmate lead tasks). The
+        // 'creator' embed used to live here but hrm_tasks doesn't have an
+        // FK from created_by → profiles, so we resolve creator names in
+        // a second batch query below (taskCreatorIds → taskCreatorMap).
+        supabase.from('hrm_tasks').select('*').eq('lead_id', id).order('due_date', { ascending: true })
     ])
 
     if (leadResult.error) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
@@ -87,8 +92,13 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         const { data: taskCreators } = await supabase.from('profiles').select('id, full_name').in('id', taskCreatorIds)
         if (taskCreators) taskCreatorMap = Object.fromEntries(taskCreators.map((c: { id: string; full_name: string }) => [c.id, c.full_name]))
     }
-    const tasks = rawTasks.map((t: { created_by: string | null; [key: string]: unknown }) => ({
+    // hrm_tasks uses status enum ('todo' | 'in_progress' | 'review' | 'done').
+    // The web UI speaks is_completed:boolean — map at the boundary so the
+    // existing JSX (tasks.filter(t => !t.is_completed)…) keeps working.
+    const tasks = rawTasks.map((t: { created_by: string | null; status?: string; updated_at?: string; [key: string]: unknown }) => ({
         ...t,
+        is_completed: t.status === 'done',
+        completed_at: t.status === 'done' ? (t.updated_at ?? null) : null,
         creator_name: t.created_by ? (taskCreatorMap[t.created_by] || t.created_by) : null,
     }))
 
