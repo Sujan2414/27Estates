@@ -9,6 +9,7 @@ import {
     Settings, LogOut, Menu, X, BarChart3, Zap, Bell,
     CalendarCheck, TrendingUp, Shield, LayoutGrid,
     Sun, Moon, MousePointerClick, ListChecks, Flame, Trophy,
+    MessageSquare,
 } from 'lucide-react'
 import styles from './crm.module.css'
 import { CRMContext, type CRMUser, type CRMRole, ThemeProvider, useTheme } from './crm-context'
@@ -260,6 +261,7 @@ function CRMLayoutInner({ children }: { children: React.ReactNode }) {
                 items: [
                     { name: 'Connectors', href: '/crm/connectors', icon: Plug },
                     { name: 'Email', href: '/crm/emails', icon: Mail },
+                    { name: 'WhatsApp', href: '/crm/whatsapp', icon: MessageSquare },
                     { name: 'Nurture', href: '/crm/nurture', icon: Zap },
                 ],
             }] : []),
