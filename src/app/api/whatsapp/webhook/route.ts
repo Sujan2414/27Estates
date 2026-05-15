@@ -203,15 +203,20 @@ async function handleInboundMessage(msg: InboundMessage, contactName?: string) {
 
     // 24h window: Meta lets us send free-form messages for 24h after each inbound.
     // Refresh on every user message — outside this window we must use templates.
-    const windowExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-
+    // The column only exists once the Phase 1 migration has run, so we gate the
+    // write behind the funnel flag to keep deploys safe pre-migration.
+    const inboundUpdate: Record<string, unknown> = {
+        last_inbound_at: new Date().toISOString(),
+        unread_count: 0, // user replied — clear our pending count
+    }
+    if (FUNNEL_ENABLED) {
+        inboundUpdate.conversation_window_expires_at = new Date(
+            Date.now() + 24 * 60 * 60 * 1000,
+        ).toISOString()
+    }
     await supabase
         .from('whatsapp_conversations')
-        .update({
-            last_inbound_at: new Date().toISOString(),
-            unread_count: 0, // user replied — clear our pending count
-            conversation_window_expires_at: windowExpiresAt,
-        })
+        .update(inboundUpdate)
         .eq('id', conversationId)
 
     // Mark as read in Meta (blue ticks)
@@ -222,7 +227,7 @@ async function handleInboundMessage(msg: InboundMessage, contactName?: string) {
 
     const { data: conv } = await supabase
         .from('whatsapp_conversations')
-        .select('ai_enabled, status, stage, contact_name, lead_id')
+        .select('ai_enabled, status')
         .eq('id', conversationId)
         .single()
 
@@ -231,22 +236,33 @@ async function handleInboundMessage(msg: InboundMessage, contactName?: string) {
     // ── Funnel dispatcher (Phase 1) ─────────────────────────────
     // Runs BEFORE the AI. Returns true if we should fall through to AI,
     // false if the funnel already handled this turn.
-    if (FUNNEL_ENABLED && conv.stage) {
-        const action = dispatchByStage({
-            stage: conv.stage as Stage,
-            contactName: (conv.contact_name as string | null) ?? contactName ?? null,
-            contentText,
-            buttonReplyId: msg.interactive?.button_reply?.id,
-            listReplyId: msg.interactive?.list_reply?.id,
-            messageType: msg.type,
-        })
-        const fallthrough = await executeFunnelAction(
-            action,
-            conversationId,
-            msg.from,
-            (conv.lead_id as string | null) ?? null,
-        )
-        if (!fallthrough) return
+    // Note: the funnel-specific columns (stage, lead_id) are only queried when
+    // the flag is on. This keeps the deploy safe when the Phase 1 migration
+    // hasn't yet been applied — legacy AI behavior keeps working unchanged.
+    if (FUNNEL_ENABLED) {
+        const { data: convFunnel } = await supabase
+            .from('whatsapp_conversations')
+            .select('stage, contact_name, lead_id')
+            .eq('id', conversationId)
+            .single()
+        if (convFunnel?.stage) {
+            const action = dispatchByStage({
+                stage: convFunnel.stage as Stage,
+                contactName:
+                    (convFunnel.contact_name as string | null) ?? contactName ?? null,
+                contentText,
+                buttonReplyId: msg.interactive?.button_reply?.id,
+                listReplyId: msg.interactive?.list_reply?.id,
+                messageType: msg.type,
+            })
+            const fallthrough = await executeFunnelAction(
+                action,
+                conversationId,
+                msg.from,
+                (convFunnel.lead_id as string | null) ?? null,
+            )
+            if (!fallthrough) return
+        }
     }
 
     if (!contentText) {
