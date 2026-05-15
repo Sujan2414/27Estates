@@ -12,13 +12,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import {
     sendText,
+    sendButtons,
     markAsRead,
     verifyWebhookSignature,
+    type ReplyButton,
 } from '@/lib/whatsapp/meta-client'
 import { generateReply } from '@/lib/whatsapp/ai-agent'
+import {
+    dispatchByStage,
+    type FunnelAction,
+    type Stage,
+} from '@/lib/whatsapp/funnel-handlers'
 
 export const runtime = 'nodejs'           // need Node crypto for HMAC
 export const dynamic = 'force-dynamic'
+
+// Phase 1 funnel. When false, all messages route to the free-form AI (legacy
+// behavior). Flip to "true" in Vercel env to enable structured welcome buttons.
+const FUNNEL_ENABLED = process.env.WHATSAPP_FUNNEL_ENABLED === 'true'
 
 function db() {
     return createClient(
@@ -190,11 +201,16 @@ async function handleInboundMessage(msg: InboundMessage, contactName?: string) {
         meta_payload: msg,
     })
 
+    // 24h window: Meta lets us send free-form messages for 24h after each inbound.
+    // Refresh on every user message — outside this window we must use templates.
+    const windowExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
     await supabase
         .from('whatsapp_conversations')
         .update({
             last_inbound_at: new Date().toISOString(),
             unread_count: 0, // user replied — clear our pending count
+            conversation_window_expires_at: windowExpiresAt,
         })
         .eq('id', conversationId)
 
@@ -206,11 +222,33 @@ async function handleInboundMessage(msg: InboundMessage, contactName?: string) {
 
     const { data: conv } = await supabase
         .from('whatsapp_conversations')
-        .select('ai_enabled, status')
+        .select('ai_enabled, status, stage, contact_name, lead_id')
         .eq('id', conversationId)
         .single()
 
     if (!conv?.ai_enabled) return // human owns this chat
+
+    // ── Funnel dispatcher (Phase 1) ─────────────────────────────
+    // Runs BEFORE the AI. Returns true if we should fall through to AI,
+    // false if the funnel already handled this turn.
+    if (FUNNEL_ENABLED && conv.stage) {
+        const action = dispatchByStage({
+            stage: conv.stage as Stage,
+            contactName: (conv.contact_name as string | null) ?? contactName ?? null,
+            contentText,
+            buttonReplyId: msg.interactive?.button_reply?.id,
+            listReplyId: msg.interactive?.list_reply?.id,
+            messageType: msg.type,
+        })
+        const fallthrough = await executeFunnelAction(
+            action,
+            conversationId,
+            msg.from,
+            (conv.lead_id as string | null) ?? null,
+        )
+        if (!fallthrough) return
+    }
+
     if (!contentText) {
         // Non-text message (image/audio/etc) — acknowledge briefly without calling AI
         await sendAndStore(
@@ -351,6 +389,143 @@ async function sendAndStore(
             error: errMsg,
             ai_model: extras.ai_model || null,
             ai_usage: extras.ai_usage || null,
+        })
+        throw err
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// Funnel action executor (Phase 1)
+// Returns true if the AI should still run, false if we handled the turn.
+// ════════════════════════════════════════════════════════════
+async function executeFunnelAction(
+    action: FunnelAction,
+    conversationId: string,
+    to: string,
+    leadId: string | null,
+): Promise<boolean> {
+    const supabase = db()
+
+    switch (action.kind) {
+        case 'noop':
+            return false
+
+        case 'send-buttons': {
+            await sendButtonsAndStore(
+                conversationId,
+                to,
+                action.body,
+                action.buttons,
+                action.header,
+                action.footer,
+            )
+            const update: Record<string, unknown> = { stage: action.nextStage }
+            if (action.patch) Object.assign(update, action.patch)
+            await supabase
+                .from('whatsapp_conversations')
+                .update(update)
+                .eq('id', conversationId)
+            return false
+        }
+
+        case 'send-text': {
+            await sendAndStore(conversationId, to, action.body, 'assistant')
+            const update: Record<string, unknown> = {}
+            if (action.nextStage) update.stage = action.nextStage
+            if (action.patch) Object.assign(update, action.patch)
+            if (Object.keys(update).length) {
+                await supabase
+                    .from('whatsapp_conversations')
+                    .update(update)
+                    .eq('id', conversationId)
+            }
+            return false
+        }
+
+        case 'escalate': {
+            await supabase
+                .from('whatsapp_conversations')
+                .update({
+                    ai_enabled: false,
+                    status: 'handoff',
+                    stage: 'AGENT_HANDOFF',
+                })
+                .eq('id', conversationId)
+            await sendAndStore(conversationId, to, action.farewellText, 'assistant')
+            if (leadId) {
+                await supabase.from('lead_activities').insert({
+                    lead_id: leadId,
+                    type: 'whatsapp',
+                    title: `AI handed off: ${action.reason}`,
+                    description: action.summary,
+                    metadata: { source: 'whatsapp_funnel', reason: action.reason },
+                    created_by: 'whatsapp_funnel',
+                }).then(undefined, () => undefined)
+                await supabase.from('notifications').insert({
+                    type: 'whatsapp_handoff',
+                    title: `WhatsApp handoff: +${to}`,
+                    body: action.summary,
+                    link: `/crm/leads/${leadId}`,
+                    lead_id: leadId,
+                }).then(undefined, () => undefined)
+            }
+            return false
+        }
+
+        case 'delegate-to-ai': {
+            const update: Record<string, unknown> = {}
+            if (action.nextStage) update.stage = action.nextStage
+            if (action.patch) Object.assign(update, action.patch)
+            if (Object.keys(update).length) {
+                await supabase
+                    .from('whatsapp_conversations')
+                    .update(update)
+                    .eq('id', conversationId)
+            }
+            return true
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// Send interactive button message + persist outbound row
+// ════════════════════════════════════════════════════════════
+async function sendButtonsAndStore(
+    conversationId: string,
+    to: string,
+    body: string,
+    buttons: ReplyButton[],
+    header?: string,
+    footer?: string,
+) {
+    const supabase = db()
+    try {
+        const resp = await sendButtons(to, body, buttons, header, footer)
+        const wamid = resp?.messages?.[0]?.id || null
+        await supabase.from('whatsapp_messages').insert({
+            conversation_id: conversationId,
+            wa_message_id: wamid,
+            direction: 'outbound',
+            role: 'assistant',
+            type: 'interactive',
+            content: body,
+            meta_payload: { sent: { buttons, header, footer }, response: resp },
+            status: 'sent',
+        })
+        await supabase
+            .from('whatsapp_conversations')
+            .update({ last_outbound_at: new Date().toISOString() })
+            .eq('id', conversationId)
+    } catch (err) {
+        const errMsg = err instanceof Error ? err.message : 'send failed'
+        await supabase.from('whatsapp_messages').insert({
+            conversation_id: conversationId,
+            direction: 'outbound',
+            role: 'assistant',
+            type: 'interactive',
+            content: body,
+            status: 'failed',
+            error: errMsg,
         })
         throw err
     }
