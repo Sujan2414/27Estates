@@ -232,7 +232,9 @@ async function handleInboundMessage(msg: InboundMessage, contactName?: string) {
             })
         }
     } catch (err) {
-        console.error('[whatsapp] AI reply failed:', err)
+        const errMsg = err instanceof Error ? err.message : String(err)
+        const errStack = err instanceof Error ? err.stack : undefined
+        console.error('[whatsapp] AI reply failed:', errMsg, errStack)
         await sendAndStore(
             conversationId,
             msg.from,

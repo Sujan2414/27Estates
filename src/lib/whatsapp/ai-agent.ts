@@ -237,14 +237,29 @@ export async function generateReply(conversationId: string): Promise<AgentResult
     let finalText = ''
 
     for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
-        const completion = await openai.chat.completions.create({
-            model: DEPLOYMENT,
-            messages,
-            tools: TOOLS,
-            tool_choice: 'auto',
-            temperature: 0.6,
-            max_tokens: 250,
-        })
+        // NOTE: gpt-5.2-chat (Azure) does NOT accept `temperature` or `max_tokens` —
+        // use `max_completion_tokens` and omit temperature. Matches the working
+        // params in src/app/api/chat/route.ts.
+        let completion
+        try {
+            completion = await openai.chat.completions.create({
+                model: DEPLOYMENT,
+                messages,
+                tools: TOOLS,
+                tool_choice: 'auto',
+                max_completion_tokens: 400,
+            })
+        } catch (err) {
+            // Surface enough detail to debug in Vercel logs
+            const errObj = err as { status?: number; code?: string; message?: string; error?: { message?: string; code?: string } }
+            console.error('[whatsapp-agent] openai.create failed:', JSON.stringify({
+                status: errObj?.status,
+                code: errObj?.code || errObj?.error?.code,
+                message: errObj?.message || errObj?.error?.message,
+                deployment: DEPLOYMENT,
+            }))
+            throw err
+        }
 
         if (completion.usage) {
             totalUsage.prompt_tokens += completion.usage.prompt_tokens
