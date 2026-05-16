@@ -107,7 +107,7 @@ export default function LeadDetailPage() {
     const [saving, setSaving] = useState(false)
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
     const [currentUserName, setCurrentUserName] = useState<string | null>(null)
-    const [agents, setAgents] = useState<{ id: string; full_name: string; role: string }[]>([])
+    const [agents, setAgents] = useState<{ id: string; full_name: string; role: string; reporting_manager_id?: string | null }[]>([])
     const [assignDropdownOpen, setAssignDropdownOpen] = useState(false)
     const [assigning, setAssigning] = useState(false)
 
@@ -1176,11 +1176,25 @@ export default function LeadDetailPage() {
                                         <label className={styles.formLabel}>Assign To *</label>
                                         <select value={newVisit.assigned_to} onChange={e => setNewVisit({ ...newVisit, assigned_to: e.target.value })} className={styles.formSelect}>
                                             <option value="">Select person...</option>
-                                            {isAdminUser ? agents.map(a => (
-                                                <option key={a.id} value={a.id}>{a.full_name} ({a.role})</option>
-                                            )) : currentUserId ? (
-                                                <option value={currentUserId}>{currentUserName || 'Me'}</option>
-                                            ) : null}
+                                            {(() => {
+                                                if (isAdminUser) {
+                                                    return agents.map(a => (
+                                                        <option key={a.id} value={a.id}>{a.full_name} ({a.role})</option>
+                                                    ))
+                                                }
+                                                // Managers can assign visits to their direct reports — plus
+                                                // themselves, in case they're taking the visit. Filter is by
+                                                // reporting_manager_id so the dropdown stays scoped to their team.
+                                                if (crmUser?.role === 'manager') {
+                                                    const team = agents.filter(a => a.id === crmUser.id || a.reporting_manager_id === crmUser.id)
+                                                    return team.map(a => (
+                                                        <option key={a.id} value={a.id}>{a.full_name}{a.id === crmUser.id ? ' (Me)' : ''}</option>
+                                                    ))
+                                                }
+                                                return currentUserId ? (
+                                                    <option value={currentUserId}>{currentUserName || 'Me'}</option>
+                                                ) : null
+                                            })()}
                                         </select>
                                     </div>
                                     <textarea value={newVisit.notes} onChange={e => setNewVisit({ ...newVisit, notes: e.target.value })} placeholder="Notes" rows={2} className={styles.formInput} style={{ resize: 'vertical', marginBottom: '0.5rem' }} />
