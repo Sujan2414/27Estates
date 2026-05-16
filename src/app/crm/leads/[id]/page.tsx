@@ -627,7 +627,16 @@ export default function LeadDetailPage() {
                                     >
                                         Unassign
                                     </div>
-                                    {agents.map(a => (
+                                    {(() => {
+                                        // Scope the lead-assign list by role: admins see everyone,
+                                        // managers see their direct reports + themselves, agents see
+                                        // only themselves. Matches the site-visit assign dropdown.
+                                        if (isAdminUser) return agents
+                                        if (crmUser?.role === 'manager') {
+                                            return agents.filter(a => a.id === crmUser.id || a.reporting_manager_id === crmUser.id)
+                                        }
+                                        return crmUser ? agents.filter(a => a.id === crmUser.id) : []
+                                    })().map(a => (
                                         <div key={a.id}
                                             onClick={() => handleAssign(a.id)}
                                             style={{
