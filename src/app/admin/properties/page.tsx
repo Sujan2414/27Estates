@@ -32,10 +32,19 @@ interface Property {
     created_at: string
 }
 
+// UI label → DB value. Matches the public /properties page so admin and
+// public stay aligned on what "Buy" means (DB stores 'Sale').
+const LISTING_FILTERS: { ui: 'Buy' | 'Rent' | 'Lease'; db: 'Sale' | 'Rent' | 'Lease' }[] = [
+    { ui: 'Buy',   db: 'Sale'  },
+    { ui: 'Rent',  db: 'Rent'  },
+    { ui: 'Lease', db: 'Lease' },
+]
+
 export default function PropertiesPage() {
     const [properties, setProperties] = useState<Property[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
+    const [listingFilter, setListingFilter] = useState<'Sale' | 'Rent' | 'Lease'>('Rent')
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [showBulkModal, setShowBulkModal] = useState(false)
     const supabase = createClient()
@@ -76,11 +85,16 @@ export default function PropertiesPage() {
     }
 
 
-    const filteredProperties = properties.filter(property =>
-        property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.property_id.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredProperties = properties.filter(property => {
+        if (property.property_type !== listingFilter) return false
+        if (!searchQuery) return true
+        const q = searchQuery.toLowerCase()
+        return (
+            property.title.toLowerCase().includes(q) ||
+            property.location.toLowerCase().includes(q) ||
+            property.property_id.toLowerCase().includes(q)
+        )
+    })
 
     const formatPrice = (price: number, priceText: string | null) => {
         if (priceText) return priceText
@@ -124,11 +138,43 @@ export default function PropertiesPage() {
                 />
             </div>
 
+            {/* Listing-type filter — mirrors the public /properties tabs so admin
+                stays aligned with what users see. */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                {LISTING_FILTERS.map(({ ui, db }) => {
+                    const active = listingFilter === db
+                    const count = properties.filter(p => p.property_type === db).length
+                    return (
+                        <button
+                            key={db}
+                            onClick={() => setListingFilter(db)}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '999px',
+                                border: '1px solid',
+                                borderColor: active ? '#183C38' : '#d1d5db',
+                                backgroundColor: active ? '#183C38' : '#ffffff',
+                                color: active ? '#ffffff' : '#374151',
+                                fontSize: '0.8125rem',
+                                fontWeight: active ? 600 : 500,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                            }}
+                        >
+                            For {ui === 'Buy' ? 'Sale' : ui}
+                            <span style={{ fontSize: '0.6875rem', opacity: 0.7 }}>{count}</span>
+                        </button>
+                    )
+                })}
+            </div>
+
             {/* Priority note */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 16px', marginBottom: '1.25rem', backgroundColor: '#fefce8', border: '1px solid #fde68a', borderRadius: '10px' }}>
                 <Star size={16} fill="#d97706" stroke="#d97706" style={{ marginTop: 2, flexShrink: 0 }} />
                 <div style={{ fontSize: '0.8125rem', color: '#92400e', lineHeight: 1.5 }}>
-                    <strong>Featured Priority (1–6):</strong> Click the ☆ star on any property card to feature it on the website. The next available slot (1→6) is auto-assigned. Featured properties appear first in the Properties section in that order. Click a filled star to remove it.
+                    <strong>Featured Priority (1–6, per listing type):</strong> Click the ☆ star on any property card to feature it. Each listing type (Sale / Rent / Lease) has its own 1→6 slots, so featuring a Rent property doesn't consume a Buy slot. Click a filled star to remove it.
                 </div>
             </div>
 
@@ -151,10 +197,13 @@ export default function PropertiesPage() {
                                 ) : (
                                     <div className={propertyStyles.noImage}>No Image</div>
                                 )}
-                                {/* Star badge */}
+                                {/* Star badge — slots are scoped to this row's listing type
+                                    so each of Sale / Rent / Lease has its own 1→6 sequence. */}
                                 {(() => {
                                     const isActive = !!property.display_order
-                                    const usedSlots = properties.filter(p => p.display_order !== null).map(p => p.display_order as number)
+                                    const usedSlots = properties
+                                        .filter(p => p.property_type === property.property_type && p.display_order !== null)
+                                        .map(p => p.display_order as number)
                                     const nextSlot = [1,2,3,4,5,6].find(n => !usedSlots.includes(n))
                                     const canAdd = !isActive && !!nextSlot && usedSlots.length < 6
                                     return (

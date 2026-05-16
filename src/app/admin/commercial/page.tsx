@@ -23,16 +23,20 @@ interface Project {
     max_area: number | null
     min_price: string | null
     max_price: string | null
+    listing_type: string | null
     is_featured: boolean
     display_order: number | null
     images: string[]
     created_at: string
 }
 
+const LISTING_FILTERS: Array<'For Sale' | 'For Rent' | 'For Lease'> = ['For Sale', 'For Rent', 'For Lease']
+
 export default function CommercialPage() {
     const [projects, setProjects] = useState<Project[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
+    const [listingFilter, setListingFilter] = useState<'For Sale' | 'For Rent' | 'For Lease'>('For Rent')
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [showBulkModal, setShowBulkModal] = useState(false)
     const supabase = createClient()
@@ -61,11 +65,18 @@ export default function CommercialPage() {
         fetchProjects()
     }
 
-    const filteredProjects = projects.filter(project =>
-        project.project_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (project.location || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.project_id.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredProjects = projects.filter(project => {
+        // Treat NULL listing_type as 'For Rent' (matches the public page default).
+        const effectiveType = project.listing_type || 'For Rent'
+        if (effectiveType !== listingFilter) return false
+        if (!searchQuery) return true
+        const q = searchQuery.toLowerCase()
+        return (
+            project.project_name.toLowerCase().includes(q) ||
+            (project.location || '').toLowerCase().includes(q) ||
+            project.project_id.toLowerCase().includes(q)
+        )
+    })
 
     return (
         <div className={styles.dashboard}>
@@ -91,11 +102,42 @@ export default function CommercialPage() {
                     onChange={(e) => setSearchQuery(e.target.value)} className={propertyStyles.searchInput} />
             </div>
 
+            {/* Listing-type filter — mirrors the public /properties Commercial tabs. */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                {LISTING_FILTERS.map(lt => {
+                    const active = listingFilter === lt
+                    const count = projects.filter(p => (p.listing_type || 'For Rent') === lt).length
+                    return (
+                        <button
+                            key={lt}
+                            onClick={() => setListingFilter(lt)}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '999px',
+                                border: '1px solid',
+                                borderColor: active ? '#183C38' : '#d1d5db',
+                                backgroundColor: active ? '#183C38' : '#ffffff',
+                                color: active ? '#ffffff' : '#374151',
+                                fontSize: '0.8125rem',
+                                fontWeight: active ? 600 : 500,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                            }}
+                        >
+                            {lt}
+                            <span style={{ fontSize: '0.6875rem', opacity: 0.7 }}>{count}</span>
+                        </button>
+                    )
+                })}
+            </div>
+
             {/* Priority note */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 16px', marginBottom: '1.25rem', backgroundColor: '#fefce8', border: '1px solid #fde68a', borderRadius: '10px' }}>
                 <Star size={16} fill="#d97706" stroke="#d97706" style={{ marginTop: 2, flexShrink: 0 }} />
                 <div style={{ fontSize: '0.8125rem', color: '#92400e', lineHeight: 1.5 }}>
-                    <strong>Featured Priority (1–6):</strong> Click the ☆ star on any card to feature it on the website. The next available slot (1→6) is auto-assigned. Featured listings appear first in the Commercial section in that order. Click a filled star to remove it.
+                    <strong>Featured Priority (1–6, per listing type):</strong> Click the ☆ star on any card to feature it. Each listing type (For Sale / For Rent / For Lease) has its own 1→6 slots. Click a filled star to remove it.
                 </div>
             </div>
 
@@ -112,10 +154,14 @@ export default function CommercialPage() {
                                 ) : (
                                     <div className={propertyStyles.noImage}>No Image</div>
                                 )}
-                                {/* Star badge */}
+                                {/* Star badge — slots are scoped to this row's listing type
+                                    so each of For Sale / For Rent / For Lease has its own 1→6. */}
                                 {(() => {
                                     const isActive = !!project.display_order
-                                    const usedSlots = projects.filter(p => p.display_order !== null).map(p => p.display_order as number)
+                                    const rowType = project.listing_type || 'For Rent'
+                                    const usedSlots = projects
+                                        .filter(p => (p.listing_type || 'For Rent') === rowType && p.display_order !== null)
+                                        .map(p => p.display_order as number)
                                     const nextSlot = [1,2,3,4,5,6].find(n => !usedSlots.includes(n))
                                     const canAdd = !isActive && !!nextSlot && usedSlots.length < 6
                                     return (

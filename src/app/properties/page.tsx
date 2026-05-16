@@ -389,7 +389,8 @@ const Dashboard = () => {
                 { data: commercialData },
                 { data: warehouseData },
             ] = await Promise.all([
-                supabase.from('properties').select('*').order('created_at', { ascending: false }),
+                // Featured (display_order 1–6) surfaces first within each listing-type tab.
+                supabase.from('properties').select('*').order('display_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
                 supabase.from('projects').select('*').eq('section', 'residential').order('display_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
                 supabase.from('projects').select('*').eq('section', 'commercial').order('display_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
                 supabase.from('projects').select('*').eq('section', 'warehouse').order('display_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false }),
